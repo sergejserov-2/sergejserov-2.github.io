@@ -396,23 +396,32 @@ this.streetview = new Streetview({
    
     //Методы игры
     
-    prepareGame(rules = this.rules) {
-    
-        // ---------------- FSM RESET ----------------
-        this.state.game = new FSM("prepared");
-        this.state.round = new FSM("prepared");
-        // reset players FSM
-        for (const id of Object.keys(this.state.players)) {
-            this.state.players[id].fsm = new FSM("prepared");
+        prepareGame(map = this.map, rules = this.rules) {
+        
+            // ---------------- STATE RESET ----------------
+            this.map = map;
+            this.rules = rules;
+        
+            this.state.game = new FSM("prepared");
+            this.state.round = new FSM("prepared");
+        
+            for (const id of Object.keys(this.state.players)) {
+                this.state.players[id].fsm = new FSM("prepared");
+            }
+        
+            // ---------------- DATA RESET ----------------
+            this.currentRound = 0;
+            this.history = [];
+            this.currentDestination = null;
+            this.nextDestination = null;
+        
+            // ---------------- ENGINE INIT ----------------
+            this.streetview = new Streetview(this.map, this.distribution);
+            this.zoom = this.map?.minimumDistanceForPoints < 3000 ? 18 : 14;
+        
+            this.preloadNext();
+            this.fire("gamePrepared", { map: this.map, rules });
         }
-    
-        // ---------------- GAME DATA RESET ----------------
-        this.currentRound = 0;             this.history = [];
-        this.currentDestination = null;    this.nextDestination = null;
-        this.rules = rules;
-    
-        this.fire("gamePrepared", { rules });
-    }
     
     startGame() {
         if (!this.state.game.transition("started")) return;
