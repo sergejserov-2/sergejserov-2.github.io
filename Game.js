@@ -103,6 +103,8 @@ export class Game extends Emitter {
         this.preloadNext();
     }
 
+    
+
     // =====================================================
     // EVENTS
     // =====================================================
@@ -313,9 +315,9 @@ export class Game extends Emitter {
         );
     }
     formatDistance(meters) {
-        if (meters < 1000) return ${Math.floor(meters)} м;
-        if (meters < 20000) return ${Math.floor(meters / 100) / 10} км;
-        return ${Math.floor(meters / 1000)} км;
+        if (meters < 1000) return `${Math.floor(meters)} м`;
+        if (meters < 20000) return `${Math.floor(meters / 100) / 10} км`;
+        return `${Math.floor(meters / 1000)} км`;
     }
 
     // =====================================================
