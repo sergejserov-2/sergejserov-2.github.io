@@ -451,7 +451,7 @@ startGame() {
 
     // ---------------- GAMEPLAY ----------------
 
-    makeGuess(playerId) {
+    makeGuess(playerId = "p1") {
         const player = this.state.players[playerId];
 
         if (!player || player.state !== "running") return;
