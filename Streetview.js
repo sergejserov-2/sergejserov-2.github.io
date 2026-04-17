@@ -1,4 +1,4 @@
-[18.04.2026 0:13] Сергей Серов: export class Streetview {
+export class Streetview {
     constructor(map) {
         this.map = map; // expected: Google Maps wrapper with polygon + isInMap
     }
@@ -140,7 +140,7 @@
 
         return intersect;
     }
-[18.04.2026 0:13] Сергей Серов: pointInBounds(point, bounds) {
+    pointInBounds(point, bounds) {
         const rect = new google.maps.LatLngBounds(
             { lat: bounds[0][0], lng: bounds[0][1] },
             { lat: bounds[3][0], lng: bounds[3][1] }
