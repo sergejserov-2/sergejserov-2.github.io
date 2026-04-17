@@ -4,17 +4,18 @@ import { Orchestrator } from "./Orchestrator.js";
 import { tweaks } from "./Tweaks.js";
 import { MapManager } from "./MapManager.js";
 
-console.log("init file loaded");        
-
+console.log("[Init] file loaded");
 
 // =====================================================
 // GOOGLE
 // =====================================================
 
 async function waitForGoogle() {
+    console.log("[Init] waiting for Google Maps...");
     while (!window.google?.maps) {
         await new Promise(r => setTimeout(r, 50));
     }
+    console.log("[Init] Google Maps ready");
 }
 
 // =====================================================
@@ -37,76 +38,70 @@ async function loadMapFromURL() {
 }
 
 // =====================================================
-// URL RULES PARSER (минимальный слой)
-// =====================================================
-
-function parseRulesFromURL() {
-    const hash = location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-
-    return {
-        roundCount: +(params.get("rounds") || 5),
-        moveLimit: +(params.get("moves") || -1),
-        timeLimit: +(params.get("time") || -1),
-        panAllowed: params.get("pan") !== "0",
-        zoomAllowed: params.get("zoom") !== "0"
-    };
-}
-
-// =====================================================
 // BOOTSTRAP
 // =====================================================
 
 async function bootstrap() {
-    console.log("INITIALIZATION");        
+    console.log("[Init] bootstrap start");
+
     try {
         await waitForGoogle();
 
         const map = await loadMapFromURL();
-        const rules = parseRulesFromURL();
+        const element = document.querySelector(".estimator");
 
         tweaks();
 
         // =====================
-        // CORE
+        // CORE WILL BE CREATED ON PLAY
         // =====================
-        const game = new Game(
-            map,
-            document.querySelector(".estimator"),
-            rules
-        );
 
-        const ui = new UI(game);
-        const orchestrator = new Orchestrator(game, ui);
+        let game = null;
+        let ui = null;
+        let orchestrator = null;
 
         // =====================
-        // PLAY BUTTON
+        // PLAY BUTTON (SOURCE OF RULES)
         // =====================
+
         document.getElementById("playBtn")?.addEventListener("click", () => {
+
+            const rules = {
+                roundCount: 5,
+                moveLimit: -1,
+                timeLimit: -1,
+                panAllowed: true,
+                zoomAllowed: true
+            };
+
+            console.log("[UI] Play clicked → creating game with rules:", rules);
+
+            game = new Game(map, element, rules);
+            ui = new UI(game);
+            orchestrator = new Orchestrator(game, ui);
+
             game.startGame();
         });
 
         // =====================
-        // GUESS BUTTON
+        // OTHER CONTROLS
         // =====================
+
         document.getElementById("makeGuess")?.addEventListener("click", () => {
-            game.finishGuess();
+            game?.finishGuess();
         });
 
-        // =====================
-        // AUTO START (ВАЖНО)
-        // =====================
-        const params = new URLSearchParams(location.hash.substring(1));
-        const autoStart = params.get("autostart");
+        document.getElementById("returnHome")?.addEventListener("click", () => {
+            ui?.returnHome();
+        });
 
-        if (autoStart !== "0") {
-            game.startGame();
-            console.log("Transit to Game.js");
-        }
+        document.getElementById("mapOverlay")?.addEventListener("click", () => {
+            ui?.toggleMapOverlay();
+        });
 
-        console.log("[Init] Boot complete");
+        console.log("[Init] boot complete (waiting for play)");
     } catch (err) {
-        console.error("[Init] Failed:", err);
+        console.error("[Init] FAILED:", err);
     }
 }
 
