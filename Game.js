@@ -57,7 +57,7 @@ export class Game extends Emitter {
 
         this.ezMode = false;
         this.distribution = distribution.weighted;
-        this.element = element;
+
         this.svElement = new StreetviewElement(element.querySelector(".streetview"), element.querySelector(".return-home"));
 this.streetview = new Streetview({
     map: this.map,
