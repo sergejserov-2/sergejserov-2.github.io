@@ -1,4 +1,5 @@
-export class Streetview {
+/updateEx
+    export class Streetview {
     constructor(map) {
         this.map = map;
         this.distribution = {
