@@ -3,13 +3,13 @@ export class Streetview {
         this.map = map; // expected: Google Maps wrapper with polygon + isInMap
     }
 
-    // PUBLIC API
+    // функция для передачи в Game.js
     async getRandomLocation(endZoom = 14) {
         const tile = await this.randomValidTile(endZoom);
         return this.pickRandomPointFromTile(tile);
     }
 
-    // TILE SELECTION
+    // Поиск большого квадрата
     async randomValidTile(endZoom) {
         let chosenTile = { x: 0, y: 0, zoom: 0 };
         const previousTiles = [];
@@ -58,7 +58,7 @@ export class Streetview {
         return tiles[0];
     }
 
-    // POINT SAMPLING INSIDE TILE
+    // Поиск малого квадрата
     pickRandomPointFromTile(tile) {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
