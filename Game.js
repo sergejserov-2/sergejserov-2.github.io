@@ -46,7 +46,7 @@ class FSM {
 
 
 
-export class Game extend Emitter {
+export class Game extends Emitter {
     constructor(map, element, rules = {
         roundCount: 5,
         moveLimit: -1,
