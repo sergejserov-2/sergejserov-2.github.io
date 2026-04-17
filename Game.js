@@ -45,21 +45,6 @@ class FSM {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 export class Game {
     constructor(map, element, rules = {
         roundCount: 5,
