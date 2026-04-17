@@ -547,13 +547,13 @@ startGame() {
 
     
 //Действия
-fire(event, data) {
-    if (this.events[event]) {
-        for (let i = this.events[event].length - 1; i >= 0; i--) {
-            this.events[event][i](data);
+    fire(event, data) {
+        if (this.events[event]) {
+            for (let i = this.events[event].length - 1; i >= 0; i--) {
+                this.events[event][i](data);
+            }
         }
     }
-}
 
     once(event, callback) {
         let onceCallback = () => {
@@ -577,3 +577,4 @@ fire(event, data) {
             console.warn(`Trying to remove ${event} event, but it does not exist`);
         }
     }
+}
