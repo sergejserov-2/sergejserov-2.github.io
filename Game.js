@@ -345,31 +345,32 @@ export class Game {
                                                                                             this.enableGuessButton();
                                                                                         }
                                                                                     
-                                                                                        returnHome() {
-                                                                                            this.svElement.setLocation(...this.currentDestination);
-                                                                                        }
-                                                                                    
-                                                                                        preloadNextMap() {
-                                                                                            this.mapLoaded = false;
-                                                                                            this.streetview.randomValidLocation(this.zoom).then(next => {
-                                                                                                this.nextDestination = next;
-                                                                                                this.mapLoaded = true;
-                                                                                                this.fire("preload");
-                                                                                            });
-                                                                                        }
-                                                                                        
-                                                                                        
-                                                                                            // линии
-                                                                                            setTimeout(() => {
-                                                                                                if (isFinal) {
-                                                                                                    for (let r of this.previousGuesses) {
-                                                                                                        this.addOverviewLine(r.guess, r.actual, 600);
+                                                                                            returnHome() {
+                                                                                                this.svElement.setLocation(...this.currentDestination);
+                                                                                            }
+                                                                                            
+                                                                                            preloadNextMap() {
+                                                                                                this.mapLoaded = false;
+                                                                                            
+                                                                                                this.streetview.randomValidLocation(this.zoom).then(next => {
+                                                                                                    this.nextDestination = next;
+                                                                                                    this.mapLoaded = true;
+                                                                                                    this.fire("preload");
+                                                                                                });
+                                                                                            }
+                                                                                            
+                                                                                            // ✅ новый метод
+                                                                                            showOverviewLines({ guess, actual, isFinal }) {
+                                                                                                setTimeout(() => {
+                                                                                                    if (isFinal) {
+                                                                                                        for (let r of this.history) {
+                                                                                                            this.addOverviewLine(r.guess, r.actual, 600);
+                                                                                                        }
+                                                                                                    } else {
+                                                                                                        this.addOverviewLine(guess, actual, 600);
                                                                                                     }
-                                                                                                } else {
-                                                                                                    this.addOverviewLine(guess, actual, 600);
-                                                                                                }
-                                                                                            }, 50);
-                                                                                        }
+                                                                                                }, 50);
+                                                                                            }
 
 
                                                                         resetRoundState() {
