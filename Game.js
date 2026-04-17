@@ -5,7 +5,6 @@ import { StreetviewElement } from "./StreetviewElement.js";
 import { Streetview } from "./Streetview.js";
 import { Emitter } from "./Emitter.js";
 
-
 export const distribution = { weighted: 0, uniform: 1 }; 
 
 
