@@ -567,14 +567,6 @@ fire(event, data) {
     }
 
 
-
-
-
-
-
-
-
-
     start(config = {}) {
         const {
             map = this.map,
