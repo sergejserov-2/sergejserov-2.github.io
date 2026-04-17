@@ -436,10 +436,10 @@ startGame() {
     // ---------------- ROUND FLOW ----------------
 
     prepareRound() {
-        this.roundState = "idle";
-
-        this.preloadNextMap();
-
+        this.state.round = "idle";
+        this.mapLoaded = false;
+        this.marker?.setMap(null);
+        this.marker = null;
         this.nextDestination =
             this.svElement.getLocation?.() ?? this.nextDestination;
     }
