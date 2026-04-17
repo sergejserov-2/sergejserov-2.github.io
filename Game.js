@@ -61,6 +61,7 @@ export class Game extends Emitter {
         this.distribution = distribution.weighted;
         this.element = element;
         this.svElement = new StreetviewElement(element.querySelector(".streetview"), element.querySelector(".return-home"));
+        this.streetview = new Streetview();
         this.scoreElement = element.querySelector(".total-score");
         this.timeElement = element.querySelector(".time-left");
         this.movesElement = element.querySelector(".moves-left");
