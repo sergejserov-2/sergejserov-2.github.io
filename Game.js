@@ -1,4 +1,4 @@
-//updatelogic,please,update;
+//addedlog on map
 import { Scores } from "./Scores.js";
 import { Streetview } from "./Streetview.js";
 import { Emitter } from "./Emitter.js";
