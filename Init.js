@@ -5,7 +5,7 @@ import { tweaks } from "./Tweaks.js";
 import { MapManager } from "./MapManager.js";
 
 // =====================================================
-// GOOGLE LOADER
+// GOOGLE
 // =====================================================
 
 async function waitForGoogle() {
@@ -15,7 +15,7 @@ async function waitForGoogle() {
 }
 
 // =====================================================
-// MAP LOADER
+// MAP
 // =====================================================
 
 async function loadMapFromURL() {
@@ -34,6 +34,23 @@ async function loadMapFromURL() {
 }
 
 // =====================================================
+// URL RULES PARSER (минимальный слой)
+// =====================================================
+
+function parseRulesFromURL() {
+    const hash = location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+
+    return {
+        roundCount: +(params.get("rounds") || 5),
+        moveLimit: +(params.get("moves") || -1),
+        timeLimit: +(params.get("time") || -1),
+        panAllowed: params.get("pan") !== "0",
+        zoomAllowed: params.get("zoom") !== "0"
+    };
+}
+
+// =====================================================
 // BOOTSTRAP
 // =====================================================
 
@@ -42,34 +59,45 @@ async function bootstrap() {
         await waitForGoogle();
 
         const map = await loadMapFromURL();
+        const rules = parseRulesFromURL();
 
         tweaks();
 
         // =====================
-        // CORE SYSTEM
+        // CORE
         // =====================
         const game = new Game(
             map,
-            document.querySelector(".estimator")
+            document.querySelector(".estimator"),
+            rules
         );
 
         const ui = new UI(game);
-
         const orchestrator = new Orchestrator(game, ui);
 
         // =====================
-        // START GAME BUTTON
+        // PLAY BUTTON
         // =====================
         document.getElementById("playBtn")?.addEventListener("click", () => {
             game.startGame();
         });
 
         // =====================
-        // GUESSES (ONLY ENGINE CALL)
+        // GUESS BUTTON
         // =====================
         document.getElementById("makeGuess")?.addEventListener("click", () => {
             game.finishGuess();
         });
+
+        // =====================
+        // AUTO START (ВАЖНО)
+        // =====================
+        const params = new URLSearchParams(location.hash.substring(1));
+        const autoStart = params.get("autostart");
+
+        if (autoStart !== "0") {
+            game.startGame();
+        }
 
         console.log("[Init] Boot complete");
     } catch (err) {
