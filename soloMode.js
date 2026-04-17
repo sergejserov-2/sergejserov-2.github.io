@@ -1,57 +1,72 @@
-import { UI } from "./UI.js";
+export class Orchestrator {
+    constructor(game, ui) {
+        this.game = game;
+        this.ui = ui;
 
-// =========================================================
-// SOLO MODE — GAME → UI ROUTER
-// =========================================================
+        this.bind();
+    }
 
-export function bindSoloMode(game, ui) {
+    // =========================================================
+    // ORCHESTRATION LAYER (Game → UI)
+    // =========================================================
 
-    // =====================================================
-    // LOBBY
-    // =====================================================
+    bind() {
 
-    game.on("gamePrepared", () => {
-        ui.showLobby();
-    });
+        // -----------------------------------------------------
+        // LIVE HUD (continuous updates)
+        // -----------------------------------------------------
 
-    game.on("gameStarted", () => {
-        ui.hideLobby();
-        ui.hideOverview();
-    });
+        this.game.on("hudUpdated", (data) => {
+            this.ui.updateRoundHUD(data);
+        });
 
-    // =====================================================
-    // LIVE HUD (2В)
-    // =====================================================
+        this.game.on("roundStarted", (data) => {
+            this.ui.updateRoundHUD(data);
+        });
 
-    game.on("hudUpdated", (data) => {
-        ui.updateRoundHUD(data);
-    });
+        // -----------------------------------------------------
+        // ROUND FLOW
+        // -----------------------------------------------------
 
-    // =====================================================
-    // ROUND FLOW
-    // =====================================================
+        this.game.on("roundEnded", (data) => {
+            this.ui.showRoundOverview(data);
+        });
 
-    game.on("roundStarted", (data) => {
-        ui.updateRoundHUD(data);
-    });
+        this.game.on("gameEnded", (data) => {
+            this.ui.showGameOverview(data);
+        });
 
-    game.on("roundEnded", (data) => {
-        ui.showRoundOverview(data);
-    });
+        // -----------------------------------------------------
+        // PRELOAD / UX STATE HOOKS
+        // -----------------------------------------------------
 
-    // =====================================================
-    // GAME END
-    // =====================================================
+        this.game.on("preload", () => {
+            this.ui.disableGuessButton?.();
+        });
 
-    game.on("gameEnded", (data) => {
-        ui.showGameOverview(data);
-    });
+        this.game.on("roundPrepared", () => {
+            this.ui.clearGuessMarker?.();
+            this.ui.removeOverviewLines?.();
+        });
 
-    // =====================================================
-    // GUESS FLOW
-    // =====================================================
+        // -----------------------------------------------------
+        // RETURN HOME BRIDGE (UI button → Game → UI)
+        // -----------------------------------------------------
 
-    game.on("guessFinished", () => {
-        ui.disableGuessButton?.();
-    });
+        this.game.on("returnHomeRequested", () => {
+            if (!this.game.currentDestination) return;
+
+            this.ui.svElement.setLocation(
+                ...this.game.currentDestination
+            );
+        });
+
+        // -----------------------------------------------------
+        // OPTIONAL: GAME START SYNC (if needed later)
+        // -----------------------------------------------------
+
+        this.game.on("gameStarted", (data) => {
+            this.ui.updateRoundHUD(data);
+        });
+    }
 }
