@@ -1,4 +1,4 @@
-// Здесь общая логика игры:
+// Здесь общая логика игры
 
 import { Scores } from "./Scores.js";
 import { StreetviewElement } from "./StreetviewElement.js";
