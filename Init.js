@@ -2,22 +2,19 @@ import { Game } from "./Game.js";
 import { UI } from "./UI.js";
 import { EventRouter } from "./EventRouter.js";
 import { tweaks } from "./Tweaks.js";
+import { MapManager } from "./MapManager.js";
 
 // =====================================================
-// GOOGLE LOADER
+// INTERNAL UTILS (НЕ EXPORT)
 // =====================================================
-export async function waitForGoogle() {
+
+async function waitForGoogle() {
     while (!window.google?.maps) {
         await new Promise(r => setTimeout(r, 50));
     }
 }
 
-// =====================================================
-// MAP LOADER
-// =====================================================
-import { MapManager } from "./MapManager.js";
-
-export async function loadMapFromURL() {
+async function loadMapFromURL() {
     let map = decodeURI(location.hash.substring(1));
     if (map === "") map = "world";
 
@@ -35,6 +32,7 @@ export async function loadMapFromURL() {
 // =====================================================
 // BOOTSTRAP
 // =====================================================
+
 async function bootstrap() {
 
     await waitForGoogle();
