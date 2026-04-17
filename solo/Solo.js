@@ -32,6 +32,8 @@ function applyRules(game, { rules, round }) {
     if (rules.timeLimit !== -1) { game.startTimer(+rules.timeLimit); }
 }
 function resetRestrictions(game) {
+    if (!game.svElement || !game.svElement.map) return;
+
     game.svElement.resetRestrictions();
     game.timeElement.style.display = "none";
     game.movesElement.style.display = "none";
