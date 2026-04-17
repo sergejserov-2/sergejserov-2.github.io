@@ -103,8 +103,7 @@ export class Game extenda Emitter {
                 p1: new FSM()
             }
         };
-
-
+    }
 
                                                     /*  async uploadScore(e) {
                                                             if (e) e.preventDefault();
