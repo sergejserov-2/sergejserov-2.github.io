@@ -401,7 +401,8 @@ this.streetview = new Streetview({
             // ---------------- STATE RESET ----------------
             this.map = map;
             this.rules = rules;
-        
+            console.log(this.map)
+            
             this.state.game = new FSM("prepared");
             this.state.round = new FSM("prepared");
         
