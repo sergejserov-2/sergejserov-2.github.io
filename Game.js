@@ -31,7 +31,7 @@ class FSM {
 
         if (!allowedNext.includes(next)) {
             console.warn(
-                [FSM] Invalid transition: ${this.state} → ${next}
+                `[FSM] Invalid transition: ${this.state} → ${next}`
             );
             return false;
         }
