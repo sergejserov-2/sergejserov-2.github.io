@@ -4,10 +4,8 @@ import { UI } from "./UI.js";
 import { bindSoloMode } from "./SoloMode.js";
 
 // =========================================================
-// START / BOOTSTRAP LAYER
+// GOOGLE MAPS WAIT
 // =========================================================
-
-// ---------- WAIT FOR GOOGLE MAPS ----------
 
 export async function waitForGoogle() {
     while (!window.google?.maps) {
@@ -15,7 +13,9 @@ export async function waitForGoogle() {
     }
 }
 
-// ---------- LOAD MAP FROM URL ----------
+// =========================================================
+// MAP LOADER
+// =========================================================
 
 export async function loadMapFromURL() {
     let map = decodeURI(location.hash.substring(1));
@@ -33,36 +33,41 @@ export async function loadMapFromURL() {
 }
 
 // =========================================================
-// APP BOOTSTRAP ENTRY POINT
+// BOOTSTRAP ENTRY
 // =========================================================
 
 export async function startApp() {
 
-    // ---------- INIT EXTERNAL DEPENDENCIES ----------
-
+    // ---------- INIT ----------
     await waitForGoogle();
     const geoMap = await loadMapFromURL();
 
-    // ---------- CREATE CORE LAYERS ----------
-
+    // ---------- CORE SYSTEM ----------
     const game = new Game(geoMap);
     const ui = new UI(game);
 
-    // ---------- BIND SYSTEM ----------
-
+    // ---------- EVENT BRIDGE ----------
     bindSoloMode(game, ui);
 
-    // ---------- DOM ENTRY POINTS ----------
+    // =====================================================
+    // DOM BINDS
+    // =====================================================
 
-    const playBtn = document.querySelector("#playBtn");
-
-    if (playBtn) {
-        playBtn.addEventListener("click", () => {
-            game.start();
+    const makeGuessBtn = document.getElementById("makeGuess");
+    if (makeGuessBtn) {
+        makeGuessBtn.addEventListener("click", () => {
+            game.finishGuess?.(); // или game.makeGuess() если так у тебя задумано
         });
     }
 
-    console.log("Start.js bootstrap complete");
+    const returnHomeBtn = document.getElementById("returnHome");
+    if (returnHomeBtn) {
+        returnHomeBtn.addEventListener("click", () => {
+            ui.returnHome();
+        });
+    }
 
-    return { game, ui };
-}
+    const mapOverlayBtn = document.getElementById("mapOverlay");
+    if (mapOverlayBtn) {
+        mapOverlayBtn.addEventListener("click", () => {
+            ui
