@@ -1,4 +1,3 @@
-import { distribution } from "./Game.js";
 import { GeoMap } from "./GeoMap.js";
 
 export class MapManager {
