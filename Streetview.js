@@ -1,12 +1,11 @@
 export class Streetview {
     constructor(map) {
         this.map = map;
-        this.distribution = {
+        this.distributionExample = {
             weighted: 0,
             uniform: 1
         };
-        console.log("Streetview map:", this.map);
-        console.log("isInMap:", this.map?.isInMap);
+        this.mode = this.distribut
     }
 
     async randomValidLocation(endZoom = 14) {
@@ -74,7 +73,7 @@ export class Streetview {
     }
 
     pickRandomSubTile(tiles) {
-        if (this.distribution === distribution.uniform) {
+        if (this.distribution === this.distributionExample.uniform) {
             return tiles[Math.floor(tiles.length * Math.random())];
         }
 
@@ -184,7 +183,7 @@ export class Streetview {
                 img.src = e.target.result;
                 img.onload = () => {
                     let hasSv = img.width !== 1;
-                    let coverage = this.distribution === distribution.weighted ? this.getTileCoverage(img) : 0;
+                    let coverage = this.distribution === this.distributionExample.weighted ? this.getTileCoverage(img) : 0;
 
                     resolve({
                         coverage, hasSv, img, x, y, zoom
