@@ -1,5 +1,4 @@
 // Здесь основная логика игры: Флажки, угадывание, расчёт точек и т.п.
-
 import { Scores } from "./Scores.js";
 import { StreetviewElement } from "./StreetviewElement.js";
 import { Streetview } from "./Streetview.js";
