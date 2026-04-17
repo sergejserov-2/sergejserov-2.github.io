@@ -1,4 +1,4 @@
-//Движок игры
+//Движок игры, основные механики
 
 import { Scores } from "./Scores.js";
 import { Streetview } from "./Streetview.js";
