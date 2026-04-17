@@ -479,7 +479,7 @@ preloadNext() {
                     location: this.currentDestination
                 });
             
-                this.streetview.setLocation(...this.currentDestination);
+                this.svElement.setLocation(...this.currentDestination);
             }
     
             finishGuess(playerId = "p1") {
