@@ -1,7 +1,6 @@
 // Здесь общая логика игры. 
 
 import { Scores } from "./Scores.js";
-import { StreetviewElement } from "./StreetviewElement.js";
 import { Streetview } from "./Streetview.js";
 import { Emitter } from "./Emitter.js";
 
@@ -58,7 +57,6 @@ export class Game extends Emitter {
         this.ezMode = false;
         this.distribution = distribution.weighted;
 
-        this.svElement = new StreetviewElement(element.querySelector(".streetview"), element.querySelector(".return-home"));
 this.streetview = new Streetview({
     map: this.map,
     distribution: this.distribution
@@ -66,18 +64,7 @@ this.streetview = new Streetview({
 
         this.scores = new Scores();
         
-        this.googleMap = new google.maps.Map(element.querySelector(".map-element"), {
-            zoom: 0,
-            center: {lat: 0, lng: 0},
-            disableDefaultUI: true,
-            clickableIcons: false,
-            backgroundColor: "#aadaff",
-            fullscreenControl: false,
-        });
-        this.attachMap(".embed-map");
-        google.maps.event.addListener(this.googleMap, "click", e => {
-            if (this.googleMap.getDiv().parentElement.attributes.class.value === "embed-map")
-                this.placeGuessMarker(e.latLng);
+
         });
         this.setResizeEventListeners();
         this.currentRound = 0;
@@ -157,103 +144,8 @@ this.streetview = new Streetview({
                                                                                             element.style.transform = `translateY(-${element.offsetHeight}px)`;
                                                                                         }
                                                                                     
-                                                                                        attachMap(selector) {
-                                                                                            let mapElement = this.googleMap.getDiv();
-                                                                                            mapElement.remove();
-                                                                                            this.element.querySelector(selector).appendChild(mapElement);
-                                                                                        }
-                                                                                    
-                                                                                        toggleMapOverlay() {
-                                                                                            if (this.map.polygon.getMap())
-                                                                                                this.map.polygon.setMap(null);
-                                                                                            else
-                                                                                                this.map.polygon.setMap(this.googleMap);
-                                                                                        }
-                                                                                    
-                                                                                        setResizeEventListeners() {
-                                                                                            let resizeElement = this.element.querySelector(".guess-map-resizer");
-                                                                                            let resizerDown = false;
-                                                                                            let guessMap = this.element.querySelector(".guess-map");
-                                                                                    
-                                                                                            let onMove = (x, y) => {
-                                                                                                if (resizerDown) {
-                                                                                                    let height = window.innerHeight - y - this.element.offsetTop;
-                                                                                                    let width = x - this.element.offsetLeft;
-                                                                                                    guessMap.style.height = height + "px";
-                                                                                                    guessMap.style.width = width + "px";
-                                                                                                }
-                                                                                            };
-                                                                                            let onDown = () => {
-                                                                                                resizerDown = true;
-                                                                                            };
-                                                                                            let onUp = () => {
-                                                                                                resizerDown = false;
-                                                                                            };
-                                                                                    
-                                                                                            resizeElement.addEventListener("mousedown", () => onDown());
-                                                                                            document.addEventListener("mousemove", e => onMove(e.pageX, e.pageY));
-                                                                                            document.addEventListener("mouseup", () => onUp());
-                                                                                    
-                                                                                            resizeElement.addEventListener("touchstart", () => onDown());
-                                                                                            document.addEventListener("touchmove", e => onMove(e.touches[0].pageX, e.touches[0].pageY));
-                                                                                            document.addEventListener("touchend", () => onUp());
-                                                                                        }
-                                                                                    
-                                                                                    
-                                                                                        fitMapToGeoMap() {
-                                                                                            this.googleMap.fitBounds(this.map.getBounds());
-                                                                                        }
-                                                                                    
-                                                                                        fitMap(positions) {
-                                                                                            let bounds = new google.maps.LatLngBounds();
-                                                                                            for (let location of positions) {
-                                                                                                bounds.extend({
-                                                                                                    lat: location[0],
-                                                                                                    lng: location[1]
-                                                                                                });
-                                                                                            }
-                                                                                            this.googleMap.fitBounds(bounds);
-                                                                                        }
-                                                                                    
-                                                                                    
-                                                                                        removeOverviewLines() {
-                                                                                            for (let lineData of this.overviewLines) {
-                                                                                                lineData.line.setMap(null);
-                                                                                                lineData.guess.setMap(null);
-                                                                                                lineData.actual.setMap(null);
-                                                                                            }
-                                                                                        }
-                                                                                    
-                                                                                        addOverviewLine(guess, actual, animationTime = 1500) {
-                                                                                            guess = {lat: guess[0], lng: guess[1]};
-                                                                                            actual = {lat: actual[0], lng: actual[1]};
-                                                                                    
-                                                                                            let lineData = {};
-                                                                                            this.overviewLines.push(lineData);
-                                                                                    
-                                                                                            lineData.line = new google.maps.Polyline({
-                                                                                                path: [guess, guess],
-                                                                                                geodesic: true,
-                                                                                                strokeColor: "red",
-                                                                                                strokeOpacity: 0.8,
-                                                                                                strokeWeight: 3,
-                                                                                                map: this.googleMap
-                                                                                            });
-                                                                                    
-                                                                                            let dropTime = 250;
-                                                                                            let fps = 30;
-                                                                                            let steps = fps * (animationTime / 1000);
-                                                                                            let step = 0;
-                                                                                            let deltaLat = guess.lat - actual.lat;
-                                                                                            let deltaLng = guess.lng - actual.lng;
-                                                                                    
-                                                                                            lineData.guess = new google.maps.Marker({
-                                                                                                position: guess,
-                                                                                                map: this.googleMap,
-                                                                                                animation: google.maps.Animation.DROP,
-                                                                                                title: "Вы",
-                                                                                            });
-                                                                                    
+
+                                 
                                                                                             setTimeout(() => {
                                                                                                 let interval = self.setInterval(() => {
                                                                                                     if (step++ >= steps) {
@@ -282,18 +174,7 @@ this.streetview = new Streetview({
                                                                                                 lineData.actual.setMap(this.googleMap);
                                                                                             }, animationTime);
                                                                                         }
-                                                                                    
-                                                                                        disableGuessButton() {
-                                                                                            let button = this.element.querySelector(".guess-button");
-                                                                                            button.style.pointerEvents = "none";
-                                                                                            button.style.filter = "grayscale(90%)";
-                                                                                        }
-                                                                                    
-                                                                                        enableGuessButton() {
-                                                                                            let button = this.element.querySelector(".guess-button");
-                                                                                            button.style.pointerEvents = "all";
-                                                                                            button.style.filter = "grayscale(0%)";
-                                                                                        }
+
                                                                                     
                                                                                         measureDistance(from, to) {
                                                                                             return google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(...from), new google.maps.LatLng(...to));
@@ -321,9 +202,7 @@ this.streetview = new Streetview({
                                                                                             this.enableGuessButton();
                                                                                         }
                                                                                     
-                                                                                            returnHome() {
-                                                                                                this.svElement.setLocation(...this.currentDestination);
-                                                                                            }
+
                                                                                             
 preloadNext() {
     if (this.mapLoading) return;
