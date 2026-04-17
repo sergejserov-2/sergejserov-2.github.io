@@ -1,7 +1,6 @@
-import { MapManager } from "./MapManager.js";
 import { Game } from "./Game.js";
 import { UI } from "./UI.js";
-import { bindSoloMode } from "./SoloMode.js";
+import { Route } from "./SoloMode.js";
 
 // =========================================================
 // GOOGLE MAPS WAIT
