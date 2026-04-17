@@ -262,52 +262,56 @@ updateRoundHUD(data) {
         moves
     } = data;
 
-    // ROUND
-    if (this.roundElement) {
-        this.roundElement.innerHTML =
-            Раунд: <b>${round}/${roundCount}</b>;
-    }
-
-    // SCORE
-    const scoreEl = this.element.querySelector(".total-score");
-    if (scoreEl && score !== undefined) {
-        scoreEl.innerHTML = score;
-    }
-
-    // TIMER
-    if (this.timeElement) {
-        this.timeElement.innerHTML = time;
-    }
-
-    // MOVES
-    if (this.movesElement) {
-        this.movesElement.innerHTML = moves;
-    }
-}
-
-    // =========================================================
-    // 2Г — SCREENS
-    // =========================================================
-    showLobby() {
-        const el = this.element.querySelector(".gamerule-selector");
-        if (el) el.style.transform = "translateY(0%)";
-    }
-
-    hideLobby() {
-        const el = this.element.querySelector(".gamerule-selector");
-        if (el) el.style.transform = "translateY(-100%)";
-    }
-
-    showRoundUI({ round, roundCount }) {
+    // ---------- ROUND ----------
+    if (this.roundElement && round !== undefined && roundCount !== undefined) {
         this.roundElement.innerHTML =
             `Раунд: <b>${round}/${roundCount}</b>`;
     }
 
+    // ---------- SCORE ----------
+    if (this.scoreElement && score !== undefined) {
+        this.scoreElement.innerHTML =
+            `Счёт: <b>${score}</b>`;
+    }
+
+    // ---------- TIMER ----------
+    if (this.timeElement && time !== undefined) {
+        this.timeElement.innerHTML =
+            `Время: <b>${time}</b>`;
+    }
+
+    // ---------- MOVES ----------
+    if (this.movesElement && moves !== undefined) {
+        this.movesElement.innerHTML =
+            `Шаги: <b>${moves}</b>`;
+    }
+}
+
+    // =========================================================
+    // 2Г — SCREENS (SNAPSHOT UI)
+    // =========================================================
+    
+    // ---------- LOBBY ----------
+    
+    showLobby() {
+        const el = this.element.querySelector(".gamerule-selector");
+        if (el) el.style.transform = "translateY(0%)";
+    }
+    
+    hideLobby() {
+        const el = this.element.querySelector(".gamerule-selector");
+        if (el) el.style.transform = "translateY(-100%)";
+    }
+    
+    // ---------- OVERVIEW BASE ----------
+    
     hideOverview() {
         const el = this.element.querySelector(".guess-overview");
         if (el) el.style.transform = "translateY(-100%)";
     }
-
+    
+    // ---------- ROUND OVERVIEW ----------
+    
     showRoundOverview(data) {
         const {
             guess,
@@ -317,40 +321,38 @@ updateRoundHUD(data) {
             score,
             totalScore,
         } = data;
-
+    
         const el = this.element.querySelector(".guess-overview");
-        if (!el) return;
-
+    
         el.style.transform = "translateY(0%)";
-
+    
         el.querySelector(".next-round-button").style.display = "inline-block";
         el.querySelector(".game-end-buttons").style.display = "none";
-
+    
+        // --- progress ---
         const progressBar = el.querySelector(".score-progress");
-        if (progressBar) {
-            progressBar.style.width = `${(score / 5000) * 100}`%;
-        }
-
+        progressBar.style.width = `${(score / 5000) * 100}%`;
+    
+        // --- text ---
         const [meterElement, scoreElement] =
             el.querySelectorAll(".score-text p");
-
-        if (meterElement) {
-            meterElement.innerText =
-                `Вы в ${niceDistance} от загаданного места`;
-        }
-
-        if (scoreElement) {
-            scoreElement.innerText =
-                `Ваш счёт за раунд — ${score} | Общий — ${totalScore}`;
-        }
-
+    
+        meterElement.innerText =
+            `Вы в ${niceDistance} от загаданного места`;
+    
+        scoreElement.innerText =
+            `Ваш счёт за раунд — ${score} | Общий — ${totalScore}`;
+    
+        // --- map ---
         this.renderRoundOverviewMap({
             lines: [{ guess, actual }],
             focus: { guess, actual },
             isFinal: false,
         });
     }
-
+    
+    // ---------- GAME OVERVIEW ----------
+    
     showGameOverview(data) {
         const {
             history,
@@ -358,34 +360,30 @@ updateRoundHUD(data) {
             totalScore,
             roundCount,
         } = data;
-
+    
         const el = this.element.querySelector(".guess-overview");
-        if (!el) return;
-
+    
         el.style.transform = "translateY(0%)";
-
+    
         el.querySelector(".next-round-button").style.display = "none";
         el.querySelector(".game-end-buttons").style.display = "block";
-
+    
+        // --- progress ---
         const progressBar = el.querySelector(".score-progress");
-        if (progressBar) {
-            progressBar.style.width =
-                `${(totalScore / (5000 * roundCount)) * 100}`%;
-        }
-
+        progressBar.style.width =
+            `${(totalScore / (5000 * roundCount)) * 100}%`;
+    
+        // --- text ---
         const [meterElement, scoreElement] =
             el.querySelectorAll(".score-text p");
-
-        if (meterElement) {
-            meterElement.innerText =
-                `Вы в ${last.niceDistance} от загаданного места`;
-        }
-
-        if (scoreElement) {
-            scoreElement.innerText =
-                `Итоговый счёт — ${totalScore}`;
-        }
-
+    
+        meterElement.innerText =
+            `Вы в ${last.niceDistance} от загаданного места`;
+    
+        scoreElement.innerText =
+            `Итоговый счёт — ${totalScore}`;
+    
+        // --- map ---
         this.renderRoundOverviewMap({
             lines: history.map(h => ({
                 guess: h.guess,
