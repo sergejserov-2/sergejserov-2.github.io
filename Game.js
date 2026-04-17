@@ -58,6 +58,62 @@ this.state = {
   }
 };
 
+transition(event, payload = {}) {
+    const s = this.state;
+
+    switch (event) {
+
+        case "GAME_START":
+            if (s.game !== "idle") return;
+            
+            s.game = "running";
+            this.startGame();
+            break;
+
+        case "ROUND_PREPARE":
+            if (s.game !== "running") return;
+            
+            s.round = "idle";
+            this.prepareRound();
+            break;
+
+        case "ROUND_START":
+            if (s.round !== "idle") return;
+            if (!this.mapLoaded) {
+                this.once("preload", () => this.transition("ROUND_START"));
+                return;
+            }
+
+            s.round = "running";
+            this.startRound();
+            break;
+
+        case "PLAYER_GUESS":
+            const player = s.players[payload.playerId];
+            if (!player || player.state !== "running") return;
+
+            this.makeGuess(payload.playerId);
+            break;
+
+        case "ROUND_END":
+            if (s.round !== "running") return;
+
+            s.round = "ended";
+            this.endRound();
+            break;
+
+        case "GAME_END":
+            if (s.game !== "running") return;
+
+            s.game = "ended";
+            this.endGame(payload.last);
+            break;
+    }
+}
+
+
+        
+
         
         document.getElementById("makeGuess").addEventListener("click", () => {this.makeGuess();
         });
