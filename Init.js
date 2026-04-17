@@ -5,7 +5,7 @@ import { tweaks } from "./Tweaks.js";
 import { MapManager } from "./MapManager.js";
 
 // =====================================================
-// INTERNAL UTILS (НЕ EXPORT)
+// GOOGLE LOADER
 // =====================================================
 
 async function waitForGoogle() {
@@ -13,6 +13,10 @@ async function waitForGoogle() {
         await new Promise(r => setTimeout(r, 50));
     }
 }
+
+// =====================================================
+// MAP LOADER
+// =====================================================
 
 async function loadMapFromURL() {
     let map = decodeURI(location.hash.substring(1));
@@ -34,38 +38,43 @@ async function loadMapFromURL() {
 // =====================================================
 
 async function bootstrap() {
+    try {
+        await waitForGoogle();
 
-    await waitForGoogle();
+        const map = await loadMapFromURL();
 
-    const map = await loadMapFromURL();
+        tweaks();
 
-    tweaks();
+        // =====================
+        // CORE SYSTEM
+        // =====================
+        const game = new Game(
+            map,
+            document.querySelector(".estimator")
+        );
 
-    const game = new Game(map, document.querySelector(".estimator"));
-    const ui = new UI(game);
+        const ui = new UI(game);
 
-    const router = new EventRouter(game, ui);
-    router.bind();
+        const orchestrator = new Orchestrator(game, ui);
 
-    document.getElementById("playBtn")?.addEventListener("click", () => {
-        game.startGame();
-    });
+        // =====================
+        // START GAME BUTTON
+        // =====================
+        document.getElementById("playBtn")?.addEventListener("click", () => {
+            game.startGame();
+        });
 
-    document.getElementById("makeGuess")?.addEventListener("click", () => {
-        game.finishGuess();
-    });
+        // =====================
+        // GUESSES (ONLY ENGINE CALL)
+        // =====================
+        document.getElementById("makeGuess")?.addEventListener("click", () => {
+            game.finishGuess();
+        });
 
-    document.getElementById("returnHome")?.addEventListener("click", () => {
-        ui.returnHome();
-    });
-
-    document.getElementById("mapOverlay")?.addEventListener("click", () => {
-        ui.toggleMapOverlay();
-    });
-
-    console.log("[Init] Boot complete");
+        console.log("[Init] Boot complete");
+    } catch (err) {
+        console.error("[Init] Failed:", err);
+    }
 }
 
-bootstrap().catch(err => {
-    console.error("[Init] Failed:", err);
-});
+bootstrap();
