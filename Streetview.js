@@ -1,4 +1,5 @@
-    export class Streetview {
+//uod
+export class Streetview {
     constructor(map) {
         this.map = map;
         this.distribution = {
