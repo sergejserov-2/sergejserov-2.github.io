@@ -1,9 +1,12 @@
 import { distribution } from "./Game.js";
 
 export class Streetview {
-    constructor(map, distribution) {
+    constructor(map) {
         this.map = map;
-        this.distribution = distribution;
+        this.distribution = {
+            weighted: 0,
+            uniform: 1
+        };
         console.log("Streetview map:", this.map);
         console.log("isInMap:", this.map?.isInMap);
     }
