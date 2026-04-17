@@ -140,7 +140,6 @@ export class Game extends Emitter {
         this.fire("roundStarted", {
             round: this.currentRound,
             roundCount: this.rules.roundCount,
-            ...this.getHUDState(),
             location: this.currentDestination
         });
 
@@ -212,7 +211,7 @@ export class Game extends Emitter {
     startTimer() {
         this.timer = setInterval(() => {
             this.time++;
-            this.fire("hudUpdated", this.getHUDState());
+            this.fire("hudUpdated", this.getHUD());
         }, 1000);
     }
 
