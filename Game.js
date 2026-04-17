@@ -50,14 +50,12 @@ export class Game {
 
         
         //Фазы механизьму
-       
-this.gameState = "idle";   // idle | running | ended
-this.roundState = "idle";  // idle | running | ended
-
-this.previousGuesses = [];
-
-this.players = {
-    p1: {state: "idle"}   // idle | running | ended
+this.state = {
+  game: "idle",     // idle | running | ended
+  round: "idle",    // idle | running | ended
+  players: {
+    p1: { state: "idle" }
+  }
 };
 
         
@@ -310,22 +308,6 @@ this.players = {
                                                                                             });
                                                                                         }
                                                                                         
-                                                                                        renderRoundOverviewMap(data) {
-                                                                                            const { guess, actual, isFinal } = data;
-                                                                                        
-                                                                                            // всегда сначала готовим карту
-                                                                                            this.attachMap(".overview-map");
-                                                                                        
-                                                                                            // fit
-                                                                                            if (isFinal) {
-                                                                                                const locations = this.previousGuesses
-                                                                                                    .map(r => r.guess)
-                                                                                                    .concat(this.previousGuesses.map(r => r.actual));
-                                                                                        
-                                                                                                this.fitMap(locations);
-                                                                                            } else {
-                                                                                                this.fitMap([guess, actual]);
-                                                                                            }
                                                                                         
                                                                                             // линии
                                                                                             setTimeout(() => {
