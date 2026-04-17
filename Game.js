@@ -90,6 +90,10 @@ this.streetview = new Streetview({
         this.currentRound = 0;
         this.nextDestination = null;
         this.currentDestination = null;
+        this.roundReady = false;
+        this.roundStarting = false;
+
+        
 
         document.getElementById("makeGuess").addEventListener("click", () => {this.makeGuess(); });
         document.getElementById("returnHome").addEventListener("click", () => {this.returnHome();});
@@ -330,29 +334,31 @@ this.streetview = new Streetview({
                                                                                                 this.svElement.setLocation(...this.currentDestination);
                                                                                             }
                                                                                             
-                                                                                            preloadNext() {
-                                                                                                // защита от дубля загрузки
-                                                                                                if (this.mapLoading) return;
-                                                                                            
-                                                                                                this.mapLoading = true;
-                                                                                                this.mapLoaded = false;
-                                                                                            
-                                                                                                this.streetview.randomValidLocation(this.zoom)
-                                                                                                    .then(next => {
-                                                                                                        this.nextDestination = next;
-                                                                                            
-                                                                                                        this.mapLoaded = true;
-                                                                                                        this.mapLoading = false;
-                                                                                            
-                                                                                                        this.fire("preload");
-                                                                                                    })
-                                                                                                    .catch((err) => {
-                                                                                                        console.warn("[preloadNext] failed:", err);
-                                                                                            
-                                                                                                        this.mapLoading = false;
-                                                                                                        this.mapLoaded = false;
-                                                                                                    });
-                                                                                            }
+preloadNext() {
+    if (this.mapLoading) return;
+
+    this.mapLoading = true;
+    this.mapLoaded = false;
+
+    this.streetview.randomValidLocation(this.zoom)
+        .then(next => {
+            this.nextDestination = next;
+
+            this.mapLoaded = true;
+            this.mapLoading = false;
+
+            this.roundReady = true;
+
+            this.fire("preload");
+        })
+        .catch(err => {
+            console.warn("[preloadNext] failed:", err);
+
+            this.mapLoading = false;
+            this.mapLoaded = false;
+            this.roundReady = false;
+        });
+}
                                                                                             
                                                                                           renderRoundOverviewMap(data) {
                                                                                             const { guess, actual, isFinal } = data;
@@ -436,35 +442,43 @@ this.streetview = new Streetview({
     }
     
         prepareRound() {
-            // fsm round reset
-            this.state.round = new FSM("prepared");        
-    
-            // round data reset
+            //fsm reset
+            this.state.round = new FSM("prepared");
+
+            //datareset
             this.mapLoaded = false;
+            this.mapLoading = false;
             this.marker?.setMap(null);
             this.marker = null;
-            this.currentDestination = this.nextDestination;
-           
-            this.preloadNext ();
+        
+            this.roundReady = false;
+            this.roundStarting = false;
+        
+            this.preloadNext();
+        
             this.fire("roundPrepared");
         }
     
             startRound() {
-            if (!this.mapLoaded) {
-                this.once("preload", () => this.startRound());
-                return;
-            }
-        
-            if (!this.state.round.transition("started")) return;
-            for (const p of Object.values(this.state.players)) {
-                p.fsm.transition("started");
-            }
-    
+                if (!this.roundReady || !this.nextDestination) {
+                    this.once("preload", () => this.startRound());
+                    return;
+                }
+            
+                if (!this.state.round.transition("started")) return;
+            
+                for (const p of Object.values(this.state.players)) {
+                    p.fsm.transition("started");
+                }
+            
                 this.currentRound++;
+                this.currentDestination = this.nextDestination;
+            
                 this.fire("roundStarted", {
                     round: this.currentRound,
                     location: this.currentDestination
                 });
+            
                 this.streetview.setLocation(...this.currentDestination);
             }
     
