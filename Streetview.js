@@ -1,27 +1,28 @@
-export class Streetview {
-    constructor(mapAdapter) {
-        this.map = mapAdapter;
-
-        this.distributionExample = {
-            weighted: 0,
-            uniform: 1
-        };
-
-        this.distribution = this.distributionExample.weighted;
+[18.04.2026 0:13] Сергей Серов: export class Streetview {
+    constructor(map) {
+        this.map = map; // expected: Google Maps wrapper with polygon + isInMap
     }
+
+    // =====================================================
+    // PUBLIC API
+    // =====================================================
 
     async getRandomLocation(endZoom = 14) {
         const tile = await this.randomValidTile(endZoom);
-        return this.pickRandomPixel(tile);
+        return this.pickRandomPointFromTile(tile);
     }
+
+    // =====================================================
+    // TILE SELECTION
+    // =====================================================
 
     async randomValidTile(endZoom) {
         let chosenTile = { x: 0, y: 0, zoom: 0 };
-        let previousTiles = [chosenTile];
-        let failedTiles = [];
+        const previousTiles = [];
+        const failedTiles = [];
 
         while (chosenTile.zoom < endZoom) {
-            const subTiles = await this.map.getSubTiles(
+            const subTiles = await this.getSubTiles(
                 chosenTile.x,
                 chosenTile.y,
                 chosenTile.zoom
@@ -29,59 +30,45 @@ export class Streetview {
 
             const validTiles = subTiles
                 .filter(t => t.hasSv)
-                .filter(t => this.tileIntersectsMap(t));
+                .filter(t => this.tileIntersectsMap(t))
+                .filter(t => !this.isFailed(t, failedTiles));
 
             if (validTiles.length === 0) {
                 failedTiles.push(chosenTile);
 
                 chosenTile =
                     previousTiles.length > 0
-                        ? previousTiles.splice(-2)[0]
+                        ? previousTiles.pop()
                         : { x: 0, y: 0, zoom: 0 };
-            } else {
-                chosenTile = this.pickRandomSubTile(validTiles);
-                previousTiles.push(chosenTile);
+
+                continue;
             }
+
+            const next = this.pickRandomSubTile(validTiles);
+            previousTiles.push(chosenTile);
+            chosenTile = next;
         }
 
         return chosenTile;
     }
 
-    tileIntersectsMap(tile) {
-        const bounds = [
-            this.tilePixelToLatLon(tile.x, tile.y, tile.zoom, 0, 0),
-            this.tilePixelToLatLon(tile.x, tile.y, tile.zoom, 256, 256),
-            this.tilePixelToLatLon(tile.x, tile.y, tile.zoom, 0, 256),
-            this.tilePixelToLatLon(tile.x, tile.y, tile.zoom, 256, 0),
-        ];
+    pickRandomSubTile(tiles) {
+        const total = tiles.reduce((sum, t) => sum + (t.coverage || 1), 0);
+        let r = Math.random() * total;
 
-        for (const b of bounds) {
-            if (this.map.isInMap(b.lat, b.lng)) {
-                return true;
-            }
+        for (const tile of tiles) {
+            r -= tile.coverage || 1;
+            if (r <= 0) return tile;
         }
 
-        if (this.map.polygon) {
-            const rect = new google.maps.LatLngBounds(
-                new google.maps.LatLng(bounds[2].lat, bounds[2].lng),
-                new google.maps.LatLng(bounds[3].lat, bounds[3].lng)
-            );
-
-            let intersect = false;
-
-            this.map.polygon.getPaths().forEach(path => {
-                path.forEach(p => {
-                    if (rect.contains(p)) intersect = true;
-                });
-            });
-
-            return intersect;
-        }
-
-        return false;
+        return tiles[0];
     }
 
-    pickRandomPixel(tile) {
+    // =====================================================
+    // POINT SAMPLING INSIDE TILE
+    // =====================================================
+
+    pickRandomPointFromTile(tile) {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
 
@@ -94,29 +81,92 @@ export class Streetview {
 
         const data = ctx.getImageData(0, 0, img.width, img.height).data;
 
-        let bluePixelCount = 0;
+        const validPixels = [];
 
         for (let i = 0; i < data.length; i += 4) {
-            if (data[i + 2] > 0) bluePixelCount++;
-        }
-
-        let randomPixel = Math.floor(Math.random() * bluePixelCount);
-
-        for (let i = 0; i < data.length; i += 4) {
-            if (data[i + 2] > 0 && --randomPixel === 0) {
-                const x = (i / 4) % img.width;
-                const y = Math.floor((i / 4) / img.width);
-
-                return this.tilePixelToLatLon(
-                    tile.x,
-                    tile.y,
-                    tile.zoom,
-                    x,
-                    y
-                );
+            if (data[i + 2] > 0) {
+                validPixels.push(i / 4);
             }
         }
 
-        throw new Error("No valid pixel found");
+        if (validPixels.length === 0) {
+            throw new Error("Streetview: no valid pixels found in tile");
+        }
+
+        const idx =
+            validPixels[Math.floor(Math.random() * validPixels.length)];
+
+        const x = idx % img.width;
+        const y = Math.floor(idx / img.width);
+
+        return this.tilePixelToLatLon(
+            tile.x,
+            tile.y,
+            tile.zoom,
+            x,
+            y
+        );
+    }
+
+    // =====================================================
+    // MAP INTERSECTION LOGIC
+    // =====================================================
+
+    tileIntersectsMap(tile) {
+        const bounds = [
+            this.tilePixelToLatLon(tile.x, tile.y, tile.zoom, 0, 0),
+            this.tilePixelToLatLon(tile.x, tile.y, tile.zoom, 256, 0),
+            this.tilePixelToLatLon(tile.x, tile.y, tile.zoom, 0, 256),
+            this.tilePixelToLatLon(tile.x, tile.y, tile.zoom, 256, 256)
+        ];
+
+        for (const b of bounds) {
+            if (this.map.isInMap(...b)) return true;
+        }
+
+        return this.checkPolygonIntersection(bounds);
+    }
+
+    checkPolygonIntersection(bounds) {
+        let intersect = false;
+
+        this.map.polygon.getPaths().forEach(path => {
+            path.forEach(point => {
+                if (this.pointInBounds(point, bounds)) {
+                    intersect = true;
+                }
+            });
+        });
+
+        return intersect;
+    }
+[18.04.2026 0:13] Сергей Серов: pointInBounds(point, bounds) {
+        const rect = new google.maps.LatLngBounds(
+            { lat: bounds[0][0], lng: bounds[0][1] },
+            { lat: bounds[3][0], lng: bounds[3][1] }
+        );
+
+        return rect.contains(point);
+    }
+
+    isFailed(tile, failedTiles) {
+        return failedTiles.some(
+            t =>
+                t.x === tile.x &&
+                t.y === tile.y &&
+                t.zoom === tile.zoom
+        );
+    }
+
+    // =====================================================
+    // REQUIRED EXTERNAL IMPLEMENTATIONS
+    // =====================================================
+
+    async getSubTiles(x, y, zoom) {
+        throw new Error("Streetview: getSubTiles must be implemented externally");
+    }
+
+    tilePixelToLatLon(x, y, zoom, px, py) {
+        throw new Error("Streetview: tilePixelToLatLon must be implemented externally");
     }
 }
