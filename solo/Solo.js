@@ -1,6 +1,5 @@
 export function startSolo(game) {
     soloMode(game);
-
     game.element
         .querySelector("#playBtn")
         .addEventListener("click", (e) => startGame(game, e));
