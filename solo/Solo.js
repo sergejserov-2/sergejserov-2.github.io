@@ -249,36 +249,41 @@ export class Ui {
         this.googleMap.fitBounds(bounds);
     }
 
-    // =========================================================
-    // 2В — TIMER
-    // =========================================================
+// =========================================================
+// 2В — ROUND HUD (LIVE)
+// =========================================================
 
-    startTimer(duration) {
-        this.stopTimer();
+updateRoundHUD(data) {
+    const {
+        round,
+        roundCount,
+        score,
+        time,
+        moves
+    } = data;
 
-        let time = duration;
-        this.timeElement.textContent = time;
-
-        this.timerInterval = setInterval(() => {
-            time--;
-            this.timeElement.textContent = time;
-
-            if (time <= 0) {
-                this.stopTimer();
-            }
-        }, 1000);
+    // ROUND
+    if (this.roundElement) {
+        this.roundElement.innerHTML =
+            Раунд: <b>${round}/${roundCount}</b>;
     }
 
-    stopTimer() {
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-            this.timerInterval = null;
-        }
+    // SCORE
+    const scoreEl = this.element.querySelector(".total-score");
+    if (scoreEl && score !== undefined) {
+        scoreEl.innerHTML = score;
     }
 
-    endTimer() {
-        this.stopTimer();
+    // TIMER
+    if (this.timeElement) {
+        this.timeElement.innerHTML = time;
     }
+
+    // MOVES
+    if (this.movesElement) {
+        this.movesElement.innerHTML = moves;
+    }
+}
 
     // =========================================================
     // 2Г — SCREENS
