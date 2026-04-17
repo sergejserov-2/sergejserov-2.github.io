@@ -1,4 +1,4 @@
-//update
+//update2
 
 import { GeoMap } from "./GeoMap.js";
 
