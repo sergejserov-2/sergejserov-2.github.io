@@ -502,7 +502,7 @@ this.players = {
 
         const isLastRound =
             this.currentRound >= this.rules.roundCount;
-[17.04.2026 2:33] Сергей Серов: const last = this.history.at(-1) ?? null;
+            const last = this.history.at(-1) ?? null;
 
         if (isLastRound) {
             this.endGame(last);
