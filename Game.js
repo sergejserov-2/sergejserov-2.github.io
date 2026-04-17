@@ -356,18 +356,34 @@ export class Game {
                                                                                                 });
                                                                                             }
                                                                                             
-                                                                                            // ✅ новый метод
-                                                                                            showOverviewLines({ guess, actual, isFinal }) {
-                                                                                                setTimeout(() => {
-                                                                                                    if (isFinal) {
-                                                                                                        for (let r of this.history) {
-                                                                                                            this.addOverviewLine(r.guess, r.actual, 600);
-                                                                                                        }
-                                                                                                    } else {
-                                                                                                        this.addOverviewLine(guess, actual, 600);
-                                                                                                    }
-                                                                                                }, 50);
+                                                                                          renderRoundOverviewMap(data) {
+                                                                                            const { guess, actual, isFinal } = data;
+                                                                                        
+                                                                                            // всегда сначала готовим карту
+                                                                                            this.attachMap(".overview-map");
+                                                                                        
+                                                                                            // fit
+                                                                                            if (isFinal) {
+                                                                                                const locations = this.previousGuesses
+                                                                                                    .map(r => r.guess)
+                                                                                                    .concat(this.previousGuesses.map(r => r.actual));
+                                                                                        
+                                                                                                this.fitMap(locations);
+                                                                                            } else {
+                                                                                                this.fitMap([guess, actual]);
                                                                                             }
+                                                                                        
+                                                                                            // линии
+                                                                                            setTimeout(() => {
+                                                                                                if (isFinal) {
+                                                                                                    for (let r of this.previousGuesses) {
+                                                                                                        this.addOverviewLine(r.guess, r.actual, 600);
+                                                                                                    }
+                                                                                                } else {
+                                                                                                    this.addOverviewLine(guess, actual, 600);
+                                                                                                }
+                                                                                            }, 50);
+                                                                                        }
 
 
                                                                         resetRoundState() {
