@@ -1,12 +1,11 @@
 import { Scores } from "./Scores.js";
-import { StreetviewElement } from "./StreetviewElement.js";
 import { Streetview } from "./Streetview.js";
 import { Emitter } from "./Emitter.js";
 
 export const distribution = { weighted: 0, uniform: 1 };
 
 // =========================================================
-// FSM (НЕ ТРОГАЕМ)
+// FSM
 // =========================================================
 
 class FSM {
@@ -46,7 +45,7 @@ class FSM {
 // =========================================================
 
 export class Game extends Emitter {
-    constructor(map, element, rules = {
+    constructor(map, rules = {
         roundCount: 5,
         moveLimit: -1,
         panAllowed: true,
@@ -67,11 +66,13 @@ export class Game extends Emitter {
             }
         };
 
-        // ---------- ENGINE DATA ----------
+        // ---------- CORE DATA ----------
         this.currentRound = 0;
         this.history = [];
         this.currentDestination = null;
         this.nextDestination = null;
+
+        this.score = 0;
 
         this.scores = new Scores();
 
@@ -81,13 +82,7 @@ export class Game extends Emitter {
             distribution: distribution.weighted
         });
 
-        this.svElement = new StreetviewElement(
-            element.querySelector(".streetview"),
-            element.querySelector(".return-home")
-        );
-
         // ---------- INTERNAL ----------
-        this.events = {};
         this.roundReady = false;
         this.mapLoading = false;
         this.mapLoaded = false;
@@ -95,31 +90,14 @@ export class Game extends Emitter {
         this.timer = null;
         this.time = 0;
         this.moves = 0;
-        this.score = 0;
 
         this.zoom = this.map?.minimumDistanceForPoints < 3000 ? 18 : 14;
 
-        // preload first round
         this.preloadNext();
     }
 
-    
-
     // =====================================================
-    // EVENTS
-    // =====================================================
-
-    on(event, cb) {
-        if (!this.events[event]) this.events[event] = [];
-        this.events[event].push(cb);
-    }
-
-    fire(event, data) {
-        (this.events[event] || []).forEach(cb => cb(data));
-    }
-
-    // =====================================================
-    // GAME START
+    // GAME FLOW
     // =====================================================
 
     startGame() {
@@ -132,16 +110,11 @@ export class Game extends Emitter {
         this.startRound();
     }
 
-    // =====================================================
-    // ROUND FLOW (FSM НЕ ТРОГАЕМ)
-    // =====================================================
-
     prepareRound() {
         this.state.round = new FSM("prepared");
 
         this.mapLoading = false;
         this.mapLoaded = false;
-
         this.roundReady = false;
 
         this.marker = null;
@@ -163,14 +136,13 @@ export class Game extends Emitter {
 
         this.time = 0;
         this.moves = 0;
+
         this.fire("roundStarted", {
             round: this.currentRound,
             roundCount: this.rules.roundCount,
             ...this.getHUDState(),
             location: this.currentDestination
         });
-
-        this.svElement.setLocation(...this.currentDestination);
 
         this.startTimer();
     }
@@ -191,8 +163,7 @@ export class Game extends Emitter {
         });
 
         const isLast = this.currentRound >= this.rules.roundCount;
-
-        setTimeout(() => {
+    setTimeout(() => {
             if (isLast) {
                 this.endGame();
             } else {
@@ -213,28 +184,10 @@ export class Game extends Emitter {
 
         player.fsm.transition("ended");
 
-        if (!this.marker) {
-            this.placeGuessMarker({ lat: 0, lng: 0 });
-        }
-
-        const guess = [
-            this.marker.position.lat(),
-            this.marker.position.lng()
-        ];
-
-        const actual = this.currentDestination;
-
-        const distance = this.measureDistance(guess, actual);
-        const niceDistance = this.formatDistance(distance);
-        const score = this.map.scoreCalculation(distance);
-
         const payload = {
             playerId,
-            guess,
-            actual,
-            distance,
-            niceDistance,
-            score,
+            guess: null,
+            actual: this.currentDestination,
             round: this.currentRound
         };
 
@@ -314,12 +267,13 @@ export class Game extends Emitter {
             new google.maps.LatLng(...to)
         );
     }
+
     formatDistance(meters) {
         if (meters < 1000) return `${Math.floor(meters)} м`;
         if (meters < 20000) return `${Math.floor(meters / 100) / 10} км`;
         return `${Math.floor(meters / 1000)} км`;
     }
-    
+
     // =====================================================
     // END GAME
     // =====================================================
