@@ -32,7 +32,7 @@ class FSM {
         const allowedNext = this.allowed[this.state] || [];
 
         if (!allowedNext.includes(next)) {
-            console.warn([FSM] Invalid transition: ${this.state} → ${next});
+            console.warn(`[FSM] Invalid transition: ${this.state} → ${next}`);
             return false;
         }
 
