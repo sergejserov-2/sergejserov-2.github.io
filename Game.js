@@ -1,5 +1,6 @@
 // Здесь общая логика игры
 
+Чинимся
 import { Scores } from "./Scores.js";
 import { StreetviewElement } from "./StreetviewElement.js";
 import { Streetview } from "./Streetview.js";
