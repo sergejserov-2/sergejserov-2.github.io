@@ -103,8 +103,8 @@ export class Game extend Emitter {
             }
         };
     }
-
-                                                    /*  async uploadScore(e) {
+    
+                                                        /*  async uploadScore(e) {
                                                             if (e) e.preventDefault();
                                                     
                                                             console.log(this);
@@ -129,10 +129,6 @@ export class Game extend Emitter {
                                                         
                                                         */
 
-
-                                                                                    
-                                                                                  
-                                                                                    //Таймер
                                                                                     
                                                                                         startTimer(seconds) {
                                                                                             if (this.timerRunning)
