@@ -1,7 +1,5 @@
-//Движок игры, основные механики
-
 import { Scores } from "./Scores.js";
-import { Streetview } from "./Streetview.js";
+import { LocationGenerator } from "./LocationGenerator.js";
 import { Emitter } from "./Emitter.js";
 
 // =========================================================
@@ -11,7 +9,6 @@ import { Emitter } from "./Emitter.js";
 class FSM {
     constructor(initial = "prepared") {
         this.state = initial;
-
         this.allowed = {
             prepared: ["started"],
             started: ["ended"],
@@ -29,12 +26,10 @@ class FSM {
 
     transition(next) {
         const allowedNext = this.allowed[this.state] || [];
-
         if (!allowedNext.includes(next)) {
             console.warn(`[FSM] Invalid transition: ${this.state} → ${next}`);
             return false;
         }
-
         this.state = next;
         return true;
     }
@@ -45,13 +40,15 @@ class FSM {
 // =========================================================
 
 export class Game extends Emitter {
-    constructor(playArea, element, rules) {
+    constructor(playArea, element, rules, mapAdapter) {
         super();
+
         this.playArea = playArea;
         this.element = element;
         this.rules = rules;
-        this.streetview = new Streetview(playArea);
-        
+
+        // 🔥 новый генератор
+        this.generator = new LocationGenerator(mapAdapter, playArea);
 
         // ---------- STATE ----------
         this.state = {
@@ -69,14 +66,10 @@ export class Game extends Emitter {
         this.scores = new Scores();
 
         this.currentDestination = null;
-        this.nextDestination = null;
-        this.nextDestinationPromise = null;
 
         this.timer = null;
         this.time = 0;
         this.moves = 0;
-
-        this.zoom = this.map?.minimumDistanceForPoints < 3000 ? 18 : 14;
     }
 
     // =====================================================
@@ -85,58 +78,55 @@ export class Game extends Emitter {
 
     startGame() {
         if (!this.state.game.transition("started")) return;
-            this.currentRound = 1;
-            this.fire("gameStarted", this.getHUDState());
-            this.prepareRound();
+
+        this.currentRound = 1;
+
+        this.fire("gameStarted", this.getHUDState());
+
+        this.prepareRound();
     }
-   
-    prepareRound() {
+
+    async prepareRound() {
         console.log("[Game] prepareRound");
+
         this.state.round.transition("prepared");
+
         this.currentDestination = null;
-        this.nextDestination = null;
         this.marker = null;
-        this.nextDestinationPromise = this.streetview.getRandomLocation(
-            this.rules.zoom ?? 14
-        );
-        this.nextDestinationPromise
-            .then(location => {
-                console.log("[Game] destination ready", location);
-                this.nextDestination = location;
-            })
-            .catch(err => {
-                console.error("[Game] prepareRound failed", err);
-            });
-        this.fire("roundPrepared");
-        // auto-flow
-        this.startRound();
+
+        // 👉 теперь генерация синхронизирована через await
+        try {
+            this.nextDestination = await this.generator.getRandomLocation();
+
+            console.log("[Game] destination ready", this.nextDestination);
+
+            this.fire("roundPrepared");
+
+            this.startRound();
+
+        } catch (err) {
+            console.error("[Game] prepareRound failed", err);
+        }
     }
-    
+
     startRound() {
         if (!this.state.round.transition("started")) return;
+
         console.log("[Game] startRound");
-        const proceed = () => {
-            this.currentDestination = this.nextDestination;
-            this.nextDestination = null;
-            this.time = 0;
-            this.moves = 0;
-            this.fire("roundStarted", {
-                round: this.currentRound,
-                roundCount: this.rules.roundCount,
-                location: this.currentDestination
-            });
-            this.startTimer();
-        };
-    
-        // защита от преждевременного старта
-        if (!this.nextDestination) {
-            console.log("[Game] waiting for destination...");
-            this.nextDestinationPromise.then(() => {
-                proceed();
-            });
-            return;
-        }
-        proceed();
+
+        this.currentDestination = this.nextDestination;
+        this.nextDestination = null;
+
+        this.time = 0;
+        this.moves = 0;
+
+        this.fire("roundStarted", {
+            round: this.currentRound,
+            roundCount: this.rules.roundCount,
+            location: this.currentDestination
+        });
+
+        this.startTimer();
     }
 
     // =====================================================
@@ -169,15 +159,14 @@ export class Game extends Emitter {
 
         this.endRound(payload);
     }
-
     // =====================================================
-    // TIMER (LOGIC ONLY)
+    // TIMER
     // =====================================================
 
     startTimer() {
         this.timer = setInterval(() => {
             this.time++;
-            this.fire("hudUpdated", this.getHUD());
+            this.fire("hudUpdated", this.getHUDState());
         }, 1000);
     }
 
@@ -186,9 +175,36 @@ export class Game extends Emitter {
         this.timer = null;
     }
 
+    // =====================================================
+    // ROUND END
+    // =====================================================
+
+    endRound(payload = {}) {
+        this.stopTimer();
+
+        this.score += payload.score || 0;
+        this.history.push(payload);
+
+        this.fire("roundEnded", {
+            ...payload,
+            totalScore: this.score,
+            round: this.currentRound
+        });
+
+        const isLast = this.currentRound >= this.rules.roundCount;
+
+        setTimeout(() => {
+            if (isLast) {
+                this.endGame();
+            } else {
+                this.currentRound++;
+                this.prepareRound();
+            }
+        }, 3000);
+    }
 
     // =====================================================
-    // ENGINE HELPERS
+    // HELPERS
     // =====================================================
 
     getHUDState() {
