@@ -91,6 +91,8 @@ export class Game extends Emitter {
     // =====================================================
 
     startGame() {
+        console.log("startGame");
+        
         if (!this.state.game.transition("started")) return;
 
         this.currentRound = 1;
@@ -115,7 +117,9 @@ export class Game extends Emitter {
     }
 
     startRound() {
+        console.log("startRound");
         if (!this.roundReady || !this.nextDestination) {
+            console.log("waitingPreload");
             this.once("preload", () => this.startRound());
             return;
         }
@@ -214,27 +218,33 @@ export class Game extends Emitter {
     // PRELOAD
     // =====================================================
 
-    preloadNext() {
-        if (this.mapLoading) return;
+preloadNext() {
+    console.log("[Game] preloadNext");
 
-        this.mapLoading = true;
+    if (this.mapLoading) return;
 
-        this.streetview.randomValidLocation(this.zoom)
-            .then(next => {
-                this.nextDestination = next;
+    this.mapLoading = true;
 
-                this.mapLoaded = true;
-                this.mapLoading = false;
-                this.roundReady = true;
+    this.streetview.randomValidLocation(this.zoom)
+        .then(next => {
+            console.log("[Game] preload success", next);
 
-                this.fire("preload");
-            })
-            .catch(() => {
-                this.mapLoading = false;
-                this.mapLoaded = false;
-                this.roundReady = false;
-            });
-    }
+            this.nextDestination = next;
+
+            this.mapLoaded = true;
+            this.mapLoading = false;
+            this.roundReady = true;
+
+            this.fire("preload");
+        })
+        .catch(err => {
+            console.error("[Game] preload failed", err);
+
+            this.mapLoading = false;
+            this.mapLoaded = false;
+            this.roundReady = false;
+        });
+}
 
     // =====================================================
     // ENGINE HELPERS
