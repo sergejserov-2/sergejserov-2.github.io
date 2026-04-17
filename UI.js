@@ -1,6 +1,6 @@
 import { StreetviewElement } from "./StreetviewElement.js";
 
-export class Ui {
+export class UI {
 
     // =========================================================
     // 2А — CONSTRUCTOR
