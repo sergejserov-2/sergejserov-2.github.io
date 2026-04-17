@@ -6,25 +6,18 @@ export class LocationGenerator {
         this.resetSearch();
     }
 
-    // =====================================================
-    // PUBLIC API
-    // =====================================================
 
+    // PUBLIC API
     async getRandomLocation() {
         this.resetSearch();
-
         const candidates = this.generateCandidates(12);
         const valid = await this.validateCandidates(candidates);
-
         if (valid) return valid;
-
         return this.fallbackSearch(20);
     }
 
-    // =====================================================
-    // FAST CANDIDATE GENERATION
-    // =====================================================
 
+    // FAST CANDIDATE GENERATION
     generateCandidates(count = 12) {
         const result = [];
 
@@ -41,10 +34,7 @@ export class LocationGenerator {
         return result;
     }
 
-    // =====================================================
     // PARALLEL VALIDATION
-    // =====================================================
-
     async validateCandidates(candidates) {
         const checks = candidates.map(point =>
             this.map.hasStreetView(point.lat, point.lng)
@@ -56,10 +46,7 @@ export class LocationGenerator {
         return results.find(Boolean) || null;
     }
 
-    // =====================================================
     // FALLBACK (SAFE SEQUENTIAL MODE)
-    // =====================================================
-
     async fallbackSearch(maxAttempts = 20) {
         for (let i = 0; i < maxAttempts; i++) {
             const point = this.randomPointInSearchArea();
@@ -74,10 +61,7 @@ export class LocationGenerator {
         throw new Error("No valid location found");
     }
 
-    // =====================================================
     // SEARCH SPACE
-    // =====================================================
-
     randomPointInSearchArea() {
         const { center, radiusLat, radiusLng } = this.searchState;
 
@@ -95,18 +79,10 @@ export class LocationGenerator {
         };
     }
 
-    // =====================================================
     // NORMALIZATION (TEMPORARY COMPATIBILITY LAYER)
-    // =====================================================
+    normalizePlayArea(playArea) { console.log("[LocationGenerator] RAW PlayArea:", playArea); }
 
-    normalizePlayArea(playArea) {
-    console.log("[LocationGenerator] RAW PlayArea:", playArea);
-    }
-
-    // =====================================================
     // GEOMETRY HELPERS
-    // =====================================================
-
     getAreaCenter(bounds) {
         return {
             lat: (bounds.minLat + bounds.maxLat) / 2,
@@ -114,11 +90,6 @@ export class LocationGenerator {
         };
     }
 
-    getLatRadius(bounds) {
-        return (bounds.maxLat - bounds.minLat) / 2;
-    }
-
-    getLngRadius(bounds) {
-        return (bounds.maxLng - bounds.minLng) / 2;
-    }
+    getLatRadius(bounds) { return (bounds.maxLat - bounds.minLat) / 2; }
+    getLngRadius(bounds) { return (bounds.maxLng - bounds.minLng) / 2; }
 }
