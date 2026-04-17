@@ -3,6 +3,7 @@ import { UI } from "./UI.js";
 import { Orchestrator } from "./Orchestrator.js";
 import { tweaks } from "./Tweaks.js";
 import { MapManager } from "./MapManager.js";
+import { MapAdapter } from "./MapAdapter.js";
 
 console.log("[Init] file loaded");
 
@@ -19,10 +20,10 @@ async function waitForGoogle() {
 }
 
 // =====================================================
-// MAP
+// PLAY AREA
 // =====================================================
 
-async function loadMapFromURL() {
+async function loadPlayAreaFromURL() {
     let map = decodeURI(location.hash.substring(1));
     if (map === "") map = "world";
 
@@ -47,7 +48,7 @@ async function bootstrap() {
     try {
         await waitForGoogle();
 
-        const map = await loadMapFromURL();
+        const playArea = await loadPlayAreaFromURL();
         const element = document.querySelector(".estimator");
 
         tweaks();
@@ -61,7 +62,7 @@ async function bootstrap() {
         let orchestrator = null;
 
         // =====================
-        // PLAY BUTTON (SOURCE OF RULES)
+        // PLAY BUTTON
         // =====================
 
         document.getElementById("playBtn")?.addEventListener("click", () => {
@@ -76,7 +77,9 @@ async function bootstrap() {
 
             console.log("[UI] Play clicked → creating game with rules:", rules);
 
-            game = new Game(map, element, rules);
+            const mapAdapter = new MapAdapter(window.google);
+
+            game = new Game(playArea, element, rules, mapAdapter);
             ui = new UI(game);
             orchestrator = new Orchestrator(game, ui);
 
@@ -100,6 +103,7 @@ async function bootstrap() {
         });
 
         console.log("[Init] boot complete (waiting for play)");
+
     } catch (err) {
         console.error("[Init] FAILED:", err);
     }
