@@ -107,6 +107,8 @@ export function soloMode(game) {
     
     // Раунд начался
     game.on("roundStarted", (data) => {
+        game.svElement.setLocation(...data.location);
+       
         hideOverlay(game);
         resetRestrictions(game);
         applyRules(game, {
