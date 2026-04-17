@@ -1,3 +1,4 @@
+//Update with Normalize
 export class LocationGenerator {
     constructor(mapAdapter, playArea) {
         this.map = mapAdapter;
