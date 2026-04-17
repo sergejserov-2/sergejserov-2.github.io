@@ -6,7 +6,6 @@ import { Emitter } from "./Emitter.js";
 
 export const distribution = { weighted: 0, uniform: 1 }; 
 
-
 class FSM {
     constructor(initial = "prepared") {
         this.state = initial;
