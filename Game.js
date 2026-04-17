@@ -60,9 +60,6 @@ this.players = {
     p1: {state: "idle"}   // idle | running | ended
 };
 
-
-
-
         
         document.getElementById("makeGuess").addEventListener("click", () => {this.makeGuess();
         });
