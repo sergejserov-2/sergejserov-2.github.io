@@ -13,7 +13,6 @@ function startGame(game, e) {
     e.preventDefault();
     const form = game.element.querySelector("form");
     const [roundCount, timeLimit, moveLimit, ...restrictions] = [...new FormData(form)].map(n => n[1]);
-
     const rules = {
         roundCount: +roundCount,
         timeLimit: +timeLimit,
@@ -21,7 +20,6 @@ function startGame(game, e) {
         panAllowed: restrictions.includes("pan"),
         zoomAllowed: restrictions.includes("zoom")
     };
-
     game.prepareGame(game.map, rules);
     game.startGame();
 }
