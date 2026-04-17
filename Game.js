@@ -552,7 +552,6 @@ startGame() {
             last: lastPayload
         });
     }
-}
 
 
 
@@ -588,27 +587,3 @@ fire(event, data) {
             console.warn(`Trying to remove ${event} event, but it does not exist`);
         }
     }
-
-
-    start(config = {}) {
-        const {
-            map = this.map,
-            rules = this.rules,
-        } = config;
-    
-        this.map = map;
-        this.rules = rules;  
-        this.newGame(map, rules);
-        }
-    
-   
-    playRemoteRound(location) {
-        this.currentDestination = [location.lat, location.lng];
-    
-        // показать панораму
-        this.svElement.setLocation(...this.currentDestination);
-    
-        // UI обновление раунда
-        this.fire("initRound");
-    }
-}
