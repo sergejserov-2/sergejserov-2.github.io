@@ -5,6 +5,61 @@ import { StreetviewElement } from "./StreetviewElement.js";
 import { Streetview } from "./Streetview.js";
 
 export const distribution = { weighted: 0, uniform: 1 }; 
+
+
+class FSM {
+    constructor(initial = "prepared") {
+        this.state = initial;
+
+        this.allowed = {
+            prepared: ["started"],
+            started: ["ended"],
+            ended: ["prepared"]
+        };
+    }
+
+    get() {
+        return this.state;
+    }
+
+    is(v) {
+        return this.state === v;
+    }
+
+    transition(next) {
+        const allowedNext = this.allowed[this.state] || [];
+
+        if (!allowedNext.includes(next)) {
+            console.warn(
+                [FSM] Invalid transition: ${this.state} → ${next}
+            );
+            return false;
+        }
+
+        const prev = this.state;
+        this.state = next;
+
+        return true;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export class Game {
     constructor(map, element, rules = {
         roundCount: 5,
@@ -52,68 +107,14 @@ export class Game {
         document.getElementById("returnHome").addEventListener("click", () => {this.returnHome();});
         document.getElementById("mapOverlay").addEventListener("click", () => {game.toggleMapOverlay();});
         
-        //Фазы механизьму
+            
         this.state = {
-          game: "idle",     // idle | running | ended
-          round: "idle",    // idle | running | ended
-          players: {
-            p1: { state: "idle" }
-          }
+            game: new FSM(),
+            round: new FSM(),
+            players: {
+                p1: new FSM()
+            }
         };
-    }
-
-    transition(event, payload = {}) {
-        const s = this.state;
-    
-        switch (event) {
-    
-            case "GAME_START":
-                if (s.game !== "idle") return;
-                
-                s.game = "running";
-                this.startGame();
-                break;
-    
-            case "ROUND_PREPARE":
-                if (s.game !== "running") return;
-                
-                s.round = "idle";
-                this.prepareRound();
-                break;
-    
-            case "ROUND_START":
-                if (s.round !== "idle") return;
-                if (!this.mapLoaded) {
-                    this.once("preload", () => this.transition("ROUND_START"));
-                    return;
-                }
-    
-                s.round = "running";
-                this.startRound();
-                break;
-    
-            case "PLAYER_GUESS":
-                const player = s.players[payload.playerId];
-                if (!player || player.state !== "running") return;
-    
-                this.makeGuess(payload.playerId);
-                break;
-    
-            case "ROUND_END":
-                if (s.round !== "running") return;
-    
-                s.round = "ended";
-                this.endRound();
-                break;
-    
-            case "GAME_END":
-                if (s.game !== "running") return;
-    
-                s.game = "ended";
-                this.endGame(payload.last);
-                break;
-        }
-    }
 
 
 
@@ -346,14 +347,28 @@ export class Game {
                                                                                                 this.svElement.setLocation(...this.currentDestination);
                                                                                             }
                                                                                             
-                                                                                            preloadNextMap() {
+                                                                                            preloadNext() {
+                                                                                                // защита от дубля загрузки
+                                                                                                if (this.mapLoading) return;
+                                                                                            
+                                                                                                this.mapLoading = true;
                                                                                                 this.mapLoaded = false;
                                                                                             
-                                                                                                this.streetview.randomValidLocation(this.zoom).then(next => {
-                                                                                                    this.nextDestination = next;
-                                                                                                    this.mapLoaded = true;
-                                                                                                    this.fire("preload");
-                                                                                                });
+                                                                                                this.streetview.randomValidLocation(this.zoom)
+                                                                                                    .then(next => {
+                                                                                                        this.nextDestination = next;
+                                                                                            
+                                                                                                        this.mapLoaded = true;
+                                                                                                        this.mapLoading = false;
+                                                                                            
+                                                                                                        this.fire("preload");
+                                                                                                    })
+                                                                                                    .catch((err) => {
+                                                                                                        console.warn("[preloadNext] failed:", err);
+                                                                                            
+                                                                                                        this.mapLoading = false;
+                                                                                                        this.mapLoaded = false;
+                                                                                                    });
                                                                                             }
                                                                                             
                                                                                           renderRoundOverviewMap(data) {
@@ -398,171 +413,143 @@ export class Game {
    
 //Методы игры
 
-    prepareGame(rules = this.rules) {
-        if (!this.map) {
-            throw new Error("Map is required before prepareGame");
-        }
-    
-        this.rules = rules;
-    
-        this.state = {
-            game: "idle",
-            round: "idle",
-            players: {
-                p1: { state: "idle" }
-            }
-        };
-    
-        this.currentRound = 0;
-        this.history = [];
-    
-        this.overviewLines = [];
-    
-        this.streetview = new Streetview(this.map, this.distribution);
-    
-        this.zoom =
-            this.map.minimumDistanceForPoints < 3000 ? 18 : 14;
-    
-        this.preloadNextMap();
+prepareGame(rules = this.rules) {
+
+    // ---------------- FSM RESET ----------------
+    this.state.game = new FSM("prepared");
+    this.state.round = new FSM("prepared");
+    // reset players FSM
+    for (const id of Object.keys(this.state.players)) {
+        this.state.players[id].fsm = new FSM("prepared");
     }
 
-startGame() {
-    this.startTime = performance.now();
-    this.hideGameRuleSelection?.();
-    this.transition("ROUND_PREPARE");
-    this.transition("ROUND_START");
+    // ---------------- GAME DATA RESET ----------------
+    this.currentRound = 0;             this.history = [];
+    this.currentDestination = null;    this.nextDestination = null;
+    this.rules = rules;
+
+    this.fire("gamePrepared", { rules });
 }
 
-    // ---------------- ROUND FLOW ----------------
+startGame() {
+    if (!this.state.game.transition("started")) return;
+
+    this.startTime = performance.now();
+    
+    this.prepareRound();
+    this.startRound();
+
+    this.fire("gameStarted");
+}
 
     prepareRound() {
-        this.state.round = "idle";
+        // fsm round reset
+        this.state.round = new FSM("prepared");        
+
+        // round data reset
         this.mapLoaded = false;
         this.marker?.setMap(null);
         this.marker = null;
-        this.nextDestination =
-            this.svElement.getLocation?.() ?? this.nextDestination;
-    }
-
-    startRound() {
-        this.currentRound++;
-        Object.values(this.state.players).forEach(p => { p.state = "running"; });
         this.currentDestination = this.nextDestination;
-        this.disableGuessButton();
-        this.applyRules?.();
-
-        this.fire("startRound", {
-            round: this.currentRound,
-            location: this.currentDestination
-        });
-
-        setTimeout(() => {
-            this.fire("initRoundUI");
-            this.removeOverviewLines();
-            this.attachMap(".embed-map");
-            this.fitMapToGeoMap();
-        }, 300);
-        this.svElement.setLocation(...this.currentDestination);
+       
+        this.preloadNext ();
+        this.fire("roundPrepared");
     }
 
-    // ---------------- GAMEPLAY ----------------
-
-    makeGuess(playerId = "p1") {
-        const player = this.state.players[playerId];
-
-        if (!player || player.state !== "running") return;
-
-        player.state = "ended";
-
-        if (!this.marker || this.marker.getMap() === null) {
-            this.placeGuessMarker({ lat: 0, lng: 0 });
+        startRound() {
+        if (!this.mapLoaded) {
+            this.once("preload", () => this.startRound());
+            return;
+        }
+    
+        if (!this.state.round.transition("started")) return;
+        for (const p of Object.values(this.state.players)) {
+            p.fsm.transition("started");
         }
 
-        this.marker.setMap(null);
-        this.endTimer();
-
-        const guess = [
-            this.marker.position.lat(),
-            this.marker.position.lng()
-        ];
-
-        const actual = this.ezMode
-            ? this.svElement.getLocation()
-            : this.currentDestination;
-
-        const distance = this.measureDistance(guess, actual);
-        const niceDistance = this.formatDistance(distance);
-        const score = this.map.scoreCalculation(distance);
-
-        const payload = {
-            playerId,
-            guess,
-            actual,
-            distance,
-            niceDistance,
-            score,
-            round: this.currentRound
-        };
-
-        // SOURCE OF TRUTH
-        this.history.push(payload);
-
-        this.fire("guessFinished", payload);
-
-        this.checkRoundEnd();
-    }
-
-    checkRoundEnd() {
-        const allEnded = Object
-            .values(this.state.players)
-            .every(p => p.state === "ended");
-    
-        if (allEnded) {
-            this.transition("ROUND_END");
+            this.currentRound++;
+            this.fire("roundStarted", {
+                round: this.currentRound,
+                location: this.currentDestination
+            });
+            this.streetview.setLocation(...this.currentDestination);
         }
-    }
 
-    // ---------------- ROUND END ----------------
-
-    endRound() {
-        const isLastRound =
-            this.currentRound >= this.rules.roundCount;
-    
-        const last = this.history.at(-1) ?? null;
-    
-        this.fire("endRound", {
-            round: this.currentRound,
-            history: this.history,
-            last
-        });
-    
-        // ⏱ задержка 3 секунды
-        setTimeout(() => {
-            if (isLastRound) {
-                this.transition("GAME_END", { last });
-                return;
+        finishGuess(playerId = "p1") {
+            const player = this.state.players[playerId];
+            if (!player || !player.fsm.is("started")) return;
+            player.fsm.transition("ended");
+        
+            if (!this.marker || this.marker.getMap() === null) {
+                this.placeGuessMarker({ lat: 0, lng: 0 });
             }
-    
-            this.transition("ROUND_PREPARE");
-            this.transition("ROUND_START");
-        }, 3000);
-    }
+        
+            const guess = [
+                this.marker.position.lat(),
+                this.marker.position.lng()
+            ];
+        
+            this.marker.setMap(null);
+        
+            const actual = this.currentDestination;
+            const distance = this.measureDistance(guess, actual);
+            const niceDistance = this.formatDistance(distance);
+            const score = this.map.scoreCalculation(distance);
+        
+            const payload = {
+                playerId,
+                guess,
+                actual,
+                distance,
+                niceDistance,
+                score,
+                round: this.currentRound
+            };
+        
+            this.history.push(payload);
+        
+            this.fire("guessFinished", payload);
+        
+            this.checkRoundEnd();
+        }
 
+        checkRoundEnd() {
+            const allEnded = Object.values(this.state.players)
+                .every(p => p.fsm.is("ended"));
+            if (!allEnded) return;
+            this.endRound();
+        }
 
-    // ---------------- GAME END ----------------
+endRound() {
+    if (!this.state.round.transition("ended")) return;
 
-    endGame(lastPayload) {
-        this.gameState = "ended";
-        this.roundState = "idle";
+    const last = this.history.at(-1) ?? null;
 
-        const playersScores = this.computeFinalScores();
+    const isLastRound = this.currentRound >= this.rules.roundCount;
 
-        this.fire("endGame", {
-            history: this.history,
-            players: playersScores,
-            last: lastPayload
-        });
-    }
+    const payload = {
+        round: this.currentRound,
+        history: this.history,
+        last
+    };
+
+    this.fire("roundEnded", payload);
+
+    setTimeout(() => {
+        if (isLastRound) {
+            this.endGame(payload);
+        } else {
+            this.prepareRound();
+            this.startRound();
+        }
+    }, 3000);
+}
+
+endGame(data) {
+    if (!this.state.game.transition("ended")) return;
+
+    this.fire("gameEnded", data);
+}
 
 
 
