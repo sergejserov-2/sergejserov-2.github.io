@@ -5,7 +5,7 @@ export class Ui {
     // =========================================================
     // 2А — CONSTRUCTOR
     // =========================================================
-
+    
     constructor(game) {
         this.game = game;
         this.element = game.element;
