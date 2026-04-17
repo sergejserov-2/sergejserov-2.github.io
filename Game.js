@@ -46,7 +46,8 @@ class FSM {
 export class Game extends Emitter {
     constructor(map, element, rules) {
         super();
-
+console.log("[DEBUG map]", map);
+console.log("[DEBUG isInMap]", map.isInMap);
         this.map = map;
         this.element = element;
         this.rules = rules;
@@ -91,9 +92,7 @@ export class Game extends Emitter {
     // GAME FLOW
     // =====================================================
 
-    startGame() {
-        console.log("startGame");
-        
+    startGame() {      
         if (!this.state.game.transition("started")) return;
 
         this.currentRound = 1;
@@ -118,7 +117,6 @@ export class Game extends Emitter {
     }
 
     startRound() {
-        console.log("startRound");
         if (!this.roundReady || !this.nextDestination) {
             console.log("waitingPreload");
             this.once("preload", () => this.startRound());
