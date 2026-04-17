@@ -6,6 +6,8 @@ export class Streetview {
     constructor(map, distribution) {
         this.map = map;
         this.distribution = distribution;
+        console.log("Streetview map:", this.map);
+        console.log("isInMap:", this.map?.isInMap);
     }
 
     async randomValidLocation(endZoom = 14) {
