@@ -1,4 +1,3 @@
-//uod
 export class Streetview {
     constructor(map) {
         this.map = map;
