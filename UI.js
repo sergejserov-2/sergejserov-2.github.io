@@ -1,10 +1,6 @@
-[17.04.2026 19:22] Сергей Серов: import { StreetviewElement } from "./StreetviewElement.js";
+[17.04.2026 19:45] Сергей Серов: import { StreetviewElement } from "./StreetviewElement.js";
 
 export class UI {
-
-    // =========================================================
-    // CONSTRUCTOR
-    // =========================================================
 
     constructor(game) {
         this.game = game;
@@ -15,13 +11,11 @@ export class UI {
             this.element.querySelector(".return-home")
         );
 
-        // HUD
         this.scoreElement = this.element.querySelector(".total-score");
         this.timeElement = this.element.querySelector(".time-left");
         this.movesElement = this.element.querySelector(".moves-left");
         this.roundElement = this.element.querySelector(".round");
 
-        // MAP
         this.googleMap = null;
         this.marker = null;
         this.overviewLines = [];
@@ -29,9 +23,9 @@ export class UI {
         this.isEmbedMode = true;
     }
 
-    // =========================================================
-    // 2Б — MAP SETUP
-    // =========================================================
+    // =====================================================
+    // MAP INIT
+    // =====================================================
 
     initMapUI({ polygon, isEmbedMode = true } = {}) {
         this.googleMap = new google.maps.Map(
@@ -40,9 +34,7 @@ export class UI {
                 zoom: 0,
                 center: { lat: 0, lng: 0 },
                 disableDefaultUI: true,
-                clickableIcons: false,
-                backgroundColor: "#aadaff",
-                fullscreenControl: false,
+                clickableIcons: false
             }
         );
 
@@ -60,92 +52,96 @@ export class UI {
     }
 
     attachMap(selector) {
-        const mapElement = this.googleMap.getDiv();
-        mapElement.remove();
-        this.element.querySelector(selector).appendChild(mapElement);
+        const el = this.googleMap.getDiv();
+        el.remove();
+        this.element.querySelector(selector).appendChild(el);
     }
 
-    toggleMapOverlay() {
-        if (!this.polygon) return;
+    // =====================================================
+    // HUD (LIVE)
+    // =====================================================
 
-        if (this.polygon.getMap()) {
-            this.polygon.setMap(null);
-        } else {
-            this.polygon.setMap(this.googleMap);
-        }
+    updateRoundHUD(data) {
+        const { round, roundCount, score, time, moves } = data;
+
+        if (this.roundElement)
+            this.roundElement.innerHTML = `Раунд: <b>${round}/${roundCount}</b>`;
+
+        if (this.scoreElement)
+            this.scoreElement.innerHTML = `Счёт: <b>${score}</b>`;
+
+        if (this.timeElement)
+            this.timeElement.innerHTML = `Время: <b>${time}</b>`;
+
+        if (this.movesElement)
+            this.movesElement.innerHTML = `Шаги: <b>${moves}</b>`;
     }
 
-    setResizeEventListeners() {
-        const resizeElement = this.element.querySelector(".guess-map-resizer");
-        const guessMap = this.element.querySelector(".guess-map");
+    // =====================================================
+    // OVERVIEW SCREENS (ВОЗВРАЩЕНО)
+    // =====================================================
 
-        let resizerDown = false;
+    showRoundOverview(data) {
+        const el = this.element.querySelector(".guess-overview");
 
-        const onMove = (x, y) => {
-            if (!resizerDown) return;
+        el.style.transform = "translateY(0%)";
 
-            const height = window.innerHeight - y - this.element.offsetTop;
-            const width = x - this.element.offsetLeft;
+        el.querySelector(".next-round-button").style.display = "inline-block";
+        el.querySelector(".game-end-buttons").style.display = "none";
 
-            guessMap.style.height = height + "px";
-            guessMap.style.width = width + "px";
-        };
+        const progressBar = el.querySelector(".score-progress");
+        progressBar.style.width = `${(data.score / 5000) * 100}%`;
 
-        resizeElement.addEventListener("mousedown", () => (resizerDown = true));
-        document.addEventListener("mousemove", (e) => onMove(e.pageX, e.pageY));
-        document.addEventListener("mouseup", () => (resizerDown = false));
+        const [meter, scoreText] = el.querySelectorAll(".score-text p");
 
-        resizeElement.addEventListener("touchstart", () => (resizerDown = true));
-        document.addEventListener("touchmove", (e) =>
-            onMove(e.touches[0].pageX, e.touches[0].pageY)
-        );
-        document.addEventListener("touchend", () => (resizerDown = false));
-    }
+        meter.innerText =
+            `Вы в ${data.niceDistance} от загаданного места`;
 
-    // =========================================================
-    // INTERACTION
-    // =========================================================
+        scoreText.innerText =
+            `Ваш счёт — ${data.score} | Общий — ${data.totalScore}`;
 
-    placeGuessMarker(location) {
-        if (!location) return;
-
-        if (this.marker) {
-            this.marker.setMap(null);
-        }
-
-        this.marker = new google.maps.Marker({
-            position: location,
-            map: this.googleMap,
+        this.renderRoundOverviewMap({
+            lines: [{ guess: data.guess, actual: data.actual }],
+            focus: { guess: data.guess, actual: data.actual },
+            isFinal: false
         });
-
-        this.enableGuessButton();
     }
 
-    clearGuessMarker() {
-        if (!this.marker) return;
-        this.marker.setMap(null);
-        this.marker = null;
-    }
-    enableGuessButton() {
-        const button = this.element.querySelector(".guess-button");
-        button.style.pointerEvents = "all";
-        button.style.filter = "grayscale(0%)";
+    showGameOverview(data) {
+        const el = this.element.querySelector(".guess-overview");
+
+        el.style.transform = "translateY(0%)";
+
+        el.querySelector(".next-round-button").style.display = "none";
+        el.querySelector(".game-end-buttons").style.display = "block";
+
+        const progressBar = el.querySelector(".score-progress");
+        progressBar.style.width =
+            `${(data.totalScore / (5000 * data.roundCount)) * 100}%`;
+
+        const [meter, scoreText] = el.querySelectorAll(".score-text p");
+[17.04.2026 19:45] Сергей Серов: meter.innerText =
+            `Вы в ${data.history.at(-1).niceDistance} от загаданного места`;
+
+        scoreText.innerText =
+            `Итоговый счёт — ${data.totalScore}`;
+
+        this.renderRoundOverviewMap({
+            lines: data.history.map(h => ({
+                guess: h.guess,
+                actual: h.actual
+            })),
+            focus: {
+                guess: data.history.at(-1).guess,
+                actual: data.history.at(-1).actual
+            },
+            isFinal: true
+        });
     }
 
-    disableGuessButton() {
-        const button = this.element.querySelector(".guess-button");
-        button.style.pointerEvents = "none";
-        button.style.filter = "grayscale(90%)";
-    }
-
-    returnHome() {
-        // UI не знает state → просим Game
-        this.game.fire("returnHomeRequested");
-    }
-
-    // =========================================================
-    // OVERVIEW MAP
-    // =========================================================
+    // =====================================================
+    // MAP OVERVIEW RENDER
+    // =====================================================
 
     renderRoundOverviewMap(data) {
         const { lines, focus, isFinal } = data;
@@ -169,76 +165,6 @@ export class UI {
         }, 50);
     }
 
-    removeOverviewLines() {
-        for (const lineData of this.overviewLines) {
-            lineData.line.setMap(null);
-            lineData.guess.setMap(null);
-            lineData.actual.setMap(null);
-        }
-        this.overviewLines = [];
-    }
-
-    addOverviewLine(guess, actual, animationTime = 1500) {
-        const g = { lat: guess[0], lng: guess[1] };
-        const a = { lat: actual[0], lng: actual[1] };
-
-        const lineData = {};
-        this.overviewLines.push(lineData);
-
-        lineData.line = new google.maps.Polyline({
-            path: [g, g],
-            geodesic: true,
-            strokeColor: "red",
-            strokeOpacity: 0.8,
-            strokeWeight: 3,
-            map: this.googleMap,
-        });
-
-        const dropTime = 250;
-        const fps = 30;
-        const steps = fps * (animationTime / 1000);
-        let step = 0;
-
-        const deltaLat = g.lat - a.lat;
-        const deltaLng = g.lng - a.lng;
-
-        lineData.guess = new google.maps.Marker({
-            position: g,
-            map: this.googleMap,
-            animation: google.maps.Animation.DROP,
-            title: "Вы",
-        });
-
-        setTimeout(() => {
-            const interval = setInterval(() => {
-                if (step++ >= steps) {
-                    clearInterval(interval);
-                    lineData.line.setPath([g, a]);
-                    return;
-                }
-
-                lineData.line.setPath([
-                    g,
-                    {
-                        lat: g.lat - deltaLat * (step / steps),
-                        lng: g.lng - deltaLng * (step / steps),
-                    },
-                ]);
-            }, 1000 / fps);
-        }, dropTime);
-
-        setTimeout(() => {
-            lineData.actual = new google.maps.Marker({
-                position: a,
-                animation: google.maps.Animation.DROP,
-                icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
-                title: "Загаданное место",
-            });
-
-            lineData.actual.setMap(this.googleMap);
-        }, animationTime);
-    }
-
     fitMap(positions) {
         if (!positions?.length) return;
 
@@ -251,110 +177,30 @@ export class UI {
         this.googleMap.fitBounds(bounds);
     }
 
-    // =========================================================
-    // 2В — HUD (LIVE UI)
-    // =========================================================
+    // =====================================================
+    // MARKER
+    // =====================================================
 
-    updateRoundHUD(data) {
-        const { round, roundCount, score, time, moves } = data;
+    placeGuessMarker(location) {
+        if (this.marker) this.marker.setMap(null);
 
-        if (this.roundElement) {
-            this.roundElement.innerHTML =
-                `Раунд: <b>${round}/${roundCount}</b>`;
-        }
-[17.04.2026 19:22] Сергей Серов: if (this.scoreElement) {
-            this.scoreElement.innerHTML =
-                `Счёт: <b>${score}</b>`;
-        }
-
-        if (this.timeElement) {
-            this.timeElement.innerHTML =
-                `Время: <b>${time}</b>`;
-        }
-
-        if (this.movesElement) {
-            this.movesElement.innerHTML =
-                `Шаги: <b>${moves}</b>`;
-        }
-    }
-
-    // =========================================================
-    // 2Г — SCREENS (SNAPSHOT UI)
-    // =========================================================
-
-    hideLobby() {
-        const el = this.element.querySelector(".gamerule-selector");
-        if (el) el.style.transform = "translateY(-100%)";
-    }
-
-    showLobby() {
-        const el = this.element.querySelector(".gamerule-selector");
-        if (el) el.style.transform = "translateY(0%)";
-    }
-
-    hideOverview() {
-        const el = this.element.querySelector(".guess-overview");
-        if (el) el.style.transform = "translateY(-100%)";
-    }
-
-    showRoundOverview(data) {
-        const el = this.element.querySelector(".guess-overview");
-
-        el.style.transform = "translateY(0%)";
-
-        el.querySelector(".next-round-button").style.display = "inline-block";
-        el.querySelector(".game-end-buttons").style.display = "none";
-
-        const progressBar = el.querySelector(".score-progress");
-        progressBar.style.width = `${(data.score / 5000) * 100}%`;
-
-        const [meterElement, scoreElement] =
-            el.querySelectorAll(".score-text p");
-
-        meterElement.innerText =
-            `Вы в ${data.niceDistance} от загаданного места`;
-
-        scoreElement.innerText =
-            `Ваш счёт — ${data.score} | Общий — ${data.totalScore}`;
-
-        this.renderRoundOverviewMap({
-            lines: [{ guess: data.guess, actual: data.actual }],
-            focus: { guess: data.guess, actual: data.actual },
-            isFinal: false,
+        this.marker = new google.maps.Marker({
+            position: location,
+            map: this.googleMap
         });
     }
 
-    showGameOverview(data) {
-        const el = this.element.querySelector(".guess-overview");
+    clearGuessMarker() {
+        if (this.marker) this.marker.setMap(null);
+        this.marker = null;
+    }
 
-        el.style.transform = "translateY(0%)";
-
-        el.querySelector(".next-round-button").style.display = "none";
-        el.querySelector(".game-end-buttons").style.display = "block";
-
-        const progressBar = el.querySelector(".score-progress");
-        progressBar.style.width =
-            `${(data.totalScore / (5000 * data.roundCount)) * 100}%`;
-
-        const [meterElement, scoreElement] =
-            el.querySelectorAll(".score-text p");
-
-        meterElement.innerText =
-            `Вы в ${data.last.niceDistance} от загаданного места`;
-
-        scoreElement.innerText =
-            `Итоговый счёт — ${data.totalScore}`;
-
-        this.renderRoundOverviewMap({
-            lines: data.history.map(h => ({
-                guess: h.guess,
-                actual: h.actual,
-            })),
-            focus: {
-                guess: data.last.guess,
-                actual: data.last.actual,
-            },
-            isFinal: true,
-        });
+    removeOverviewLines() {
+        for (const l of this.overviewLines) {
+            l.line.setMap(null);
+            l.guess.setMap(null);
+            l.actual.setMap(null);
+        }
+        this.overviewLines = [];
     }
 }
