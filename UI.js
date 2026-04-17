@@ -1,4 +1,4 @@
-[17.04.2026 19:45] Сергей Серов: import { StreetviewElement } from "./StreetviewElement.js";
+import { StreetviewElement } from "./StreetviewElement.js";
 
 export class UI {
 
@@ -61,20 +61,19 @@ export class UI {
     // HUD (LIVE)
     // =====================================================
 
+    returnHome() {
+        this.game.fire("returnHomeRequested", {
+            location: this.game.currentDestination
+        });
+    }
+    
     updateRoundHUD(data) {
         const { round, roundCount, score, time, moves } = data;
 
-        if (this.roundElement)
-            this.roundElement.innerHTML = `Раунд: <b>${round}/${roundCount}</b>`;
-
-        if (this.scoreElement)
-            this.scoreElement.innerHTML = `Счёт: <b>${score}</b>`;
-
-        if (this.timeElement)
-            this.timeElement.innerHTML = `Время: <b>${time}</b>`;
-
-        if (this.movesElement)
-            this.movesElement.innerHTML = `Шаги: <b>${moves}</b>`;
+        this.roundElement.innerHTML = `Раунд: <b>${round}/${roundCount}</b>`;
+        this.scoreElement.innerHTML = `Счёт: <b>${score}</b>`;
+        this.timeElement.innerHTML = `Время: <b>${time}</b>`;
+        this.movesElement.innerHTML = `Шаги: <b>${moves}</b>`;
     }
 
     // =====================================================
@@ -120,7 +119,7 @@ export class UI {
             `${(data.totalScore / (5000 * data.roundCount)) * 100}%`;
 
         const [meter, scoreText] = el.querySelectorAll(".score-text p");
-[17.04.2026 19:45] Сергей Серов: meter.innerText =
+            meter.innerText =
             `Вы в ${data.history.at(-1).niceDistance} от загаданного места`;
 
         scoreText.innerText =
