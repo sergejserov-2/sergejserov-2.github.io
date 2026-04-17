@@ -60,11 +60,6 @@ export class Game {
             p1: { state: "idle" }
           }
         };
-        
-        setTimeout(() => {
-            this.gameReady = true;
-            console.log("🎮 GAME READY");
-        }, 300);
     }
 
     transition(event, payload = {}) {
