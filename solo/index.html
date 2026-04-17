@@ -93,31 +93,7 @@
     <div class="streetview"></div>
 </div>
 
-    <script src='../StreetviewElement.js' type='module'></script>
-    <script src='../Game.js' type='module'></script>
-    <script src='../GeoMap.js' type='module'></script>
-    <script src='../MapManager.js' type='module'></script>
-    <script src='../Start.js' type='module'></script>
-    <script src='../Streetview.js' type='module'></script>
-    <script src='../Tweaks.js' type='module'></script>
-    <script src='./Solo.js' type='module'></script>
-    
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAJfRzZ-GGIV3iCrCVkTsYKDNh09kenzNM&libraries=geometry" async defer></script>
-    
-    <script type="module">
-        import { Game } from "../Game.js";
-        import { loadMapFromURL } from "../Start.js";
-        import { waitForGoogle } from "../Start.js";
-        import { tweaks } from "../Tweaks.js";
-        import { startSolo } from "./Solo.js";
-        
-        await waitForGoogle();
-        const geoMap = await loadMapFromURL();
-        tweaks();
-        const game = new Game(geoMap, document.querySelector(".estimator"));
-        
-        startSolo(game);
-    </script>
+    <script src='../Init.js' type='module'></script>
 </body>
 
 </html>
