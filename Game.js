@@ -115,6 +115,8 @@ export class Game {
         }
     }
 
+
+
                                                     /*  async uploadScore(e) {
                                                             if (e) e.preventDefault();
                                                     
