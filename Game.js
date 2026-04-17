@@ -45,16 +45,11 @@ class FSM {
 // =========================================================
 
 export class Game extends Emitter {
-    constructor(map, rules = {
-        roundCount: 5,
-        moveLimit: -1,
-        panAllowed: true,
-        timeLimit: -1,
-        zoomAllowed: true
-    }) {
+    constructor(map, element, rules) {
         super();
 
         this.map = map;
+        this.element = element;
         this.rules = rules;
 
         // ---------- STATE ----------
