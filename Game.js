@@ -63,10 +63,7 @@ this.streetview = new Streetview({
     map: this.map,
     distribution: this.distribution
 });
-        this.scoreElement = element.querySelector(".total-score");
-        this.timeElement = element.querySelector(".time-left");
-        this.movesElement = element.querySelector(".moves-left");
-        this.roundElement = element.querySelector(".round");
+
         this.scores = new Scores();
         
         this.googleMap = new google.maps.Map(element.querySelector(".map-element"), {
@@ -93,12 +90,6 @@ this.streetview = new Streetview({
         this.roundReady = false;
         this.roundStarting = false;
 
-        
-
-        document.getElementById("makeGuess").addEventListener("click", () => {this.makeGuess(); });
-        document.getElementById("returnHome").addEventListener("click", () => {this.returnHome();});
-        document.getElementById("mapOverlay").addEventListener("click", () => {game.toggleMapOverlay();});
-        
             
         this.state = {
             game: new FSM(),
