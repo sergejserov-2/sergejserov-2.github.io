@@ -319,7 +319,7 @@ export class Game extends Emitter {
         if (meters < 20000) return `${Math.floor(meters / 100) / 10} км`;
         return `${Math.floor(meters / 1000)} км`;
     }
-
+    
     // =====================================================
     // END GAME
     // =====================================================
