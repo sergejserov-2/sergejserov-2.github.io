@@ -4,9 +4,9 @@ export class MapAdapter {
     }
 
     hasStreetView(lat, lng) {
-        return new Promise((resolve) => {
-            const sv = new this.google.maps.StreetViewService();
+        const sv = new this.google.maps.StreetViewService();
 
+        return new Promise((resolve) => {
             sv.getPanorama(
                 { location: { lat, lng }, radius: 50 },
                 (data, status) => {
