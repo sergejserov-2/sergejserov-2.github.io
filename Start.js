@@ -33,7 +33,7 @@ export async function loadMapFromURL() {
 }
 
 // =========================================================
-// BOOTSTRAP ENTRY
+// APP BOOTSTRAP
 // =========================================================
 
 export async function startApp() {
@@ -42,24 +42,34 @@ export async function startApp() {
     await waitForGoogle();
     const geoMap = await loadMapFromURL();
 
-    // ---------- CORE SYSTEM ----------
+    // ---------- CORE ----------
     const game = new Game(geoMap);
     const ui = new UI(game);
 
-    // ---------- EVENT BRIDGE ----------
+    // ---------- BIND GAME ↔ UI ----------
     bindSoloMode(game, ui);
 
     // =====================================================
-    // DOM BINDS
+    // DOM BINDS (ENTRY LAYER ONLY)
     // =====================================================
 
-    const makeGuessBtn = document.getElementById("makeGuess");
-    if (makeGuessBtn) {
-        makeGuessBtn.addEventListener("click", () => {
-            game.finishGuess?.(); // или game.makeGuess() если так у тебя задумано
+    // ---------- START GAME ----------
+    const playBtn = document.querySelector("#playBtn");
+    if (playBtn) {
+        playBtn.addEventListener("click", () => {
+            game.startGame();
         });
     }
 
+    // ---------- MAKE GUESS ----------
+    const makeGuessBtn = document.getElementById("makeGuess");
+    if (makeGuessBtn) {
+        makeGuessBtn.addEventListener("click", () => {
+            game.finishGuess();
+        });
+    }
+
+    // ---------- RETURN HOME (MAP / STREETVIEW) ----------
     const returnHomeBtn = document.getElementById("returnHome");
     if (returnHomeBtn) {
         returnHomeBtn.addEventListener("click", () => {
@@ -67,7 +77,15 @@ export async function startApp() {
         });
     }
 
+    // ---------- MAP OVERLAY TOGGLE ----------
     const mapOverlayBtn = document.getElementById("mapOverlay");
     if (mapOverlayBtn) {
         mapOverlayBtn.addEventListener("click", () => {
-            ui
+            ui.toggleMapOverlay();
+        });
+    }
+
+    console.log("🚀 App started (Start.js bootstrap complete)");
+
+    return { game, ui };
+}
