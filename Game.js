@@ -2,8 +2,6 @@ import { Scores } from "./Scores.js";
 import { Streetview } from "./Streetview.js";
 import { Emitter } from "./Emitter.js";
 
-export const distribution = { weighted: 0, uniform: 1 };
-
 // =========================================================
 // FSM
 // =========================================================
@@ -72,10 +70,7 @@ export class Game extends Emitter {
         this.scores = new Scores();
 
         // ---------- STREETVIEW ENGINE ----------
-        this.streetview = new Streetview({
-            map: this.map,
-            distribution: distribution.weighted
-        });
+        this.streetview = new Streetview({ map: this.map,});
 
         // ---------- INTERNAL ----------
         this.roundReady = false;
