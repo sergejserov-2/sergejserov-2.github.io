@@ -3,6 +3,8 @@
 import { Scores } from "./Scores.js";
 import { StreetviewElement } from "./StreetviewElement.js";
 import { Streetview } from "./Streetview.js";
+import { Emitter } from "./Emitter.js";
+
 
 export const distribution = { weighted: 0, uniform: 1 }; 
 
@@ -45,7 +47,7 @@ class FSM {
 
 
 
-export class Game {
+export class Game extenda Emitter {
     constructor(map, element, rules = {
         roundCount: 5,
         moveLimit: -1,
@@ -53,6 +55,7 @@ export class Game {
         timeLimit: -1,
         zoomAllowed: true
     }) {
+        super();
         if (localStorage.user !== undefined) element.querySelector(".username-input").value = localStorage.user;
         if (map.name === "my_area") element.querySelector(".high-score-form").style.display = "none";
 
@@ -396,178 +399,143 @@ export class Game {
 
     
    
-//Методы игры
-
-prepareGame(rules = this.rules) {
-
-    // ---------------- FSM RESET ----------------
-    this.state.game = new FSM("prepared");
-    this.state.round = new FSM("prepared");
-    // reset players FSM
-    for (const id of Object.keys(this.state.players)) {
-        this.state.players[id].fsm = new FSM("prepared");
-    }
-
-    // ---------------- GAME DATA RESET ----------------
-    this.currentRound = 0;             this.history = [];
-    this.currentDestination = null;    this.nextDestination = null;
-    this.rules = rules;
-
-    this.fire("gamePrepared", { rules });
-}
-
-startGame() {
-    if (!this.state.game.transition("started")) return;
-
-    this.startTime = performance.now();
+    //Методы игры
     
-    this.prepareRound();
-    this.startRound();
-
-    this.fire("gameStarted");
-}
-
-    prepareRound() {
-        // fsm round reset
-        this.state.round = new FSM("prepared");        
-
-        // round data reset
-        this.mapLoaded = false;
-        this.marker?.setMap(null);
-        this.marker = null;
-        this.currentDestination = this.nextDestination;
-       
-        this.preloadNext ();
-        this.fire("roundPrepared");
-    }
-
-        startRound() {
-        if (!this.mapLoaded) {
-            this.once("preload", () => this.startRound());
-            return;
+    prepareGame(rules = this.rules) {
+    
+        // ---------------- FSM RESET ----------------
+        this.state.game = new FSM("prepared");
+        this.state.round = new FSM("prepared");
+        // reset players FSM
+        for (const id of Object.keys(this.state.players)) {
+            this.state.players[id].fsm = new FSM("prepared");
         }
     
-        if (!this.state.round.transition("started")) return;
-        for (const p of Object.values(this.state.players)) {
-            p.fsm.transition("started");
-        }
-
-            this.currentRound++;
-            this.fire("roundStarted", {
-                round: this.currentRound,
-                location: this.currentDestination
-            });
-            this.streetview.setLocation(...this.currentDestination);
-        }
-
-        finishGuess(playerId = "p1") {
-            const player = this.state.players[playerId];
-            if (!player || !player.fsm.is("started")) return;
-            player.fsm.transition("ended");
+        // ---------------- GAME DATA RESET ----------------
+        this.currentRound = 0;             this.history = [];
+        this.currentDestination = null;    this.nextDestination = null;
+        this.rules = rules;
+    
+        this.fire("gamePrepared", { rules });
+    }
+    
+    startGame() {
+        if (!this.state.game.transition("started")) return;
+    
+        this.startTime = performance.now();
         
-            if (!this.marker || this.marker.getMap() === null) {
-                this.placeGuessMarker({ lat: 0, lng: 0 });
+        this.prepareRound();
+        this.startRound();
+    
+        this.fire("gameStarted");
+    }
+    
+        prepareRound() {
+            // fsm round reset
+            this.state.round = new FSM("prepared");        
+    
+            // round data reset
+            this.mapLoaded = false;
+            this.marker?.setMap(null);
+            this.marker = null;
+            this.currentDestination = this.nextDestination;
+           
+            this.preloadNext ();
+            this.fire("roundPrepared");
+        }
+    
+            startRound() {
+            if (!this.mapLoaded) {
+                this.once("preload", () => this.startRound());
+                return;
             }
         
-            const guess = [
-                this.marker.position.lat(),
-                this.marker.position.lng()
-            ];
+            if (!this.state.round.transition("started")) return;
+            for (const p of Object.values(this.state.players)) {
+                p.fsm.transition("started");
+            }
+    
+                this.currentRound++;
+                this.fire("roundStarted", {
+                    round: this.currentRound,
+                    location: this.currentDestination
+                });
+                this.streetview.setLocation(...this.currentDestination);
+            }
+    
+            finishGuess(playerId = "p1") {
+                const player = this.state.players[playerId];
+                if (!player || !player.fsm.is("started")) return;
+                player.fsm.transition("ended");
+            
+                if (!this.marker || this.marker.getMap() === null) {
+                    this.placeGuessMarker({ lat: 0, lng: 0 });
+                }
+            
+                const guess = [
+                    this.marker.position.lat(),
+                    this.marker.position.lng()
+                ];
+            
+                this.marker.setMap(null);
+            
+                const actual = this.currentDestination;
+                const distance = this.measureDistance(guess, actual);
+                const niceDistance = this.formatDistance(distance);
+                const score = this.map.scoreCalculation(distance);
+            
+                const payload = {
+                    playerId,
+                    guess,
+                    actual,
+                    distance,
+                    niceDistance,
+                    score,
+                    round: this.currentRound
+                };
+            
+                this.history.push(payload);
+            
+                this.fire("guessFinished", payload);
+            
+                this.checkRoundEnd();
+            }
+    
+            checkRoundEnd() {
+                const allEnded = Object.values(this.state.players)
+                    .every(p => p.fsm.is("ended"));
+                if (!allEnded) return;
+                this.endRound();
+            }
+    
+        endRound() {
+            if (!this.state.round.transition("ended")) return;
         
-            this.marker.setMap(null);
+            const last = this.history.at(-1) ?? null;
         
-            const actual = this.currentDestination;
-            const distance = this.measureDistance(guess, actual);
-            const niceDistance = this.formatDistance(distance);
-            const score = this.map.scoreCalculation(distance);
+            const isLastRound = this.currentRound >= this.rules.roundCount;
         
             const payload = {
-                playerId,
-                guess,
-                actual,
-                distance,
-                niceDistance,
-                score,
-                round: this.currentRound
+                round: this.currentRound,
+                history: this.history,
+                last
             };
         
-            this.history.push(payload);
+            this.fire("roundEnded", payload);
         
-            this.fire("guessFinished", payload);
-        
-            this.checkRoundEnd();
+            setTimeout(() => {
+                if (isLastRound) {
+                    this.endGame(payload);
+                } else {
+                    this.prepareRound();
+                    this.startRound();
+                }
+            }, 3000);
         }
-
-        checkRoundEnd() {
-            const allEnded = Object.values(this.state.players)
-                .every(p => p.fsm.is("ended"));
-            if (!allEnded) return;
-            this.endRound();
-        }
-
-endRound() {
-    if (!this.state.round.transition("ended")) return;
-
-    const last = this.history.at(-1) ?? null;
-
-    const isLastRound = this.currentRound >= this.rules.roundCount;
-
-    const payload = {
-        round: this.currentRound,
-        history: this.history,
-        last
-    };
-
-    this.fire("roundEnded", payload);
-
-    setTimeout(() => {
-        if (isLastRound) {
-            this.endGame(payload);
-        } else {
-            this.prepareRound();
-            this.startRound();
-        }
-    }, 3000);
-}
-
-endGame(data) {
-    if (!this.state.game.transition("ended")) return;
-
-    this.fire("gameEnded", data);
-}
-
-
-
     
-//Действия
-    fire(event, data) {
-        if (this.events[event]) {
-            for (let i = this.events[event].length - 1; i >= 0; i--) {
-                this.events[event][i](data);
-            }
-        }
-    }
-
-    once(event, callback) {
-        let onceCallback = () => {
-            callback();
-            this.off(event, onceCallback);
-        }
-        this.on(event, onceCallback);
-    }
-
-    on(event, callback) {
-        if (!this.events[event]) {
-            this.events[event] = [];
-        }
-        this.events[event].push(callback);
-    }
-
-    off(event, callback) {
-        if (event in this.events) {
-            this.events[event].splice(this.events[event].indexOf(callback), 1);
-        } else {
-            console.warn(`Trying to remove ${event} event, but it does not exist`);
-        }
+    endGame(data) {
+        if (!this.state.game.transition("ended")) return;
+    
+        this.fire("gameEnded", data);
     }
 }
