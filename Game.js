@@ -82,6 +82,13 @@ export class Game extends Emitter {
     // GAME FLOW
     // =====================================================
 
+    startGame() {
+        if (!this.state.game.transition("started")) return;
+            this.currentRound = 1;
+            this.fire("gameStarted", this.getHUDState());
+            this.prepareRound();
+    }
+   
     prepareRound() {
         console.log("[Game] prepareRound");
         this.state.round.transition("prepared");
