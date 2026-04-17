@@ -4,6 +4,9 @@ import { Orchestrator } from "./Orchestrator.js";
 import { tweaks } from "./Tweaks.js";
 import { MapManager } from "./MapManager.js";
 
+console.log("init file loaded");        
+
+
 // =====================================================
 // GOOGLE
 // =====================================================
