@@ -8,6 +8,7 @@ export class Streetview {
         console.log("isInMap:", this.map?.isInMap);
     }
 
+
     async randomValidLocation(endZoom = 14) {
         let tile = await this.randomValidTile(endZoom);
         let canvas = document.createElement("canvas");
