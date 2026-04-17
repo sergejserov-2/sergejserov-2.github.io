@@ -1,6 +1,6 @@
 import { Game } from "./Game.js";
 import { UI } from "./UI.js";
-import { EventRouter } from "./EventRouter.js";
+import { Orchestrator } from "./Orchestrator.js";
 import { tweaks } from "./Tweaks.js";
 import { MapManager } from "./MapManager.js";
 
