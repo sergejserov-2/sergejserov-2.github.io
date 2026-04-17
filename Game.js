@@ -530,19 +530,22 @@ startGame() {
     
         const last = this.history.at(-1) ?? null;
     
-        if (isLastRound) {
-            this.transition("GAME_END", { last });
-            return;
-        }
-    
         this.fire("endRound", {
             round: this.currentRound,
             history: this.history,
             last
         });
     
-        this.transition("ROUND_PREPARE");
-        this.transition("ROUND_START");
+        // ⏱ задержка 3 секунды
+        setTimeout(() => {
+            if (isLastRound) {
+                this.transition("GAME_END", { last });
+                return;
+            }
+    
+            this.transition("ROUND_PREPARE");
+            this.transition("ROUND_START");
+        }, 3000);
     }
 
 
