@@ -1,5 +1,3 @@
-import { distribution } from "./Game.js";
-
 export class Streetview {
     constructor(map) {
         this.map = map;
