@@ -1,8 +1,14 @@
-export function soloMode(game, ui) {
+import { UI } from "./UI.js";
 
-    // =========================================================
-    // INIT
-    // =========================================================
+// =========================================================
+// SOLO MODE — GAME → UI ROUTER
+// =========================================================
+
+export function bindSoloMode(game, ui) {
+
+    // =====================================================
+    // LOBBY
+    // =====================================================
 
     game.on("gamePrepared", () => {
         ui.showLobby();
@@ -10,82 +16,42 @@ export function soloMode(game, ui) {
 
     game.on("gameStarted", () => {
         ui.hideLobby();
-
-        ui.initMapUI({
-            polygon: game.map?.polygon,
-            isEmbedMode: true
-        });
+        ui.hideOverview();
     });
 
-    // =========================================================
-    // ROUND START
-    // =========================================================
+    // =====================================================
+    // LIVE HUD (2В)
+    // =====================================================
+
+    game.on("hudUpdated", (data) => {
+        ui.updateRoundHUD(data);
+    });
+
+    // =====================================================
+    // ROUND FLOW
+    // =====================================================
 
     game.on("roundStarted", (data) => {
-        const { round, roundCount, timeLimit } = data;
-
-        ui.showRoundUI({ round, roundCount });
-
-        ui.clearGuessMarker();
-        ui.disableGuessButton();
-
-        ui.startTimer(timeLimit);
+        ui.updateRoundHUD(data);
     });
-
-    // =========================================================
-    // GUESS FLOW
-    // =========================================================
-
-    // пользователь нажал guess → game считает результат
-    ui.element
-        .querySelector(".guess-button")
-        .addEventListener("click", () => {
-            if (!ui.marker) return;
-
-            const pos = ui.marker.getPosition();
-
-            game.makeGuess([pos.lat(), pos.lng()]);
-        });
-
-    // когда гесс принят
-    game.on("guessFinished", () => {
-        ui.endTimer();
-        ui.disableGuessButton();
-    });
-
-    // =========================================================
-    // ROUND END (OVERVIEW)
-    // =========================================================
 
     game.on("roundEnded", (data) => {
         ui.showRoundOverview(data);
     });
 
-    // кнопка следующий раунд
-    ui.element
-        .querySelector(".next-round-button")
-        .addEventListener("click", () => {
-            ui.hideOverview();
-            ui.removeOverviewLines();
-
-            game.startNextRound();
-        });
-
-    // =========================================================
+    // =====================================================
     // GAME END
-    // =========================================================
+    // =====================================================
 
     game.on("gameEnded", (data) => {
         ui.showGameOverview(data);
     });
 
-    // =========================================================
-    // EXTRA (если нужен overlay toggle)
-    // =========================================================
+    // =====================================================
+    // GUESS FLOW
+    // =====================================================
 
-    ui.element
-        .querySelector(".toggle-map-overlay")
-        ?.addEventListener("click", () => {
-            ui.toggleMapOverlay();
-        });
+    game.on("guessFinished", () => {
+        ui.disableGuessButton?.();
+    });
 }
