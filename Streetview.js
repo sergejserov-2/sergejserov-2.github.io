@@ -1,3 +1,5 @@
+//Updated
+
 export class Streetview {
     constructor(map) {
         this.map = map; // expected: Google Maps wrapper with polygon + isInMap
