@@ -74,6 +74,10 @@ export class Ui {
         this.element.querySelector(selector).appendChild(mapElement);
     }
 
+    returnHome() {
+        this.svElement.setLocation(...this.currentDestination);
+    }
+    
     setResizeEventListeners() {
         const resizeElement = this.element.querySelector(".guess-map-resizer");
         const guessMap = this.element.querySelector(".guess-map");
