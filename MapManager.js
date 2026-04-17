@@ -1,5 +1,3 @@
-//update2
-
 import { GeoMap } from "./GeoMap.js";
 
 export class MapManager {
