@@ -1,4 +1,4 @@
-//Updated
+//Updated prowerka
 
 export class Streetview {
     constructor(map) {
