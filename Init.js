@@ -1,20 +1,21 @@
 import { Game } from "./Game.js";
 import { UI } from "./UI.js";
-import { Route } from "./SoloMode.js";
+import { EventRouter } from "./EventRouter.js";
+import { tweaks } from "./Tweaks.js";
 
-// =========================================================
-// GOOGLE MAPS WAIT
-// =========================================================
-
+// =====================================================
+// GOOGLE LOADER
+// =====================================================
 export async function waitForGoogle() {
     while (!window.google?.maps) {
         await new Promise(r => setTimeout(r, 50));
     }
 }
 
-// =========================================================
+// =====================================================
 // MAP LOADER
-// =========================================================
+// =====================================================
+import { MapManager } from "./MapManager.js";
 
 export async function loadMapFromURL() {
     let map = decodeURI(location.hash.substring(1));
@@ -31,60 +32,42 @@ export async function loadMapFromURL() {
     return await mapManager.getMapByName(map);
 }
 
-// =========================================================
-// APP BOOTSTRAP
-// =========================================================
+// =====================================================
+// BOOTSTRAP
+// =====================================================
+async function bootstrap() {
 
-export async function startApp() {
-
-    // ---------- INIT ----------
     await waitForGoogle();
-    const geoMap = await loadMapFromURL();
 
-    // ---------- CORE ----------
-    const game = new Game(geoMap);
+    const map = await loadMapFromURL();
+
+    tweaks();
+
+    const game = new Game(map, document.querySelector(".estimator"));
     const ui = new UI(game);
 
-    // ---------- BIND GAME ↔ UI ----------
-    bindSoloMode(game, ui);
+    const router = new EventRouter(game, ui);
+    router.bind();
 
-    // =====================================================
-    // DOM BINDS (ENTRY LAYER ONLY)
-    // =====================================================
+    document.getElementById("playBtn")?.addEventListener("click", () => {
+        game.startGame();
+    });
 
-    // ---------- START GAME ----------
-    const playBtn = document.querySelector("#playBtn");
-    if (playBtn) {
-        playBtn.addEventListener("click", () => {
-            game.startGame();
-        });
-    }
+    document.getElementById("makeGuess")?.addEventListener("click", () => {
+        game.finishGuess();
+    });
 
-    // ---------- MAKE GUESS ----------
-    const makeGuessBtn = document.getElementById("makeGuess");
-    if (makeGuessBtn) {
-        makeGuessBtn.addEventListener("click", () => {
-            game.finishGuess();
-        });
-    }
+    document.getElementById("returnHome")?.addEventListener("click", () => {
+        ui.returnHome();
+    });
 
-    // ---------- RETURN HOME (MAP / STREETVIEW) ----------
-    const returnHomeBtn = document.getElementById("returnHome");
-    if (returnHomeBtn) {
-        returnHomeBtn.addEventListener("click", () => {
-            ui.returnHome();
-        });
-    }
+    document.getElementById("mapOverlay")?.addEventListener("click", () => {
+        ui.toggleMapOverlay();
+    });
 
-    // ---------- MAP OVERLAY TOGGLE ----------
-    const mapOverlayBtn = document.getElementById("mapOverlay");
-    if (mapOverlayBtn) {
-        mapOverlayBtn.addEventListener("click", () => {
-            ui.toggleMapOverlay();
-        });
-    }
-
-    console.log("🚀 App started (Start.js bootstrap complete)");
-
-    return { game, ui };
+    console.log("[Init] Boot complete");
 }
+
+bootstrap().catch(err => {
+    console.error("[Init] Failed:", err);
+});
