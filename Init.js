@@ -55,6 +55,7 @@ function parseRulesFromURL() {
 // =====================================================
 
 async function bootstrap() {
+    console.log("INITIALIZATION");        
     try {
         await waitForGoogle();
 
