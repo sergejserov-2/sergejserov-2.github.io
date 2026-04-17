@@ -1,3 +1,4 @@
+//ipdateContent
 export function startSolo(game) {
     soloMode(game);
     game.element
