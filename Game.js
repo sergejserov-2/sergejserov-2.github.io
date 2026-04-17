@@ -46,11 +46,11 @@ class FSM {
 export class Game extends Emitter {
     constructor(map, element, rules) {
         super();
-console.log("[DEBUG map]", map);
-console.log("[DEBUG isInMap]", map.isInMap);
         this.map = map;
         this.element = element;
         this.rules = rules;
+        this.streetview = new Streetview(map);
+        
 
         // ---------- STATE ----------
         this.state = {
@@ -64,106 +64,71 @@ console.log("[DEBUG isInMap]", map.isInMap);
         // ---------- CORE DATA ----------
         this.currentRound = 0;
         this.history = [];
-        this.currentDestination = null;
-        this.nextDestination = null;
-
         this.score = 0;
-
         this.scores = new Scores();
 
-        // ---------- STREETVIEW ENGINE ----------
-        this.streetview = new Streetview({ map: this.map,});
-
-        // ---------- INTERNAL ----------
-        this.roundReady = false;
-        this.mapLoading = false;
-        this.mapLoaded = false;
+        this.currentDestination = null;
+        this.nextDestination = null;
+        this.nextDestinationPromise = null;
 
         this.timer = null;
         this.time = 0;
         this.moves = 0;
 
         this.zoom = this.map?.minimumDistanceForPoints < 3000 ? 18 : 14;
-
-        this.preloadNext();
     }
 
     // =====================================================
     // GAME FLOW
     // =====================================================
 
-    startGame() {      
-        if (!this.state.game.transition("started")) return;
-
-        this.currentRound = 1;
-
-        this.fire("gameStarted", this.getHUDState());
-
+    prepareRound() {
+        console.log("[Game] prepareRound");
+        this.state.round.transition("prepared");
+        this.currentDestination = null;
+        this.nextDestination = null;
+        this.marker = null;
+        this.nextDestinationPromise = this.streetview.getRandomLocation(
+            this.rules.zoom ?? 14
+        );
+        this.nextDestinationPromise
+            .then(location => {
+                console.log("[Game] destination ready", location);
+                this.nextDestination = location;
+            })
+            .catch(err => {
+                console.error("[Game] prepareRound failed", err);
+            });
+        this.fire("roundPrepared");
+        // auto-flow
         this.startRound();
     }
-
-    prepareRound() {
-        this.state.round = new FSM("prepared");
-
-        this.mapLoading = false;
-        this.mapLoaded = false;
-        this.roundReady = false;
-
-        this.marker = null;
-
-        this.preloadNext();
-
-        this.fire("roundPrepared");
-    }
-
+    
     startRound() {
-        if (!this.roundReady || !this.nextDestination) {
-            console.log("waitingPreload");
-            this.once("preload", () => this.startRound());
+        if (!this.state.round.transition("started")) return;
+        console.log("[Game] startRound");
+        const proceed = () => {
+            this.currentDestination = this.nextDestination;
+            this.nextDestination = null;
+            this.time = 0;
+            this.moves = 0;
+            this.fire("roundStarted", {
+                round: this.currentRound,
+                roundCount: this.rules.roundCount,
+                location: this.currentDestination
+            });
+            this.startTimer();
+        };
+    
+        // защита от преждевременного старта
+        if (!this.nextDestination) {
+            console.log("[Game] waiting for destination...");
+            this.nextDestinationPromise.then(() => {
+                proceed();
+            });
             return;
         }
-
-        if (!this.state.round.transition("started")) return;
-
-        this.currentDestination = this.nextDestination;
-
-        this.time = 0;
-        this.moves = 0;
-
-        this.fire("roundStarted", {
-            round: this.currentRound,
-            roundCount: this.rules.roundCount,
-            location: this.currentDestination
-        });
-
-        this.startTimer();
-    }
-
-    endRound(payload = {}) {
-        if (!this.state.round.transition("ended")) return;
-
-        this.stopTimer();
-
-        this.score += payload.score || 0;
-
-        this.history.push(payload);
-
-        this.fire("roundEnded", {
-            ...payload,
-            totalScore: this.score,
-            round: this.currentRound
-        });
-
-        const isLast = this.currentRound >= this.rules.roundCount;
-    setTimeout(() => {
-            if (isLast) {
-                this.endGame();
-            } else {
-                this.currentRound++;
-                this.prepareRound();
-                this.startRound();
-            }
-        }, 3000);
+        proceed();
     }
 
     // =====================================================
@@ -213,37 +178,6 @@ console.log("[DEBUG isInMap]", map.isInMap);
         this.timer = null;
     }
 
-    // =====================================================
-    // PRELOAD
-    // =====================================================
-
-preloadNext() {
-    console.log("[Game] preloadNext");
-
-    if (this.mapLoading) return;
-
-    this.mapLoading = true;
-
-    this.streetview.randomValidLocation(this.zoom)
-        .then(next => {
-            console.log("[Game] preload success", next);
-
-            this.nextDestination = next;
-
-            this.mapLoaded = true;
-            this.mapLoading = false;
-            this.roundReady = true;
-
-            this.fire("preload");
-        })
-        .catch(err => {
-            console.error("[Game] preload failed", err);
-
-            this.mapLoading = false;
-            this.mapLoaded = false;
-            this.roundReady = false;
-        });
-}
 
     // =====================================================
     // ENGINE HELPERS
