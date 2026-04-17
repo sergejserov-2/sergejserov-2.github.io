@@ -1,4 +1,4 @@
-//upd2
+//upd57
 export function startSolo(game) {
     soloMode(game);
     game.element
