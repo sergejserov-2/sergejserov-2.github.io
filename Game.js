@@ -42,6 +42,7 @@ class FSM {
 export class Game extends Emitter {
     constructor(playArea, element, rules, mapAdapter) {
         super();
+console.log("[Game] playArea =", playArea);
 
         this.playArea = playArea;
         this.element = element;
