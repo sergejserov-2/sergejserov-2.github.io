@@ -1,5 +1,3 @@
-//upd2
-
 import { distribution } from "./Game.js";
 
 export class Streetview {
