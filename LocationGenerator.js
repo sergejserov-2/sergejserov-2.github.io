@@ -132,7 +132,7 @@ export class LocationGenerator {
             }
 
             return cells;
-            catch (e) {
+        } catch (e) {
             console.warn("[Generator] grid build failed → fallback mode", e);
             this.fallbackMode = true;
             return [];
