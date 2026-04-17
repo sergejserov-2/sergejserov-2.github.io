@@ -8,7 +8,6 @@ export class UI {
 
         this.svElement = new StreetviewElement(
             this.element.querySelector(".streetview"),
-            this.element.querySelector(".return-home")
         );
 
         this.scoreElement = this.element.querySelector(".total-score");
