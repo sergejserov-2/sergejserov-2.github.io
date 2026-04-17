@@ -43,8 +43,6 @@ class FSM {
     }
 }
 
-
-
 export class Game extends Emitter {
     constructor(map, element, rules = {
         roundCount: 5,
