@@ -22,7 +22,7 @@ function startGame(game, e) {
         zoomAllowed: restrictions.includes("zoom")
     };
 
-    game.prepareGame(rules);
+    game.prepareGame(map, rules);
     game.startGame();
 }
 
