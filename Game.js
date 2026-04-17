@@ -394,40 +394,36 @@ transition(event, payload = {}) {
         if (!this.map) {
             throw new Error("Map is required before prepareGame");
         }
-
+    
         this.rules = rules;
-
-        this.gameState = "idle";
-        this.roundState = "idle";
-
+    
+        this.state = {
+            game: "idle",
+            round: "idle",
+            players: {
+                p1: { state: "idle" }
+            }
+        };
+    
         this.currentRound = 0;
         this.history = [];
-
-        this.players = {
-            p1: { state: "idle" }
-        };
-
+    
         this.overviewLines = [];
-
+    
         this.streetview = new Streetview(this.map, this.distribution);
-
+    
         this.zoom =
             this.map.minimumDistanceForPoints < 3000 ? 18 : 14;
-
+    
         this.preloadNextMap();
     }
 
-    startGame() {
-        if (this.gameState !== "idle") return;
-
-        this.gameState = "running";
-        this.startTime = performance.now();
-
-        this.hideGameRuleSelection?.();
-
-        this.prepareRound();
-        this.startRound();
-    }
+startGame() {
+    this.startTime = performance.now();
+    this.hideGameRuleSelection?.();
+    this.transition("ROUND_PREPARE");
+    this.transition("ROUND_START");
+}
 
     // ---------------- ROUND FLOW ----------------
 
@@ -441,22 +437,11 @@ transition(event, payload = {}) {
     }
 
     startRound() {
-        this.roundState = "running";
         this.currentRound++;
-
-        Object.values(this.players).forEach(p => {
-            p.state = "running";
-        });
-
-        if (!this.mapLoaded) {
-            this.once("preload", () => this.startRound());
-            return;
-        }
-
+        Object.values(this.state.players).forEach(p => { p.state = "running"; });
         this.currentDestination = this.nextDestination;
-
         this.disableGuessButton();
-        this.applyRulesToUI?.();
+        this.applyRules?.();
 
         this.fire("startRound", {
             round: this.currentRound,
@@ -469,14 +454,13 @@ transition(event, payload = {}) {
             this.attachMap(".embed-map");
             this.fitMapToGeoMap();
         }, 300);
-
         this.svElement.setLocation(...this.currentDestination);
     }
 
     // ---------------- GAMEPLAY ----------------
 
-    makeGuess(playerId = "p1") {
-        const player = this.players[playerId];
+    makeGuess(playerId) {
+        const player = this.state.players[playerId];
 
         if (!player || player.state !== "running") return;
 
@@ -522,37 +506,37 @@ transition(event, payload = {}) {
 
     checkRoundEnd() {
         const allEnded = Object
-            .values(this.players)
+            .values(this.state.players)
             .every(p => p.state === "ended");
-
+    
         if (allEnded) {
-            this.endRound();
+            this.transition("ROUND_END");
         }
     }
 
     // ---------------- ROUND END ----------------
 
     endRound() {
-        this.roundState = "ended";
-
         const isLastRound =
             this.currentRound >= this.rules.roundCount;
-            const last = this.history.at(-1) ?? null;
-
+    
+        const last = this.history.at(-1) ?? null;
+    
         if (isLastRound) {
-            this.endGame(last);
+            this.transition("GAME_END", { last });
             return;
         }
-
+    
         this.fire("endRound", {
             round: this.currentRound,
             history: this.history,
             last
         });
-
-        this.prepareRound();
-        this.startRound();
+    
+        this.transition("ROUND_PREPARE");
+        this.transition("ROUND_START");
     }
+
 
     // ---------------- GAME END ----------------
 
