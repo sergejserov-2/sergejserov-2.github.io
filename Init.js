@@ -101,6 +101,7 @@ async function bootstrap() {
 
         if (autoStart !== "0") {
             game.startGame();
+            console.log("Transit to Game.js");
         }
 
         console.log("[Init] Boot complete");
