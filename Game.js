@@ -45,12 +45,12 @@ class FSM {
 // =========================================================
 
 export class Game extends Emitter {
-    constructor(map, element, rules) {
+    constructor(playArea, element, rules) {
         super();
-        this.map = map;
+        this.playArea = playArea;
         this.element = element;
         this.rules = rules;
-        this.streetview = new Streetview(map);
+        this.streetview = new Streetview(playArea);
         
 
         // ---------- STATE ----------
