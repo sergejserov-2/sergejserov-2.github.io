@@ -1,7 +1,7 @@
 export class LocationGenerator {
     constructor(mapAdapter, playArea) {
         this.map = mapAdapter;
-        this.playArea = playArea;
+        this.playArea = this.normalizePlayArea(playArea);
 
         this.resetSearch();
     }
@@ -14,7 +14,6 @@ export class LocationGenerator {
         this.resetSearch();
 
         const candidates = this.generateCandidates(12);
-
         const valid = await this.validateCandidates(candidates);
 
         if (valid) return valid;
@@ -54,7 +53,6 @@ export class LocationGenerator {
         );
 
         const results = await Promise.all(checks);
-
         return results.find(Boolean) || null;
     }
 
@@ -95,6 +93,54 @@ export class LocationGenerator {
             radiusLat: this.getLatRadius(this.playArea.bounds),
             radiusLng: this.getLngRadius(this.playArea.bounds)
         };
+    }
+
+    // =====================================================
+    // NORMALIZATION (TEMPORARY COMPATIBILITY LAYER)
+    // =====================================================
+
+    normalizePlayArea(playArea) {
+        if (!playArea) {
+            throw new Error("PlayArea is undefined");
+        }
+
+        // уже нормализован
+        if (playArea.bounds) {
+            return playArea;
+        }
+
+        // плоский формат
+        if (
+            playArea.minLat !== undefined &&
+            playArea.maxLat !== undefined
+        ) {
+            return {
+                bounds: {
+                    minLat: playArea.minLat,
+                    maxLat: playArea.maxLat,
+                    minLng: playArea.minLng,
+                    maxLng: playArea.maxLng
+                },
+                polygon: playArea.polygon || null
+            };
+        }
+
+        // Google LatLngBounds
+        if (playArea.getNorthEast && playArea.getSouthWest) {
+            const ne = playArea.getNorthEast();
+            const sw = playArea.getSouthWest();
+                return {
+                bounds: {
+                    minLat: sw.lat(),
+                    maxLat: ne.lat(),
+                    minLng: sw.lng(),
+                    maxLng: ne.lng()
+                },
+                polygon: null
+            };
+        }
+
+        throw new Error("Unknown PlayArea format");
     }
 
     // =====================================================
