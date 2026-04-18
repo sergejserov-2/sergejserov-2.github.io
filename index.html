@@ -1,165 +1,282 @@
-<!DOCTYPE html>
+[18.04.2026 22:40] Сергей Серов: <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <title>Geo Game</title>
 
 <style>
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #0f1115;
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-    }
+/* =========================
+   BASE
+========================= */
 
-    .lobby {
-        width: 420px;
-        background: #161a22;
-        border-radius: 14px;
-        padding: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f1115;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
 
-    h1 {
-        font-size: 20px;
-        margin-bottom: 20px;
-    }
+/* =========================
+   CONTAINER
+========================= */
 
-    .section {
-        margin-bottom: 20px;
-    }
+.box {
+    width: 440px;
+    background: #161a22;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
 
-    .title {
-        font-size: 13px;
-        opacity: 0.7;
-        margin-bottom: 10px;
-    }
+h2 {
+    margin: 0 0 16px;
+    font-size: 20px;
+}
 
-    .modes, .areas {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
+/* =========================
+   SECTIONS
+========================= */
 
-    .btn {
-        padding: 10px 12px;
-        border-radius: 10px;
-        cursor: pointer;
-        background: #2a2f3a;
-        border: 1px solid transparent;
-        user-select: none;
-        font-size: 13px;
-        transition: 0.2s;
-    }
+.section {
+    margin-bottom: 16px;
+}
 
-    .btn:hover {
-        background: #343b4a;
-    }
+.title {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-bottom: 8px;
+}
 
-    .btn.active {
-        border: 1px solid #4ea1ff;
-        background: #22344d;
-    }
+/* =========================
+   ROW BUTTONS
+========================= */
 
-    .btn.country {
-        border: 1px solid #2ecc71;
-    }
+.row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
 
-    .btn.region {
-        border: 1px solid #f1c40f;
-    }
+.btn {
+    padding: 8px 10px;
+    background: #2a2f3a;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: 0.15s;
+    user-select: none;
+}
 
-    .btn.country.active {
-        background: rgba(46, 204, 113, 0.15);
-    }
+.btn:hover {
+    background: #343b4a;
+}
 
-    .btn.region.active {
-        background: rgba(241, 196, 15, 0.15);
-    }
+.btn.active {
+    background: #4ea1ff;
+}
 
-    .start-btn {
-        width: 100%;
-        margin-top: 10px;
-        background: #4ea1ff;
-        color: white;
-        text-align: center;
-        padding: 12px;
-        border-radius: 10px;
-        cursor: pointer;
-        font-weight: bold;
-    }
+/* =========================
+   SPECIAL COLORS
+========================= */
 
-    .start-btn:hover {
-        background: #3b8be0;
-    }
+.btn.country {
+    border: 1px solid #2ecc71;
+}
+
+.btn.region {
+    border: 1px solid #f1c40f;
+}
+
+.btn.country.active {
+    background: rgba(46, 204, 113, 0.15);
+}
+
+.btn.region.active {
+    background: rgba(241, 196, 15, 0.15);
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: none;
+    background: #2a2f3a;
+    color: white;
+    outline: none;
+}
+
+/* =========================
+   CHECKBOXES
+========================= */
+
+label {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+/* =========================
+   START BUTTON
+========================= */
+
+.start {
+    width: 100%;
+    margin-top: 10px;
+    background: #2ecc71;
+    padding: 12px;
+    text-align: center;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.start:hover {
+    background: #27ae60;
+}
 </style>
 
 </head>
 
 <body>
 
-<div class="lobby">
+<div class="box">
 
-    <h1>🌍 Geo Game</h1>
+    <h2>🌍 Geo Game</h2>
 
     <!-- MODE -->
     <div class="section">
         <div class="title">Режим</div>
-        <div class="modes">
+        <div class="row" id="modes">
             <div class="btn active" data-mode="solo">Соло</div>
             <div class="btn" data-mode="duel">Дуэль</div>
         </div>
     </div>
 
+    <!-- ROUNDS -->
+    <div class="section">
+        <div class="title">Раунды</div>
+        <div class="row" id="rounds">
+            <div class="btn active" data-rounds="1">1</div>
+            <div class="btn" data-rounds="2">2</div>
+            <div class="btn" data-rounds="3">3</div>
+            <div class="btn" data-rounds="4">4</div>
+            <div class="btn" data-rounds="5">5</div>
+        </div>
+    </div>
+
+    <!-- TIME -->
+    <div class="section">
+        <div class="title">Время</div>
+        <input id="time" type="number" value="60" min="0">
+
+        <label>
+            <input type="checkbox" id="infiniteTime">
+            Бесконечное время
+        </label>
+    </div>
+
+    <!-- MOVES -->
+    <div class="section">
+        <div class="title">Ходы</div>
+        <input id="moves" type="number" value="10" min="0">
+
+        <label>
+            <input type="checkbox" id="infiniteMoves">
+            Бесконечные ходы
+        </label>
+    </div>
+
     <!-- AREA -->
     <div class="section">
-        <div class="title">Категория</div>
-        <div class="areas">
-            <div class="btn country active" data-area="france">🇫🇷 France</div>
-            <div class="btn country" data-area="germany">🇩🇪 Germany</div>
-            <div class="btn region" data-area="europe">🌍 Europe</div>
-            <div class="btn region" data-area="asia">🌏 Asia</div>
+        <div class="title">Карта</div>
+        <div class="row" id="areas">
+            <div class="btn active" data-area="france">🇫🇷 France</div>
+            <div class="btn" data-area="germany">🇩🇪 Germany</div>
+            <div class="btn" data-area="europe">🌍 Europe</div>
+            <div class="btn" data-area="asia">🌏 Asia</div>
         </div>
     </div>
 
     <!-- START -->
-    <div class="start-btn" id="startBtn">Начать игру</div>
+    <div class="start" id="start">START</div>
 
 </div>
 
 <script>
-    let selectedMode = "solo";
-    let selectedArea = "france";
+let mode = "solo";
+let area = "france";
+let rounds = 5;
+// =========================
+// MODE
+// =========================
 
-    document.querySelectorAll("[data-mode]").forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll("[data-mode]").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            selectedMode = btn.dataset.mode;
-        };
-    });
-
-    document.querySelectorAll("[data-area]").forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll("[data-area]").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            selectedArea = btn.dataset.area;
-        };
-    });
-
-    document.getElementById("startBtn").onclick = () => {
-        console.log("[START GAME]", {
-            mode: selectedMode,
-            area: selectedArea
-        });
-
-        // сюда потом подключим Bridge → Game.startGame(...)
-        alert(`Start: ${selectedMode} / ${selectedArea}`);
+document.querySelectorAll("[data-mode]").forEach(b => {
+    b.onclick = () => {
+        document.querySelectorAll("[data-mode]").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        mode = b.dataset.mode;
     };
+});
+
+// =========================
+// ROUNDS
+// =========================
+
+document.querySelectorAll("[data-rounds]").forEach(b => {
+    b.onclick = () => {
+        document.querySelectorAll("[data-rounds]").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        rounds = +b.dataset.rounds;
+    };
+});
+
+// =========================
+// AREA
+// =========================
+
+document.querySelectorAll("[data-area]").forEach(b => {
+    b.onclick = () => {
+        document.querySelectorAll("[data-area]").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        area = b.dataset.area;
+    };
+});
+
+// =========================
+// START
+// =========================
+
+document.getElementById("start").onclick = () => {
+
+    const infiniteTime = document.getElementById("infiniteTime").checked;
+    const infiniteMoves = document.getElementById("infiniteMoves").checked;
+
+    const config = {
+        mode,
+        area,
+        rules: {
+            rounds,
+            time: infiniteTime ? -1 : +document.getElementById("time").value,
+            moves: infiniteMoves ? -1 : +document.getElementById("moves").value,
+            zoom: true,
+            pan: true
+        }
+    };
+
+    localStorage.setItem("gameConfig", JSON.stringify(config));
+
+    window.location.href = "/play.html";
+};
 </script>
 
 </body>
