@@ -27,9 +27,7 @@ async function waitForGoogle() {
     console.log("[Init] Google Maps ready");
 }
 
-// =====================================================
 // CONFIG
-// =====================================================
 
 function loadConfig() {
     const raw = localStorage.getItem("gameConfig");
