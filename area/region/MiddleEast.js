@@ -1,4 +1,5 @@
-export default {
+import { Area } from "../Area.js"
+export default new Area({
   name: "Middle East",
   polygonPoints: [
     // 1–10 Восточное Средиземноморье (Турция / Левант)
