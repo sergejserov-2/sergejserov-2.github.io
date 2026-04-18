@@ -58,50 +58,32 @@ async function bootstrap() {
         // 3. CONFIG
         const config = loadConfig();
         console.log("[Init] config:", config);
-
-        // 4. ROOT
-        const element = document.querySelector(".game-root");
-
-        // =====================================================
-        // CORE SYSTEMS (PURE)
-        // =====================================================
-
+        
+        const element = document.querySelector(".game");
+        
         const geometry = new Geometry();
         const mapAdapter = new MapAdapter(window.google);
-
+        
         const generator = new LocationGenerator(mapAdapter, geometry);
         const scoring = new Scoring(geometry);
-
-        // =====================================================
-        // GAME
-        // =====================================================
-
+        
         const game = new Game({
             area: config.area,
             element,
             rules: config.rules,
             generator,
-            scoring,
-            mapAdapter
+            scoring
         });
-
-        // =====================================================
-        // UI
-        // =====================================================
-
+        
         const mapUI = new MapUI(game);
         const staticUI = new StaticUI(game);
-
-        // =====================================================
-        // BRIDGE (EVENT WIRING)
-        // =====================================================
-
-        new Bridge({ game, ui });
-
-        // =====================================================
-        // START
-        // =====================================================
-
+        
+        new Bridge({
+            game,
+            mapUI,
+            staticUI
+        });
+        
         game.startGame();
 
         console.log("[Init] game started");
