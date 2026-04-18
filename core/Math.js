@@ -1,16 +1,20 @@
 export class Math {
-    
-    distance(from, to) {
-        return google.maps.geometry.spherical.computeDistanceBetween(
-            new google.maps.LatLng(from.lat, from.lng),
-            new google.maps.LatLng(to.lat, to.lng)
-        );
-    }
 
-    formatDistance(meters) {
-        if (meters < 1000) return `${Math.floor(meters)} м`;
-        if (meters < 20000) return `${Math.floor(meters / 100) / 10} км`;
-        return `${Math.floor(meters / 1000)} км`;
+    distance(from, to) {
+        const R = 6371000; // радиус Земли в метрах
+        const toRad = (deg) => deg * Math.PI / 180;
+
+        const dLat = toRad(to.lat - from.lat);
+        const dLng = toRad(to.lng - from.lng);
+
+        const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(from.lat)) *
+            Math.cos(toRad(to.lat)) *
+            Math.sin(dLng / 2) ** 2;
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     calculateScore(distance) {
@@ -18,18 +22,12 @@ export class Math {
         return Math.max(0, Math.round(max - distance));
     }
 
-    calculateResult({ guess, actual, time }) {
-        if (!guess || !actual) {
-            return { score: 0, distance: 0 };
-        }
-
-        const distance = this.distance(guess, actual);
-        const score = this.calculateScore(distance);
-
+    // чистый расчёт результата (без логики игры)
+    calculateResult(distance) {
         return {
             distance,
             formatted: this.formatDistance(distance),
-            score
+            score: this.calculateScore(distance)
         };
     }
 }
