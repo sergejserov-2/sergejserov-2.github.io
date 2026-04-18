@@ -1,46 +1,39 @@
 export class AreaRules {
-    constructor(polygon, minimumDistanceForPoints, name) {
-        console.log(minimumDistanceForPoints);
+    constructor(polygonPoints, minimumDistanceForPoints, name) {
         this.minimumDistanceForPoints = minimumDistanceForPoints;
-        this.maxScore = 5000;
         this.name = name;
 
-        this.polygon = polygon;
+        this.polygonPoints = polygonPoints;
     }
 
-    getBounds() {
-        const bounds = new google.maps.LatLngBounds();
-        this.polygon.getPaths().forEach(path => {
-            path.forEach(pos => {
-                bounds.extend(pos);
-            });
-        });
-        return bounds;
+    // проверка попадания точки в полигон (ray casting алгоритм)
+    isInMap(lat, lng) {
+        let inside = false;
+
+        for (let i = 0, j = this.polygonPoints.length - 1; i < this.polygonPoints.length; j = i++) {
+            const xi = this.polygonPoints[i].lat;
+            const yi = this.polygonPoints[i].lng;
+
+            const xj = this.polygonPoints[j].lat;
+            const yj = this.polygonPoints[j].lng;
+
+            const intersect =
+                ((yi > lng) !== (yj > lng)) &&
+                (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
+
+            if (intersect) inside = !inside;
+        }
+
+        return inside;
     }
 
-    isInMap(lat, lon) {
-        return google.maps.geometry.poly.containsLocation({lat: lat, lng: lon}, this.polygon);
+    // только правило: "как интерпретировать расстояние"
+    isCloseEnough(distance) {
+        return distance < 7.5;
     }
 
-    scoreCalculation(distance) {
-        if(distance < 7.5)
-            return 5000;
-
-        let score = (this.minimumDistanceForPoints - distance) / (this.minimumDistanceForPoints / this.maxScore);
-        let scoreDifficulty = 2;
-
-        console.log("1", score);
-
-        if (score < 0)
-            return 0;
-
-        score = score ** scoreDifficulty / this.maxScore ** (scoreDifficulty - 1);
-
-        console.log("2", score);
-
-        score = Math.max(0, score);
-        score = Math.min(this.maxScore, score);
-        console.log("3", score);
-        return Math.round(score);
+    // чистая нормализация порога (без игровой экономики)
+    normalizeDistance(distance) {
+        return Math.max(0, this.minimumDistanceForPoints - distance);
     }
 }
