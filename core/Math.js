@@ -22,11 +22,9 @@ export class Math {
         return Math.max(0, Math.round(max - distance));
     }
 
-    // чистый расчёт результата (без логики игры)
     calculateResult(distance) {
         return {
             distance,
-            formatted: this.formatDistance(distance),
             score: this.calculateScore(distance)
         };
     }
