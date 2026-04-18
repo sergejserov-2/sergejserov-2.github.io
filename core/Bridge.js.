@@ -1,4 +1,4 @@
-export class Orchestrator {
+export class Bridge {
     constructor(game, ui) {
         this.game = game;
         this.ui = ui;
