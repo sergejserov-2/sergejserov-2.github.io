@@ -3,6 +3,6 @@ export class Area {
         this.name = name;
 
         // [[lat, lng], [lat, lng], ...]
-        this.polygonPoints = polygonPoints;
+        this.polygon = polygon;
     }
 }
