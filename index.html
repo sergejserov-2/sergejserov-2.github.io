@@ -1,204 +1,166 @@
-<html lang='ru'>
-    
+<!DOCTYPE html>
+<html lang="ru">
 <head>
-    <meta charset='utf-8'/>
-    <title>Угадай место!</title>
-    <meta name='theme-color' content='#3cba92'>
-    <meta name='mobile-web-app-capable' content='yes'>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel='icon' sizes='192x192' href='img/favicon.png'>
-    <link rel='shortcut icon' type='image/png' href='img/favicon.png'>
-    <!--<link rel="icon" href="img/favicon.ico" type="image/x-icon" />-->
-    <!--<link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />-->
-    <!-- Favicon moet 192x192 zijn -->
-    <link href="https://fonts.googleapis.com/css?family=Montserrat|Roboto" rel="stylesheet">
-    <link rel='stylesheet' href='homepage/main.css'>
-    <script src='homepage/script.js' type='text/javascript'></script>
+<meta charset="UTF-8">
+<title>Geo Game</title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0f1115;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    .lobby {
+        width: 420px;
+        background: #161a22;
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+        font-size: 20px;
+        margin-bottom: 20px;
+    }
+
+    .section {
+        margin-bottom: 20px;
+    }
+
+    .title {
+        font-size: 13px;
+        opacity: 0.7;
+        margin-bottom: 10px;
+    }
+
+    .modes, .areas {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        background: #2a2f3a;
+        border: 1px solid transparent;
+        user-select: none;
+        font-size: 13px;
+        transition: 0.2s;
+    }
+
+    .btn:hover {
+        background: #343b4a;
+    }
+
+    .btn.active {
+        border: 1px solid #4ea1ff;
+        background: #22344d;
+    }
+
+    .btn.country {
+        border: 1px solid #2ecc71;
+    }
+
+    .btn.region {
+        border: 1px solid #f1c40f;
+    }
+
+    .btn.country.active {
+        background: rgba(46, 204, 113, 0.15);
+    }
+
+    .btn.region.active {
+        background: rgba(241, 196, 15, 0.15);
+    }
+
+    .start-btn {
+        width: 100%;
+        margin-top: 10px;
+        background: #4ea1ff;
+        color: white;
+        text-align: center;
+        padding: 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .start-btn:hover {
+        background: #3b8be0;
+    }
+</style>
+
 </head>
 
 <body>
-<div class="front-page">
-    <h1>Угадай место!</h1>
-    <div class="maps">
-        <h2>Режимы игры:</h2>
-        <div class="kml-maps map-container">
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/world.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">По миру</div>
-                    <div class="map-actions">
-                        <a href=./solo#world class="map-play">Играть</a>
-                        <a href=./highscore#world class="map-score">Счёт</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/my_area.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Вокруг меня</div>
-                    <div class="map-actions">
-                        <label class="radius-picker">
-                            <span>Радиус</span>
-                            <input type="number" class="radius-input" value="10" placeholder="Радиус в километрах">
-                            <span>км</span>
-                        </label>
-                        <span class="clickable map-play" onmouseup="playMyArea(event)">Играть</span>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/my_area.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Указать место</div>
-                    <div class="map-actions">
-                        <label class="radius-picker">
-                            <span>Радиус</span>
-                            <input type="number" class="radius-input" value="10" placeholder="Радиус в километрах">
-                            <span>км</span>
-                        </label>
-                        <span class="clickable map-play" onmouseup="playMyArea(event)">Играть</span>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/my_area.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Дуэль</div>
-                    <div class="map-actions">
-                        <label class="radius-picker">
-                            <span>Радиус</span>
-                            <input type="number" class="radius-input" value="10" placeholder="Радиус в километрах">
-                            <span>км</span>
-                        </label>
-                        <span class="clickable map-play" id="duelBtn">Играть</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <h2>Подборки:</h2>
-        <div class="collection-maps map-container">
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/asia.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Советский союз</div>
-                    <div class="map-actions">
-                        <a href=./play#asia class="map-play">Играть</a>
-                        <a href=./highscore#asia class="map-score">Счёт</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/asia.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Страны социализма</div>
-                    <div class="map-actions">
-                        <a href=./play#asia class="map-play">Играть</a>
-                        <a href=./highscore#asia class="map-score">Счёт</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/european_union.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Евросоюз</div>
-                    <div class="map-actions">
-                        <a href=./play#european_union class="map-play">Играть</a>
-                        <a href=./highscore#european_union class="map-score">Счёт</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/benelux.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Бенилюкс</div>
-                    <div class="map-actions">
-                        <a href=./play#benelux class="map-play">Играть</a>
-                        <a href=./highscore#benelux class="map-score">Счёт</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/africa.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Африка</div>
-                    <div class="map-actions">
-                        <a href=./play#africa class="map-play">Play</a>
-                        <a href=./highscore#africa class="map-score">Scores</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/north_america.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">North America</div>
-                    <div class="map-actions">
-                        <a href=./play#north_america class="map-play">Play</a>
-                        <a href=./highscore#north_america class="map-score">Scores</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/south_america.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">South America</div>
-                    <div class="map-actions">
-                        <a href=./play#south_america class="map-play">Play</a>
-                        <a href=./highscore#south_america class="map-score">Scores</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/europe.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Europe</div>
-                    <div class="map-actions">
-                        <a href=./play#europe class="map-play">Play</a>
-                        <a href=./highscore#europe class="map-score">Scores</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/asia.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Asia</div>
-                    <div class="map-actions">
-                        <a href=./play#asia class="map-play">Play</a>
-                        <a href=./highscore#asia class="map-score">Scores</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/south_east_asia.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">South East Asia</div>
-                    <div class="map-actions">
-                        <a href=./play#south_east_asia class="map-play">Play</a>
-                        <a href=./highscore#south_east_asia class="map-score">Scores</a>
-                    </div>
-                </div>
-            </div>
-            <div class="map">
-                <div class="map-background" style="background-image:url(data/thumbnails/oceania.jpg)"></div>
-                <div class="map-text">
-                    <div class="map-title">Oceania</div>
-                    <div class="map-actions">
-                        <a href=./play#oceania class="map-play">Play</a>
-                        <a href=./highscore#oceania class="map-score">Scores</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <h2>Country Maps</h2>
-        <div class="country-maps map-container">
+
+<div class="lobby">
+
+    <h1>🌍 Geo Game</h1>
+
+    <!-- MODE -->
+    <div class="section">
+        <div class="title">Режим</div>
+        <div class="modes">
+            <div class="btn active" data-mode="solo">Соло</div>
+            <div class="btn" data-mode="duel">Дуэль</div>
         </div>
     </div>
-</div>
-<script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAJfRzZ-GGIV3iCrCVkTsYKDNh09kenzNM&libraries=geometry"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script type="module" src='./duel/firebase.js'></script>
-<script type="module" src='./duel/roomCreate.js'></script>
-</body>
 
+    <!-- AREA -->
+    <div class="section">
+        <div class="title">Категория</div>
+        <div class="areas">
+            <div class="btn country active" data-area="france">🇫🇷 France</div>
+            <div class="btn country" data-area="germany">🇩🇪 Germany</div>
+            <div class="btn region" data-area="europe">🌍 Europe</div>
+            <div class="btn region" data-area="asia">🌏 Asia</div>
+        </div>
+    </div>
+
+    <!-- START -->
+    <div class="start-btn" id="startBtn">Начать игру</div>
+
+</div>
+
+<script>
+    let selectedMode = "solo";
+    let selectedArea = "france";
+
+    document.querySelectorAll("[data-mode]").forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll("[data-mode]").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            selectedMode = btn.dataset.mode;
+        };
+    });
+
+    document.querySelectorAll("[data-area]").forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll("[data-area]").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            selectedArea = btn.dataset.area;
+        };
+    });
+
+    document.getElementById("startBtn").onclick = () => {
+        console.log("[START GAME]", {
+            mode: selectedMode,
+            area: selectedArea
+        });
+
+        // сюда потом подключим Bridge → Game.startGame(...)
+        alert(Start: ${selectedMode} / ${selectedArea});
+    };
+</script>
+
+</body>
 </html>
