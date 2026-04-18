@@ -63,7 +63,7 @@ async function bootstrap() {
         }
 
         // 5. Root element
-        const element = document.querySelector(".game-root");
+        const element = document.querySelector(".game");
 
         // CORE
 
