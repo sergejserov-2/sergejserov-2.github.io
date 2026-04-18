@@ -1,41 +1,42 @@
 import { Game } from "./Game.js";
 import { UI } from "./UI.js";
-import { Orchestrator } from "./Orchestrator.js";
-import { tweaks } from "./Tweaks.js";
-import { MapManager } from "./MapManager.js";
-import { MapAdapter } from "./MapAdapter.js";
+import { Bridge } from "./Bridge.js";
 
-console.log("[Init] file loaded");
+import { LocationGenerator } from "./Infrastructure/LocationGenerator.js";
+import { Scoring } from "./core/Scoring.js";
+import { Geometry } from "./core/Geometry.js";
+import { MapAdapter } from "./Infrastructure/MapAdapter.js";
+
+import { tweaks } from "./Tweaks.js";
+
+console.log("[Init] loaded");
 
 // =====================================================
-// GOOGLE
+// GOOGLE WAIT
 // =====================================================
 
 async function waitForGoogle() {
     console.log("[Init] waiting for Google Maps...");
+
     while (!window.google?.maps) {
         await new Promise(r => setTimeout(r, 50));
     }
+
     console.log("[Init] Google Maps ready");
 }
 
 // =====================================================
-// PLAY AREA
+// CONFIG LOAD
 // =====================================================
 
-async function loadPlayAreaFromURL() {
-    let map = decodeURI(location.hash.substring(1));
-    if (map === "") map = "world";
+function loadConfig() {
+    const raw = localStorage.getItem("gameConfig");
 
-    const mapManager = new MapManager();
-    await mapManager.initialize();
-
-    if (map.startsWith("area#")) {
-        let [, lat, lon, radius] = map.split("#").map(n => +n);
-        return mapManager.getAreaMap(lat, lon, radius);
+    if (!raw) {
+        throw new Error("No gameConfig found in localStorage");
     }
 
-    return await mapManager.getMapByName(map);
+    return JSON.parse(raw);
 }
 
 // =====================================================
@@ -43,67 +44,64 @@ async function loadPlayAreaFromURL() {
 // =====================================================
 
 async function bootstrap() {
-    console.log("[Init] bootstrap start");
-
-
-    
-
     try {
+        console.log("[Init] bootstrap start");
+
+        // 1. WAIT GOOGLE
         await waitForGoogle();
 
-        const playArea = await loadPlayAreaFromURL();
-        const element = document.querySelector(".estimator");
-
+        // 2. TWEEKS (must stay as you requested)
         tweaks();
 
-        // =====================
-        // CORE WILL BE CREATED ON PLAY
-        // =====================
+        // 3. CONFIG
+        const config = loadConfig();
+        console.log("[Init] config:", config);
 
-        let game = null;
-        let ui = null;
-        let orchestrator = null;
+        // 4. ROOT
+        const element = document.querySelector(".game-root");
 
-        // =====================
-        // PLAY BUTTON
-        // =====================
+        // =====================================================
+        // CORE SYSTEMS (PURE)
+        // =====================================================
 
-        document.getElementById("playBtn")?.addEventListener("click", () => {
+        const geometry = new Geometry();
+        const mapAdapter = new MapAdapter(window.google);
 
-            const rules = {
-                roundCount: 5,
-                moveLimit: -1,
-                timeLimit: -1,
-                panAllowed: true,
-                zoomAllowed: true
-            };
-            
-            const mapAdapter = new MapAdapter(window.google);
+        const generator = new LocationGenerator(mapAdapter, geometry);
+        const scoring = new Scoring(geometry);
 
-            game = new Game(playArea, element, rules, mapAdapter);
-            ui = new UI(game);
-            orchestrator = new Orchestrator(game, ui);
+        // =====================================================
+        // GAME
+        // =====================================================
 
-            game.startGame();
+        const game = new Game({
+            area: config.area,
+            element,
+            rules: config.rules,
+            generator,
+            scoring,
+            mapAdapter
         });
 
-        // =====================
-        // OTHER CONTROLS
-        // =====================
+        // =====================================================
+        // UI
+        // =====================================================
 
-        document.getElementById("makeGuess")?.addEventListener("click", () => {
-            game?.finishGuess();
-        });
+        const ui = new UI(game);
 
-        document.getElementById("returnHome")?.addEventListener("click", () => {
-            ui?.returnHome();
-        });
+        // =====================================================
+        // BRIDGE (EVENT WIRING)
+        // =====================================================
 
-        document.getElementById("mapOverlay")?.addEventListener("click", () => {
-            ui?.toggleMapOverlay();
-        });
+        new Bridge({ game, ui });
 
-        console.log("[Init] boot complete (waiting for play)");
+        // =====================================================
+        // START
+        // =====================================================
+
+        game.startGame();
+
+        console.log("[Init] game started");
 
     } catch (err) {
         console.error("[Init] FAILED:", err);
@@ -111,41 +109,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-
-
-
-import { Game } from "./core/Game.js";
-import { LocationGenerator } from "./Infrastructure/LocationGenerator.js";
-import { Scoring } from "./core/Scoring.js";
-import { Geometry } from "./core/Geometry.js";
-import { MapAdapter } from "./Infrastructure/MapAdapter.js";
-
-// =====================
-// CORE SYSTEMS
-// =====================
-
-const mapAdapter = new MapAdapter(google);
-
-const geometry = new Geometry();
-const scoring = new Scoring(geometry);
-
-const generator = new LocationGenerator(mapAdapter);
-
-// =====================
-// GAME INSTANCE
-// =====================
-
-const game = new Game({
-    area,
-    element,
-    rules,
-    generator,
-    scoring,
-    mapAdapter
-});
-
-// =====================
-// START
-// =====================
-
-game.startGame();
