@@ -87,27 +87,38 @@ console.log("[Game] playArea =", playArea);
         this.prepareRound();
     }
 
-    async prepareRound() {
+    prepareRound() {
         console.log("[Game] prepareRound");
-
-        this.state.round.transition("prepared");
-
-        this.currentDestination = null;
-        this.marker = null;
-
-        // 👉 теперь генерация синхронизирована через await
-        try {
-            this.nextDestination = await this.generator.getRandomLocation();
-
-            console.log("[Game] destination ready", this.nextDestination);
-
-            this.fire("roundPrepared");
-
-            this.startRound();
-
-        } catch (err) {
-            console.error("[Game] prepareRound failed", err);
+    
+        // защита FSM
+        if (!this.state.round.is("prepared")) {
+            this.state.round.transition("prepared");
         }
+    
+        // сброс состояния
+        this.currentDestination = null;
+        this.nextDestination = null;
+        this.marker = null;
+    
+        // 🔥 ВАЖНО: не блокируем UI
+        setTimeout(() => {
+            this.nextDestinationPromise = this.locationGenerator.getRandomLocation();
+    
+            this.nextDestinationPromise
+                .then(location => {
+                    console.log("[Game] destination ready", location);
+                    this.nextDestination = location;
+                })
+                .catch(err => {
+                    console.error("[Game] prepareRound failed", err);
+                });
+    
+        }, 0);
+    
+        this.fire("roundPrepared");
+    
+        // авто-переход к старту
+        this.startRound();
     }
 
     startRound() {
