@@ -1,4 +1,4 @@
-import { GeoMap } from "./GeoMap.js";
+import { AreaRules } from "./AreaRules.js";
 
 export class Area {
     async initialize() {
