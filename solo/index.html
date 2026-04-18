@@ -1,100 +1,170 @@
-<html lang='ru'>
-
+<html lang="ru">
 <head>
-    <meta charset='utf-8'/>
+    <meta charset="utf-8"/>
     <title>Соло режим - играть</title>
 
-    <meta name='theme-color' content='#6e45e2'>
-    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name="theme-color" content="#6e45e2">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
-    <link rel='icon' sizes='192x192' href='../img/favicon.png'>
-    <link rel='shortcut icon' type='image/png' href='../img/favicon.png'>
-    <link href="https://fonts.googleapis.com/css?family=Montserrat|Roboto" rel="stylesheet">
-    <link rel='stylesheet' href='main.css'>
+
+    <link rel="icon" href="../img/favicon.png">
+    <link rel="stylesheet" href="main.css">
 </head>
 
 <body>
-<div class='estimator'>
-    <div class="gamerule-selector">
-        <h2>Правила</h2>
-        <form>
-            <div class="radio-picker">
-                <p>Количество раундов</p>
-                <input type="radio" name="round-count" value="1" id="1round">
-                <label class="radio-choice" for="1round">1</label>
-                <input type="radio" name="round-count" value="2" id="2round">
-                <label class="radio-choice" for="2round">2</label>
-                <input type="radio" name="round-count" value="3" id="3round">
-                <label class="radio-choice" for="3round">3</label>
-                <input type="radio" name="round-count" value="4" id="4round">
-                <label class="radio-choice" for="4round">4</label>
-                <input type="radio" name="round-count" value="5" id="5round" checked>
-                <label class="radio-choice" for="5round">5</label>
-            </div>
-            <label class="number-picker">
-                <p>Лимит времени</p>
-                <p class="hint">-1 = неограничено</p>
-                <input type="number" name='time-limit' class='button' value="-1">
-                <span>секунд</span>
-            </label>
-            <label class="number-picker">
-                <p>Кол-во шагов</p>
-                <p class="hint">-1 = неограничено</p>
-                <input type="number" name='move-limit' class='button' value="-1">
-                <span>шагов</span>
-            </label>
-            <div class="radio-picker pan-radio">
-                <p>Увеличение и осмотр</p>
-                <input type="checkbox" name="+" value="pan" id="yes" checked>
-                <label class="radio-choice" for="yes">Осмотр</label>
-                <input type="checkbox" name="+" value="zoom" id="no" checked>
-                <label class="radio-choice" for="no">Увеличение</label>
-            </div>
-            <input type="submit" class="button" id="playBtn" value="Начать игру">
-        </form>
+
+<div class="game">
+
+    <!-- =====================================================
+        1. LOBBY (ESTIMATOR)
+    ====================================================== -->
+    <div class="lobby estimator">
+
+        <div class="gamerule-selector">
+            <h2>Правила</h2>
+
+            <form>
+                <div class="radio-picker">
+                    <p>Количество раундов</p>
+
+                    <input type="radio" name="round-count" value="1" id="1round">
+                    <label for="1round">1</label>
+
+                    <input type="radio" name="round-count" value="2" id="2round">
+                    <label for="2round">2</label>
+
+                    <input type="radio" name="round-count" value="3" id="3round">
+                    <label for="3round">3</label>
+
+                    <input type="radio" name="round-count" value="4" id="4round">
+                    <label for="4round">4</label>
+
+                    <input type="radio" name="round-count" value="5" id="5round" checked>
+                    <label for="5round">5</label>
+                </div>
+
+                <label>
+                    <p>Лимит времени</p>
+                    <p class="hint">-1 = неограничено</p>
+                    <input type="number" name="time-limit" value="-1">
+                    <span>секунд</span>
+                </label>
+
+                <label>
+                    <p>Кол-во шагов</p>
+                    <p class="hint">-1 = неограничено</p>
+                    <input type="number" name="move-limit" value="-1">
+                    <span>шагов</span>
+                </label>
+
+                <div class="radio-picker pan-radio">
+                    <p>Увеличение и осмотр</p>
+
+                    <input type="checkbox" id="pan" checked>
+                    <label for="pan">Осмотр</label>
+
+                    <input type="checkbox" id="zoom" checked>
+                    <label for="zoom">Увеличение</label>
+                </div>
+
+                <input type="submit" id="playBtn" value="Начать игру">
+            </form>
+        </div>
+
     </div>
-    <div class="map-element"></div>
-    <div class="guess-overview">
+
+    <!-- =====================================================
+        2. LOADING SCREEN (NEW)
+    ====================================================== -->
+    <div class="loading-screen" style="display:none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">Загрузка локации...</div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+        3. GAME SCENE
+    ====================================================== -->
+
+    <div class="game-scene">
+
+        <!-- STREETVIEW -->
+        <div class="streetview"></div>
+
+        <!-- MAP -->
+        <div class="map-element"></div>
+
+        <div class="embed-map"></div>
         <div class="overview-map"></div>
+
+        <!-- HUD -->
+        <div class="info-view">
+            <div class="round">Раунд: <b>0/0</b></div>
+            <div class="total-score">Счёт: <b>0</b></div>
+            <div class="time-left">Время: <b>0</b></div>
+            <div class="moves-left">Шагов: <b>0</b></div>
+        </div>
+
+        <!-- GUESS CONTROLS -->
+        <div class="guess-map">
+            <div class="toggle-map-overlay" id="mapOverlay"></div>
+            <div class="guess-map-resizer"></div>
+            <div class="embed-map"></div>
+
+            <div class="guess-button" id="makeGuess">
+                Сделать выбор
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+        4. RESULT SCREEN
+    ====================================================== -->
+<div class="guess-overview" style="transform: translateY(100%);">
+
         <div class="score-view">
+
             <div class="score-progress-bar">
                 <div class="score-progress"></div>
             </div>
+
             <div class="score-text">
-                <p>Вы стоите точно на нужном месте</p>
-                <p>Ваш счёт - ∞ очков!</p>
+                <p></p>
+                <p></p>
             </div>
-            <div class="button next-round-button" id="nextRound">Далее</div>
+
+            <div class="button next-round-button">Далее</div>
+
             <div class="game-end-buttons">
-                <form class="high-score-form" onsubmit="game.uploadScore(event)">
-                    <p>Submit to scoreboard to see other high scores</p>
-                    <input pattern=".{3,}" class="username-input" placeholder="Имя игрока" required title="Не менее 3 символов">
-                    <input type="submit" value="Submit" class="button submit-button">
+
+                <form class="high-score-form">
+                    <p>Submit to scoreboard</p>
+
+                    <input class="username-input"
+                           placeholder="Имя игрока"
+                           required
+                           minlength="3">
+
+                    <input type="submit" value="Submit">
                 </form>
-                <div class="button play-again-button" id="againBtn">Играть снова</div>
-                <div class="button home-button" id="goHome">Выбрать другой режим</div>
+
+                <div class="button play-again-button">Играть снова</div>
+                <div class="button home-button">Выбрать режим</div>
+
             </div>
+
         </div>
     </div>
-    <div class="info-view">
-        <div class="round">Раунд: <b>2/5</b></div>
-        <div class="total-score">Счёт: <b>0</b></div>
-        <div class="time-left">Время: <b>0</b></div>
-        <div class="moves-left">Шагов: <b>0</b></div>
-    </div>
-    <div class="return-home" id="returnHome"></div>
-    <div class="guess-map">
-        <div class="toggle-map-overlay" id="mapOverlay"></div>
-        <div class="guess-map-resizer"></div>
-        <div class="embed-map"></div>
-        <div class="guess-button" id="makeGuess">Сделать выбор</div>
-    </div>
-    <div class="streetview"></div>
+
 </div>
 
-    <script src='../Init.js' type='module'></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAJfRzZ-GGIV3iCrCVkTsYKDNh09kenzNM&libraries=geometry"></script>
-</body>
+<script type="module" src="../Init.js"></script>
 
+<script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAJfRzZ-GGIV3iCrCVkTsYKDNh09kenzNM&libraries=geometry">
+</script>
+
+</body>
 </html>
