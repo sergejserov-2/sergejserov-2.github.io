@@ -1,7 +1,10 @@
-import { LocationGenerator } from "./LocationGenerator.js";
 import { Emitter } from "./Emitter.js";
+import { LocationGenerator } from "./LocationGenerator.js";
+import { Scoring } from "../core/Scoring.js";
 
-// GAME (CLEAN ARCHITECTURE VERSION)
+// =========================================================
+// GAME (CLEAN ORCHESTRATOR)
+// =========================================================
 
 export class Game extends Emitter {
     constructor(area, element, rules, mapAdapter) {
@@ -9,18 +12,23 @@ export class Game extends Emitter {
 
         console.log("[Game] init");
 
+        // =====================
         // DEPENDENCIES
+        // =====================
         this.area = area;
         this.element = element;
         this.rules = rules;
 
         this.mapAdapter = mapAdapter;
-        this.generator = new LocationGenerator(mapAdapter);
 
-        // GAME STATE
+        this.generator = new LocationGenerator(mapAdapter);
+        this.scoring = new Scoring(mapAdapter);
+
+        // =====================
+        // STATE
+        // =====================
         this.gameState = "idle"; // idle | active | ended
 
-        // ROUND STATE
         this.roundState = "loading"; // loading | ready | active | ended
 
         this.currentRound = 0;
@@ -32,12 +40,16 @@ export class Game extends Emitter {
 
         this.generating = false;
 
+        // =====================
         // PLAYERS
+        // =====================
         this.players = {
-            p1: { state: "idle", score: 0 }
+            p1: { state: "idle", score: 0, lastGuess: null }
         };
 
-        // CORE DATA
+        // =====================
+        // GAME DATA
+        // =====================
         this.history = [];
         this.score = 0;
 
@@ -46,7 +58,9 @@ export class Game extends Emitter {
         this.moves = 0;
     }
 
-    // GAME START
+    // =====================================================
+    // START GAME
+    // =====================================================
 
     startGame() {
         if (this.gameState !== "idle") return;
@@ -61,7 +75,9 @@ export class Game extends Emitter {
         this.prepareNextRound();
     }
 
+    // =====================================================
     // ROUND PIPELINE
+    // =====================================================
 
     prepareNextRound() {
         if (this.generating) return;
@@ -73,7 +89,6 @@ export class Game extends Emitter {
 
         this.generator.generate(this.area)
             .then(loc => {
-
                 this.next = loc;
                 this.generating = false;
 
@@ -91,6 +106,10 @@ export class Game extends Emitter {
                 this.generating = false;
             });
     }
+
+    // =====================================================
+    // ROUND START
+    // =====================================================
 
     startRound() {
         if (this.roundState !== "ready" || !this.next) return;
@@ -119,32 +138,37 @@ export class Game extends Emitter {
 
         this.prepareNextRound();
     }
-    
-        // PLAYER ACTIONS
-    
-        finishGuess(playerId = "p1") {
-            const player = this.players[playerId];
-    
-            if (!player || player.state !== "playing") return;
-    
-            player.state = "finished";
-    
-            const result = this.calculateResult({
-                guess: player.lastGuess,
-                actual: this.current,
-                time: this.time
-            });
-    
-            this.score += result.score;
-            this.fire("guessFinished", {
-                playerId,
-                actual: this.current,
-                round: this.currentRound,
-                result
-            });
-    
-            this.checkRoundEnd?.();
-        }
+
+    // =====================================================
+    // PLAYER ACTION
+    // =====================================================
+
+    finishGuess(playerId = "p1") {
+        const player = this.players[playerId];
+
+        if (!player || player.state !== "playing") return;
+
+        player.state = "finished";
+
+        const result = this.scoring.calculateResult({
+            guess: player.lastGuess,
+            actual: this.current
+        });
+
+        this.score += result.score;
+        this.fire("guessFinished", {
+            playerId,
+            actual: this.current,
+            round: this.currentRound,
+            result
+        });
+
+        this.checkRoundEnd?.();
+    }
+
+    // =====================================================
+    // ROUND END
+    // =====================================================
 
     endRound(payload = {}) {
         this.stopTimer();
@@ -209,39 +233,9 @@ export class Game extends Emitter {
         };
     }
 
-    // SCORING (TEMP INSIDE GAME)
-
-    distance(from, to) {
-        return this.mapAdapter.distance(from, to);
-    }
-
-    formatDistance(meters) {
-        if (meters < 1000) return ${Math.floor(meters)} м;
-        if (meters < 20000) return ${Math.floor(meters / 100) / 10} км;
-        return ${Math.floor(meters / 1000)} км;
-    }
-
-    calculateScore(distance) {
-        const max = 5000;
-        return Math.max(0, Math.round(max - distance));
-    }
-
-    calculateResult({ guess, actual, time }) {
-        if (!guess || !actual) {
-            return { score: 0, distance: 0 };
-        }
-
-        const distance = this.distance(guess, actual);
-        const score = this.calculateScore(distance);
-
-        return {
-            distance,
-            formatted: this.formatDistance(distance),
-            score
-        };
-    }
-
+    // =====================================================
     // END GAME
+    // =====================================================
 
     endGame() {
         if (this.gameState === "ended") return;
