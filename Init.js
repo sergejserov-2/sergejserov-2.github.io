@@ -15,9 +15,7 @@ import { AreaRegistry } from "./area/Area.js";
 
 console.log("[Init] loaded");
 
-// =====================================================
 // GOOGLE WAIT
-// =====================================================
 
 async function waitForGoogle() {
     console.log("[Init] waiting for Google Maps...");
