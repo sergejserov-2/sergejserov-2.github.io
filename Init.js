@@ -65,7 +65,7 @@ async function bootstrap() {
         const area = AreaRegistry[config.area];
 
         if (!area) {
-            throw new Error(Unknown area: ${config.area});
+            throw new Error(`Unknown area: ${config.area}`);
         }
 
         // 5. Root element
