@@ -45,6 +45,9 @@ async function loadPlayAreaFromURL() {
 async function bootstrap() {
     console.log("[Init] bootstrap start");
 
+
+    
+
     try {
         await waitForGoogle();
 
@@ -64,6 +67,8 @@ async function bootstrap() {
         // =====================
         // PLAY BUTTON
         // =====================
+let isStarting = false;
+
 
         document.getElementById("playBtn")?.addEventListener("click", () => {
 
@@ -75,8 +80,9 @@ async function bootstrap() {
                 zoomAllowed: true
             };
 
-            console.log("[UI] Play clicked → creating game with rules:", rules);
-
+            if (isStarting) return;
+            isStarting = true;
+            
             const mapAdapter = new MapAdapter(window.google);
 
             game = new Game(playArea, element, rules, mapAdapter);
