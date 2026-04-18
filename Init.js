@@ -64,7 +64,11 @@ async function bootstrap() {
         const geometry = new Geometry();
         const mapAdapter = new MapAdapter(window.google);
         
-        const generator = new LocationGenerator(mapAdapter, geometry);
+        const generator = new LocationGenerator({
+            mapAdapter,
+            geometry
+        });
+        
         const scoring = new Scoring(geometry);
         
         const game = new Game({
