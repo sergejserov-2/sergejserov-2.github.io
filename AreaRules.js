@@ -1,4 +1,4 @@
-export class GeoMap {
+export class AreaRules {
     constructor(polygon, minimumDistanceForPoints, name) {
         console.log(minimumDistanceForPoints);
         this.minimumDistanceForPoints = minimumDistanceForPoints;
