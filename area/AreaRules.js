@@ -1,12 +1,11 @@
 export class AreaRules {
     constructor(polygonPoints, minimumDistanceForPoints, name) {
+        this.polygonPoints = polygonPoints; // чистые координаты
         this.minimumDistanceForPoints = minimumDistanceForPoints;
         this.name = name;
-
-        this.polygonPoints = polygonPoints;
     }
 
-    // проверка попадания точки в полигон (ray casting алгоритм)
+    // проверка: точка внутри полигона (ray casting)
     isInMap(lat, lng) {
         let inside = false;
 
@@ -27,13 +26,13 @@ export class AreaRules {
         return inside;
     }
 
-    // только правило: "как интерпретировать расстояние"
+    // правило: считается ли точка "близкой"
     isCloseEnough(distance) {
         return distance < 7.5;
     }
 
-    // чистая нормализация порога (без игровой экономики)
-    normalizeDistance(distance) {
-        return Math.max(0, this.minimumDistanceForPoints - distance);
+    // правило: насколько далеко допустимая зона влияния
+    getMinimumDistance() {
+        return this.minimumDistanceForPoints;
     }
 }
