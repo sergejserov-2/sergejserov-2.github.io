@@ -1,55 +1,37 @@
 import { Emitter } from "./Emitter.js";
-import { LocationGenerator } from "./LocationGenerator.js";
-import { Scoring } from "../core/Scoring.js";
 
-// =========================================================
-// GAME (CLEAN ORCHESTRATOR)
-// =========================================================
+// GAME (PURE ORCHESTRATOR / DI VERSION)
 
 export class Game extends Emitter {
-    constructor(area, element, rules, mapAdapter) {
+    constructor({ area, element, rules, generator, scoring }) {
         super();
-
         console.log("[Game] init");
 
-        // =====================
         // DEPENDENCIES
-        // =====================
         this.area = area;
         this.element = element;
         this.rules = rules;
+        this.generator = generator;
+        this.scoring = scoring;
 
-        this.mapAdapter = mapAdapter;
-
-        this.generator = new LocationGenerator(mapAdapter);
-        this.scoring = new Scoring(mapAdapter);
-
-        // =====================
         // STATE
-        // =====================
-        this.gameState = "idle"; // idle | active | ended
 
+        this.gameState = "idle"; // idle | active | ended
         this.roundState = "loading"; // loading | ready | active | ended
 
         this.currentRound = 0;
         this.maxRounds = rules.roundCount;
 
-        // buffer
         this.current = null;
         this.next = null;
-
         this.generating = false;
 
-        // =====================
         // PLAYERS
-        // =====================
         this.players = {
             p1: { state: "idle", score: 0, lastGuess: null }
         };
 
-        // =====================
         // GAME DATA
-        // =====================
         this.history = [];
         this.score = 0;
 
@@ -58,9 +40,8 @@ export class Game extends Emitter {
         this.moves = 0;
     }
 
-    // =====================================================
+
     // START GAME
-    // =====================================================
 
     startGame() {
         if (this.gameState !== "idle") return;
@@ -68,14 +49,11 @@ export class Game extends Emitter {
         this.gameState = "active";
         this.currentRound = 1;
 
-        console.log("[Game] startGame");
-
         this.fire("gameStarted");
 
         this.prepareNextRound();
     }
 
-    // =====================================================
     // ROUND PIPELINE
     // =====================================================
 
@@ -119,8 +97,6 @@ export class Game extends Emitter {
         this.current = this.next;
         this.next = null;
 
-        console.log("[Game] roundStarted", this.current);
-
         Object.values(this.players).forEach(p => {
             p.state = "playing";
         });
@@ -156,20 +132,18 @@ export class Game extends Emitter {
         });
 
         this.score += result.score;
+
         this.fire("guessFinished", {
             playerId,
             actual: this.current,
             round: this.currentRound,
             result
         });
-
-        this.checkRoundEnd?.();
     }
 
     // =====================================================
     // ROUND END
     // =====================================================
-
     endRound(payload = {}) {
         this.stopTimer();
 
@@ -241,8 +215,6 @@ export class Game extends Emitter {
         if (this.gameState === "ended") return;
 
         this.gameState = "ended";
-
-        console.log("[Game] gameEnded");
 
         this.fire("gameEnded", {
             totalScore: this.score,
