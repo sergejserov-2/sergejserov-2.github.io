@@ -1,3 +1,5 @@
+//update
+
 import { Scores } from "./Scores.js";
 import { LocationGenerator } from "./LocationGenerator.js";
 import { Emitter } from "./Emitter.js";
