@@ -1,38 +1,66 @@
-export class AreaRules {
-    constructor(polygonPoints, minimumDistanceForPoints, name) {
-        this.polygonPoints = polygonPoints; // чистые координаты
-        this.minimumDistanceForPoints = minimumDistanceForPoints;
-        this.name = name;
+import { AreaRules } from "./AreaRules.js";
+
+export class Area {
+
+    constructor() {
+        this.areas = this.createAreas();
     }
 
-    // проверка: точка внутри полигона (ray casting)
-    isInMap(lat, lng) {
-        let inside = false;
+    createAreas() {
+        return [
+            {
+                id: "area_1",
+                name: "Central Zone",
+                polygonPoints: [
+                    { lat: 54.9, lng: 23.9 },
+                    { lat: 54.91, lng: 23.95 },
+                    { lat: 54.89, lng: 23.96 },
+                    { lat: 54.88, lng: 23.92 }
+                ],
+                minimumDistanceForPoints: 5000,
+                rules: new AreaRules(
+                    [
+                        { lat: 54.9, lng: 23.9 },
+                        { lat: 54.91, lng: 23.95 },
+                        { lat: 54.89, lng: 23.96 },
+                        { lat: 54.88, lng: 23.92 }
+                    ],
+                    5000,
+                    "Central Zone"
+                )
+            },
 
-        for (let i = 0, j = this.polygonPoints.length - 1; i < this.polygonPoints.length; j = i++) {
-            const xi = this.polygonPoints[i].lat;
-            const yi = this.polygonPoints[i].lng;
-
-            const xj = this.polygonPoints[j].lat;
-            const yj = this.polygonPoints[j].lng;
-
-            const intersect =
-                ((yi > lng) !== (yj > lng)) &&
-                (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
-
-            if (intersect) inside = !inside;
-        }
-
-        return inside;
+            {
+                id: "area_2",
+                name: "Industrial Zone",
+                polygonPoints: [
+                    { lat: 54.92, lng: 23.85 },
+                    { lat: 54.93, lng: 23.9 },
+                    { lat: 54.91, lng: 23.91 },
+                    { lat: 54.90, lng: 23.86 }
+                ],
+                minimumDistanceForPoints: 8000,
+                rules: new AreaRules(
+                    [
+                        { lat: 54.92, lng: 23.85 },
+                        { lat: 54.93, lng: 23.9 },
+                        { lat: 54.91, lng: 23.91 },
+                        { lat: 54.90, lng: 23.86 }
+                    ],
+                    8000,
+                    "Industrial Zone"
+                )
+            }
+        ];
     }
 
-    // правило: считается ли точка "близкой"
-    isCloseEnough(distance) {
-        return distance < 7.5;
+    // вернуть все Area
+    getAll() {
+        return this.areas;
     }
 
-    // правило: насколько далеко допустимая зона влияния
-    getMinimumDistance() {
-        return this.minimumDistanceForPoints;
+    // получить по id
+    getById(id) {
+        return this.areas.find(area => area.id === id);
     }
 }
