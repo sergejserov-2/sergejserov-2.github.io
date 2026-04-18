@@ -73,3 +73,5 @@ export class Orchestrator {
                 location.lng
             );
         });
+    }
+}
