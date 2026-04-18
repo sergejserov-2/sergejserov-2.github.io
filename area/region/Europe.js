@@ -1,7 +1,5 @@
-import { Area } from "../Area.js"
-
-
-export default new Area({
+import { AreaItem } from "../Area.js"
+export default new AreaItem({
   name: "Europe",
   polygon: [
     // 1–10 Северная Скандинавия
