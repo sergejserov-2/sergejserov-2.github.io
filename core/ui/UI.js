@@ -28,6 +28,11 @@ export class UI {
     // 2B — MAP LAYER
     // =====================================================
 
+    formatDistance(meters) {
+        if (meters < 1000) return ${Math.floor(meters)} м;
+        return ${Math.floor(meters / 1000)} км;
+    }
+    
     initMapUI({ polygon, isEmbedMode = true } = {}) {
         this.googleMap = new google.maps.Map(
             this.element.querySelector(".map-element"),
