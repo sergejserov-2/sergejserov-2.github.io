@@ -89,7 +89,8 @@ async function bootstrap() {
         // UI
         // =====================================================
 
-        const ui = new UI(game);
+        const mapUI = new MapUI(game);
+        const staticUI = new StaticUI(game);
 
         // =====================================================
         // BRIDGE (EVENT WIRING)
