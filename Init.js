@@ -11,6 +11,8 @@ import { Geometry } from "./core/Geometry.js";
 import { LocationGenerator } from "./infrastructure/LocationGenerator.js";
 import { MapAdapter } from "./infrastructure/MapAdapter.js";
 
+import { Area } from "./area/Area.js";
+
 console.log("[Init] loaded");
 
 // =====================================================
@@ -28,7 +30,7 @@ async function waitForGoogle() {
 }
 
 // =====================================================
-// CONFIG LOAD
+// CONFIG
 // =====================================================
 
 function loadConfig() {
@@ -49,45 +51,74 @@ async function bootstrap() {
     try {
         console.log("[Init] bootstrap start");
 
-        // 1. WAIT GOOGLE
+        // 1. Google
         await waitForGoogle();
 
-        // 2. TWEEKS (must stay as you requested)
+        // 2. UI tweaks (оставляем как есть)
         tweaks();
 
-        // 3. CONFIG
+        // 3. Config
         const config = loadConfig();
         console.log("[Init] config:", config);
-        
-        const element = document.querySelector(".game");
-        
+
+        // 4. Resolve AREA (ключ → объект)
+        const area = Area[config.area];
+
+        if (!area) {
+            throw new Error(Unknown area: ${config.area});
+        }
+
+        // 5. Root element
+        const element = document.querySelector(".game-root");
+
+        // =====================================================
+        // CORE
+        // =====================================================
+
         const geometry = new Geometry();
         const mapAdapter = new MapAdapter(window.google);
-        
+
         const generator = new LocationGenerator({
             mapAdapter,
             geometry
         });
-        
+
         const scoring = new Scoring(geometry);
-        
+
+        // =====================================================
+        // GAME
+        // =====================================================
+
         const game = new Game({
-            area: config.area,
+            area,
             element,
             rules: config.rules,
             generator,
-            scoring
+            scoring,
+            mapAdapter
         });
-        
+
+        // =====================================================
+        // UI
+        // =====================================================
+
         const mapUI = new MapUI(game);
         const staticUI = new StaticUI(game);
-        
+
+        // =====================================================
+        // BRIDGE
+        // =====================================================
+
         new Bridge({
             game,
             mapUI,
             staticUI
         });
-        
+
+        // =====================================================
+        // START
+        // =====================================================
+
         game.startGame();
 
         console.log("[Init] game started");
