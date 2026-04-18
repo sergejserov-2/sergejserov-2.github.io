@@ -1,6 +1,6 @@
 import { Area } from "../Area.js"
 export default new Area({
-  name: "Middle East",
+  name: "middleEast",
   polygonPoints: [
     // 1–10 Восточное Средиземноморье (Турция / Левант)
     [42,26], [41,28], [40,30], [39,32], [38,34], [37,36], [36,38], [35,40], [34,42], [33,44],
