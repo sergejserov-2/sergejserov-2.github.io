@@ -1,4 +1,4 @@
-export class MathUtil {
+export class Geomerty {
 
     // GEODESIC DISTANCE (Haversine)
     distance(from, to) {
