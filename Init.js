@@ -67,8 +67,6 @@ async function bootstrap() {
         // =====================
         // PLAY BUTTON
         // =====================
-let isStarting = false;
-
 
         document.getElementById("playBtn")?.addEventListener("click", () => {
 
@@ -79,9 +77,6 @@ let isStarting = false;
                 panAllowed: true,
                 zoomAllowed: true
             };
-
-            if (isStarting) return;
-            isStarting = true;
             
             const mapAdapter = new MapAdapter(window.google);
 
