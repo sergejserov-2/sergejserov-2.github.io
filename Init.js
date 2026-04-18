@@ -77,9 +77,7 @@ async function bootstrap() {
 
         const scoring = new Scoring(geometry);
 
-        // =====================================================
         // GAME
-        // =====================================================
 
         const game = new Game({
             area,
@@ -90,9 +88,7 @@ async function bootstrap() {
             mapAdapter
         });
 
-        // =====================================================
         // UI
-        // =====================================================
 
         const mapUI = new MapUI(game);
         const staticUI = new StaticUI(game);
