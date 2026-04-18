@@ -67,9 +67,7 @@ async function bootstrap() {
         // 5. Root element
         const element = document.querySelector(".game-root");
 
-        // =====================================================
         // CORE
-        // =====================================================
 
         const geometry = new Geometry();
         const mapAdapter = new MapAdapter(window.google);
