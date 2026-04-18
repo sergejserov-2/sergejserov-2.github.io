@@ -1,77 +1,86 @@
 export class Bridge {
-    constructor(game, ui) {
+    constructor({ game, mapUI, staticUI }) {
         this.game = game;
-        this.ui = ui;
+        this.mapUI = mapUI;
+        this.staticUI = staticUI;
 
-        this.bind();
+        this.bindGameEvents();
+        this.bindMapEvents();
     }
 
-    bind() {
+    // =====================================================
+    // GAME → UI
+    // =====================================================
 
-        // =====================
+    bindGameEvents() {
+
         // GAME START
-        // =====================
-        this.game.on("gameStarted", (d) => {
-            this.ui.hideLobby?.();
-            this.ui.updateRoundHUD?.(d);
+        this.game.on("gameStarted", () => {
+            this.staticUI.showGame();
         });
 
-        // =====================
-        // ROUND PREPARED
-        // =====================
-        this.game.on("roundPrepared", () => {
-            this.ui.clearGuessMarker?.();
-            this.ui.removeOverviewLines?.();
-            this.ui.showLoading?.();
+        // ROUND LOADING
+        this.game.on("roundLoading", () => {
+            this.staticUI.showLoading();
         });
 
-        // =====================
-        // ROUND STARTED (основной игровой момент)
-        // =====================
-        this.game.on("roundStarted", (d) => {
-            this.ui.hideLoading?.();
-
-            this.ui.clearGuessMarker?.();
-            this.ui.removeOverviewLines?.();
-
-            this.ui.enableGuessButton?.();
-
-            // StreetView загрузка
-            if (this.ui.svElement && d?.location) {
-                this.ui.svElement.setLocation(
-                    d.location.lat,
-                    d.location.lng
-                );
-            }
-
-            this.ui.resetMap?.();
+        // ROUND READY
+        this.game.on("roundReady", ({ round }) => {
+            this.staticUI.showRoundReady(round);
         });
 
-        // =====================
-        // ROUND ENDED
-        // =====================
-        this.game.on("roundEnded", (d) => {
-            this.ui.showRoundOverview?.(d);
-            this.ui.disableGuessButton?.();
-        });
+        // ROUND STARTED
+        this.game.on("roundStarted", ({ round, roundCount, location }) => {
+            this.staticUI.hideLoading();
+            this.staticUI.startRound();
 
-        // =====================
-        // GAME ENDED
-        // =====================
-        this.game.on("gameEnded", (d) => {
-            this.ui.showGameOverview?.(d);
-        });
+            this.mapUI.clearGuessMarker();
+            this.mapUI.clearOverview();
 
-        // =====================
-        // RETURN HOME (если используется)
-        // =====================
-        this.game.on("returnHomeRequested", ({ location }) => {
-            if (!location) return;
+            this.mapUI.enableGuessMode();
 
-            this.ui.svElement?.setLocation(
-                location.lat,
-                location.lng
+            this.staticUI.updateHUD(
+                this.game.getHUDState()
             );
+        });
+
+        // HUD TICK
+        this.game.on("hudUpdated", (hud) => {
+            this.staticUI.updateHUD(hud);
+        });
+
+        // GUESS RESULT
+        this.game.on("guessFinished", ({ result }) => {
+            this.mapUI.disableGuessMode();
+
+            this.staticUI.showRoundResult(result);
+
+            this.mapUI.renderOverview({
+                guess: this.game.players.p1.lastGuess,
+                actual: this.game.current
+            });
+        });
+
+        // ROUND END
+        this.game.on("roundEnded", (data) => {
+            this.staticUI.showRoundResult(data);
+        });
+
+        // GAME END
+        this.game.on("gameEnded", (data) => {
+            this.staticUI.showGameResult(data);
+        });
+    }
+
+    // =====================================================
+    // MAP → GAME
+    // =====================================================
+
+    bindMapEvents() {
+
+        this.mapUI.onGuess((point) => {
+            this.game.players.p1.lastGuess = point;
+            this.game.finishGuess("p1");
         });
     }
 }
