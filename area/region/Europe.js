@@ -1,4 +1,7 @@
-export default {
+import { Area } from "../Area.js"
+
+
+export default new Area({
   name: "Europe",
   polygon: [
     // 1–10 Северная Скандинавия
@@ -20,4 +23,4 @@ export default {
     // 81–89 Центральный возврат + замыкание
     [45,2], [47,4], [49,6], [51,8], [53,10], [56,12], [60,14], [66,16], [72,-25]
   ]
-};
+});
