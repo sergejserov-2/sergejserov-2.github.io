@@ -1,4 +1,5 @@
-export default {
+import { Area } from "../Area.js"
+export default new Area({
   name: "Asia",
   polygonPoints: [
     // 1–10 Северная Сибирь (западный вход)
