@@ -39,9 +39,7 @@ function loadConfig() {
     return JSON.parse(raw);
 }
 
-// =====================================================
 // BOOTSTRAP
-// =====================================================
 
 async function bootstrap() {
     try {
