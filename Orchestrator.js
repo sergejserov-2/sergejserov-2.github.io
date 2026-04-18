@@ -9,48 +9,67 @@ export class Orchestrator {
     bind() {
 
         // =====================
-        // HUD 
+        // GAME START
         // =====================
-        this.game.on("hudUpdated", d => {
-            this.ui.updateRoundHUD(d);
+        this.game.on("gameStarted", (d) => {
+            this.ui.hideLobby?.();
+            this.ui.updateRoundHUD?.(d);
         });
 
         // =====================
-        // ROUND START 
+        // ROUND PREPARED
         // =====================
-        this.game.on("roundStarted", d => {
-            // можно использовать как reset UI state если надо
+        this.game.on("roundPrepared", () => {
             this.ui.clearGuessMarker?.();
             this.ui.removeOverviewLines?.();
+            this.ui.showLoading?.();
         });
 
         // =====================
-        // ROUND END SCREEN
+        // ROUND STARTED (основной игровой момент)
         // =====================
-        this.game.on("roundEnded", d => {
-            this.ui.showRoundOverview(d);
+        this.game.on("roundStarted", (d) => {
+            this.ui.hideLoading?.();
+
+            this.ui.clearGuessMarker?.();
+            this.ui.removeOverviewLines?.();
+
+            this.ui.enableGuessButton?.();
+
+            // StreetView загрузка
+            if (this.ui.svElement && d?.location) {
+                this.ui.svElement.setLocation(
+                    d.location.lat,
+                    d.location.lng
+                );
+            }
+
+            this.ui.resetMap?.();
         });
 
         // =====================
-        // GAME END SCREEN
+        // ROUND ENDED
         // =====================
-        this.game.on("gameEnded", d => {
-            this.ui.showGameOverview(d);
-        });
-
-        // =====================
-        // PRELOAD UX
-        // =====================
-        this.game.on("preload", () => {
+        this.game.on("roundEnded", (d) => {
+            this.ui.showRoundOverview?.(d);
             this.ui.disableGuessButton?.();
         });
 
         // =====================
-        // RETURN HOME 
+        // GAME ENDED
+        // =====================
+        this.game.on("gameEnded", (d) => {
+            this.ui.showGameOverview?.(d);
+        });
+
+        // =====================
+        // RETURN HOME (если используется)
         // =====================
         this.game.on("returnHomeRequested", ({ location }) => {
             if (!location) return;
-            this.ui.svElement.setLocation(...location);
+
+            this.ui.svElement?.setLocation(
+                location.lat,
+                location.lng
+            );
         });
-    }
-}
