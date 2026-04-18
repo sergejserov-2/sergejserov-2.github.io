@@ -1,4 +1,4 @@
-export class AreaItem {
+export class Area {
     constructor({ name, polygon }) {
         this.name = name;
         this.polygon = polygon;
@@ -14,7 +14,7 @@ import Oceania from "./regions/Oceania.js";
 import MiddleEast from "./regions/MiddleEast.js";
 import SovietUnion from "./regions/SovietUnion.js";
 
-export const Area = {
+export const AreaRegistry = {
     europe: Europe,
     asia: Asia,
     africa: Africa,
