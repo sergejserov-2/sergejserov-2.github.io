@@ -1,6 +1,3 @@
-//data
-
-
 export class Orchestrator {
     constructor(game, ui) {
         this.game = game;
