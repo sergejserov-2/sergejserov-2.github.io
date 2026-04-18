@@ -11,7 +11,7 @@ import { Geometry } from "./core/Geometry.js";
 import { LocationGenerator } from "./infrastructure/LocationGenerator.js";
 import { MapAdapter } from "./infrastructure/MapAdapter.js";
 
-import { AreaRegistry } from "./area/Area.js";
+import { AreaRegistry } from "./area/AreaRegistry.js";
 
 console.log("[Init] loaded");
 
