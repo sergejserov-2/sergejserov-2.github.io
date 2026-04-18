@@ -1,7 +1,7 @@
 import { Area } from "../Area.js"
 export default new Area({
   name: "sovietUnion",
-  polygonPoints: [
+  polygon: [
     // 1–10 Западная Европа (Балтика / граница)
     [60,30], [61,32], [62,34], [63,36], [64,38], [65,40], [66,42], [67,44], [68,46], [69,48],
     // 11–20 Восточная Европа
