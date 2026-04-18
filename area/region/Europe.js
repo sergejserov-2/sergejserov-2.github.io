@@ -1,6 +1,6 @@
 import { Area } from "../Area.js"
 export default new Area({
-  name: "Europe",
+  name: "europe",
   polygon: [
     // 1–10 Северная Скандинавия
     [72,-25], [72,-18], [72,-10], [71,-5], [70,0], [69,5], [68,10], [67,15], [66,18], [65,20],
