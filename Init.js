@@ -1,13 +1,15 @@
-import { Game } from "./Game.js";
-import { UI } from "./UI.js";
-import { Bridge } from "./Bridge.js";
+import { Game } from "./core/Game.js";
 
-import { LocationGenerator } from "./Infrastructure/LocationGenerator.js";
+import { MapUI } from "./core/ui/MapUI.js";
+import { StaticUI } from "./core/ui/StaticUI.js";
+import { tweaks } from "./core/ui/Tweaks.js";
+
+import { Bridge } from "./core/Bridge.js";
 import { Scoring } from "./core/Scoring.js";
 import { Geometry } from "./core/Geometry.js";
-import { MapAdapter } from "./Infrastructure/MapAdapter.js";
 
-import { tweaks } from "./Tweaks.js";
+import { LocationGenerator } from "./infrastructure/LocationGenerator.js";
+import { MapAdapter } from "./infrastructure/MapAdapter.js";
 
 console.log("[Init] loaded");
 
