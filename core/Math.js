@@ -1,6 +1,6 @@
-export class Math {
+export class MathUtil {
 
-    // расстояние между двумя точками (в метрах)
+    // GEODESIC DISTANCE (Haversine)
     distance(from, to) {
         const R = 6371000;
 
@@ -20,19 +20,54 @@ export class Math {
         return R * c;
     }
 
-    // ограничение значения в диапазоне
-    clamp(value, min, max) {
-        return Math.max(min, Math.min(max, value));
-    }
+    // CLAMP
+    clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 
-    // нормализация значения в диапазон 0..1
+    // NORMALIZE (0..1)
     normalize(value, min, max) {
         if (max === min) return 0;
         return (value - min) / (max - min);
     }
 
-    // экспоненциальное сглаживание (для кривых)
-    easeOut(value, power = 2) {
-        return 1 - Math.pow(1 - value, power);
+    // EASING
+    easeOut(value, power = 2) { return 1 - Math.pow(1 - value, power); }
+
+    // GEOMETRY: BOUNDS
+    getBounds(polygon) {
+        let minLat = Infinity;
+        let maxLat = -Infinity;
+        let minLng = Infinity;
+        let maxLng = -Infinity;
+        for (const [lat, lng] of polygon) {
+            minLat = Math.min(minLat, lat);
+            maxLat = Math.max(maxLat, lat);
+            minLng = Math.min(minLng, lng);
+            maxLng = Math.max(maxLng, lng);
+        }
+        return { minLat, maxLat, minLng, maxLng };
+    }
+
+    // RANDOM POINT IN BOUNDS
+    randomPointInBounds(bounds) {
+        return {
+            lat: bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat),
+            lng: bounds.minLng + Math.random() * (bounds.maxLng - bounds.minLng)
+        };
+    }
+
+    // POINT IN POLYGON (RAY CASTING)
+    isInsidePolygon(point, polygon) {
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const [xi, yi] = polygon[i];
+            const [xj, yj] = polygon[j];
+            const intersect =
+                yi > point.lat !== yj > point.lat &&
+                point.lng <
+                    ((xj - xi) * (point.lat - yi)) / (yj - yi + 1e-9) + xi;
+
+            if (intersect) inside = !inside;
+        }
+        return inside;
     }
 }
