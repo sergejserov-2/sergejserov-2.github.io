@@ -12,7 +12,7 @@ export class LocationGenerator {
     // =====================================================
 
     async generate(area) {
-        const polygon = area.polygonPoints;
+        const polygon = area.polygon;
         const bounds = this.geometry.getBounds(polygon);
 
         let attempts = 0;
