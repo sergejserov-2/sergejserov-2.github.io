@@ -5,14 +5,14 @@ export class Area {
     }
 }
 
-import Europe from "./regions/Europe.js";
-import Asia from "./regions/Asia.js";
-import Africa from "./regions/Africa.js";
-import NorthAmerica from "./regions/NorthAmerica.js";
-import LatinAmerica from "./regions/LatinAmerica.js";
-import Oceania from "./regions/Oceania.js";
-import MiddleEast from "./regions/MiddleEast.js";
-import SovietUnion from "./regions/SovietUnion.js";
+import Europe from "./region/Europe.js";
+import Asia from "./region/Asia.js";
+import Africa from "./region/Africa.js";
+import NorthAmerica from "./region/NorthAmerica.js";
+import LatinAmerica from "./region/LatinAmerica.js";
+import Oceania from "./region/Oceania.js";
+import MiddleEast from "./region/MiddleEast.js";
+import SovietUnion from "./region/SovietUnion.js";
 
 export const AreaRegistry = {
     europe: Europe,
