@@ -11,7 +11,7 @@ import { Geometry } from "./core/Geometry.js";
 import { LocationGenerator } from "./infrastructure/LocationGenerator.js";
 import { MapAdapter } from "./infrastructure/MapAdapter.js";
 
-import { Area } from "./area/Area.js";
+import { AreaRegistry } from "./area/Area.js";
 
 console.log("[Init] loaded");
 
@@ -62,7 +62,7 @@ async function bootstrap() {
         console.log("[Init] config:", config);
 
         // 4. Resolve AREA (ключ → объект)
-        const area = Area[config.area];
+        const area = AreaRegistry[config.area];
 
         if (!area) {
             throw new Error(Unknown area: ${config.area});
