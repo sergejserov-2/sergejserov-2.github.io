@@ -1,4 +1,5 @@
-export default {
+import { Area } from "../Area.js"
+export default new Area({
   name: "sovietUnion",
   polygonPoints: [
     // 1–10 Западная Европа (Балтика / граница)
