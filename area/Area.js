@@ -1,5 +1,5 @@
 export class Area {
-    constructor({ name, polygonPoints }) {
+    constructor({ name, polygon }) {
         this.name = name;
 
         // [[lat, lng], [lat, lng], ...]
