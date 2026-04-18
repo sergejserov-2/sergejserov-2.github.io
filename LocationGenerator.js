@@ -1,4 +1,4 @@
-//upd
+//updateлвадвладлвдаааааааааааааааааааааааааааааааааааааааааааааааааааа
 export class LocationGenerator {
     constructor(mapAdapter, playArea) {
         this.map = mapAdapter;
