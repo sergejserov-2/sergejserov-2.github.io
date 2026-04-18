@@ -110,6 +110,7 @@ console.log("[Game] playArea =", playArea);
                 .then(location => {
                     console.log("[Game] destination ready", location);
                     this.nextDestination = location;
+                    this.startRound();
                 })
                 .catch(err => {
                     console.error("[Game] prepareRound failed", err);
@@ -118,9 +119,6 @@ console.log("[Game] playArea =", playArea);
         }, 0);
     
         this.fire("roundPrepared");
-    
-        // авто-переход к старту
-        this.startRound();
     }
 
     startRound() {
