@@ -22,8 +22,7 @@ export class LocationGenerator {
         return point;
       }
     }
-
-    throw new Error(No valid Street View point in area: ${area.name});
+    throw new Error(`No valid Street View point in area: ${area.name}`);
   }
 
   // INTERNAL: POINT SEARCH
