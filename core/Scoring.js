@@ -14,9 +14,9 @@ export class Scoring {
     }
 
     formatDistance(meters) {
-        if (meters < 1000) return ${Math.floor(meters)} м;
-        if (meters < 20000) return ${(meters / 1000).toFixed(1)} км;
-        return ${Math.floor(meters / 1000)} км;
+        if (meters < 1000) return `${Math.floor(meters)} м`;
+        if (meters < 20000) return `${(meters / 1000).toFixed(1)} км`;
+        return `${Math.floor(meters / 1000)} км`;
     }
 
 
