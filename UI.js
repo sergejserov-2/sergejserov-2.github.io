@@ -1,10 +1,12 @@
 import { StreetviewElement } from "./StreetviewElement.js";
-
 export class UI {
-
     constructor(game) {
         this.game = game;
         this.element = game.element;
+
+        // =====================================================
+        // 2A — BOOTSTRAP
+        // =====================================================
 
         this.svElement = new StreetviewElement(
             this.element.querySelector(".streetview"),
@@ -23,7 +25,7 @@ export class UI {
     }
 
     // =====================================================
-    // MAP INIT
+    // 2B — MAP LAYER
     // =====================================================
 
     initMapUI({ polygon, isEmbedMode = true } = {}) {
@@ -47,7 +49,7 @@ export class UI {
             this.placeGuessMarker(e.latLng);
         });
 
-        this.setResizeEventListeners();
+        this.setResizeEventListeners?.();
     }
 
     attachMap(selector) {
@@ -56,16 +58,51 @@ export class UI {
         this.element.querySelector(selector).appendChild(el);
     }
 
-    // =====================================================
-    // HUD (LIVE)
-    // =====================================================
-
     returnHome() {
         this.game.fire("returnHomeRequested", {
-            location: this.game.currentDestination
+            location: this.game.current
         });
     }
-    
+
+    fitMap(positions) {
+        if (!positions?.length) return;
+
+        const bounds = new google.maps.LatLngBounds();
+
+        for (const p of positions) {
+            bounds.extend({ lat: p[0], lng: p[1] });
+        }
+
+        this.googleMap.fitBounds(bounds);
+    }
+
+    placeGuessMarker(location) {
+        if (this.marker) this.marker.setMap(null);
+
+        this.marker = new google.maps.Marker({
+            position: location,
+            map: this.googleMap
+        });
+    }
+
+    clearGuessMarker() {
+        if (this.marker) this.marker.setMap(null);
+        this.marker = null;
+    }
+
+    removeOverviewLines() {
+        for (const l of this.overviewLines) {
+            l.line.setMap(null);
+            l.guess.setMap(null);
+            l.actual.setMap(null);
+        }
+        this.overviewLines = [];
+    }
+
+    // =====================================================
+    // 2C — LIVE HUD
+    // =====================================================
+
     updateRoundHUD(data) {
         const { round, roundCount, score, time, moves } = data;
 
@@ -76,7 +113,63 @@ export class UI {
     }
 
     // =====================================================
-    // OVERVIEW SCREENS (ВОЗВРАЩЕНО)
+    // 2D — UI SCREENS (STATES)
+    // =====================================================
+
+    showLoadingOverlay() {
+        const el = this.element.querySelector(".loading-overlay");
+        if (el) el.style.display = "flex";
+    }
+
+    hideLoadingOverlay() {
+        const el = this.element.querySelector(".loading-overlay");
+        if (el) el.style.display = "none";
+    }
+
+    showGame() {
+        this.element.classList.remove("hidden");
+    }
+
+    hideGame() {
+        this.element.classList.add("hidden");
+    }
+
+    hideLobby() {
+        const el = this.element.querySelector(".lobby");
+        if (el) el.style.display = "none";
+    }
+    prepareRound(data) {
+        this.clearGuessMarker();
+        this.removeOverviewLines();
+    }
+
+    startRound(data) {
+        this.hideLoadingOverlay();
+
+        const el = this.element.querySelector(".guess-overview");
+        if (el) el.style.transform = "translateY(100%)";
+    }
+
+    enableGuessInput() {
+        this.isEmbedMode = true;
+        this.googleMap?.setOptions({ draggable: true });
+    }
+
+    disableGuessInput() {
+        this.isEmbedMode = false;
+        this.googleMap?.setOptions({ draggable: false });
+    }
+
+    lockInput() {
+        this.disableGuessInput();
+    }
+
+    showGuessResult(data) {
+        console.log("[UI] guess result", data);
+    }
+
+    // =====================================================
+    // OVERVIEW SCREENS
     // =====================================================
 
     showRoundOverview(data) {
@@ -93,7 +186,7 @@ export class UI {
         const [meter, scoreText] = el.querySelectorAll(".score-text p");
 
         meter.innerText =
-            `Вы в ${data.niceDistance} от загаданного места`;
+            `Вы в ${data.niceDistance || ""} от загаданного места`;
 
         scoreText.innerText =
             `Ваш счёт — ${data.score} | Общий — ${data.totalScore}`;
@@ -118,8 +211,11 @@ export class UI {
             `${(data.totalScore / (5000 * data.roundCount)) * 100}%`;
 
         const [meter, scoreText] = el.querySelectorAll(".score-text p");
-            meter.innerText =
-            `Вы в ${data.history.at(-1).niceDistance} от загаданного места`;
+
+        const last = data.history.at(-1);
+
+        meter.innerText =
+            `Вы в ${last?.niceDistance || ""} от загаданного места`;
 
         scoreText.innerText =
             `Итоговый счёт — ${data.totalScore}`;
@@ -130,16 +226,12 @@ export class UI {
                 actual: h.actual
             })),
             focus: {
-                guess: data.history.at(-1).guess,
-                actual: data.history.at(-1).actual
+                guess: last?.guess,
+                actual: last?.actual
             },
             isFinal: true
         });
     }
-
-    // =====================================================
-    // MAP OVERVIEW RENDER
-    // =====================================================
 
     renderRoundOverviewMap(data) {
         const { lines, focus, isFinal } = data;
@@ -155,50 +247,11 @@ export class UI {
         setTimeout(() => {
             if (isFinal) {
                 lines.forEach(l =>
-                    this.addOverviewLine(l.guess, l.actual, 600)
+                    this.addOverviewLine?.(l.guess, l.actual, 600)
                 );
             } else {
-                this.addOverviewLine(focus.guess, focus.actual, 600);
+                this.addOverviewLine?.(focus.guess, focus.actual, 600);
             }
         }, 50);
-    }
-
-    fitMap(positions) {
-        if (!positions?.length) return;
-
-        const bounds = new google.maps.LatLngBounds();
-
-        for (const p of positions) {
-            bounds.extend({ lat: p[0], lng: p[1] });
-        }
-
-        this.googleMap.fitBounds(bounds);
-    }
-
-    // =====================================================
-    // MARKER
-    // =====================================================
-
-    placeGuessMarker(location) {
-        if (this.marker) this.marker.setMap(null);
-
-        this.marker = new google.maps.Marker({
-            position: location,
-            map: this.googleMap
-        });
-    }
-
-    clearGuessMarker() {
-        if (this.marker) this.marker.setMap(null);
-        this.marker = null;
-    }
-
-    removeOverviewLines() {
-        for (const l of this.overviewLines) {
-            l.line.setMap(null);
-            l.guess.setMap(null);
-            l.actual.setMap(null);
-        }
-        this.overviewLines = [];
     }
 }
