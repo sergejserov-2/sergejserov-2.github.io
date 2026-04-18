@@ -1,0 +1,184 @@
+export class StaticUI {
+    constructor({ element }) {
+        this.element = element;
+
+        // HUD
+        this.roundEl = element.querySelector(".round");
+        this.scoreEl = element.querySelector(".total-score");
+        this.timeEl = element.querySelector(".time");
+        this.movesEl = element.querySelector(".moves");
+
+        // SCREENS
+        this.loadingOverlay = element.querySelector(".loading-overlay");
+        this.resultScreen = element.querySelector(".guess-overview");
+
+        // RESULT UI
+        this.progressBar = element.querySelector(".score-progress");
+        this.textEls = element.querySelectorAll(".score-text p");
+        this.nextBtn = element.querySelector(".next-round-button");
+        this.endButtons = element.querySelector(".game-end-buttons");
+
+        this.form = element.querySelector(".high-score-form");
+    }
+
+    // =====================================================
+    // GAME STATES
+    // =====================================================
+
+    showGame() {
+        this.element.classList.remove("hidden");
+    }
+
+    hideGame() {
+        this.element.classList.add("hidden");
+    }
+
+    // =====================================================
+    // LOADING
+    // =====================================================
+
+    showLoading() {
+        if (this.loadingOverlay) {
+            this.loadingOverlay.style.display = "flex";
+        }
+    }
+
+    hideLoading() {
+        if (this.loadingOverlay) {
+            this.loadingOverlay.style.display = "none";
+        }
+    }
+
+    // =====================================================
+    // HUD
+    // =====================================================
+
+    updateHUD({ round, roundCount, score, time, moves }) {
+        if (this.roundEl) {
+            this.roundEl.innerHTML = `Раунд: <b>${round}/${roundCount}</b>`;
+        }
+
+        if (this.scoreEl) {
+            this.scoreEl.innerHTML = `Счёт: <b>${score}</b>`;
+        }
+
+        if (this.timeEl) {
+            this.timeEl.innerHTML = `Время: <b>${time}</b>`;
+        }
+
+        if (this.movesEl) {
+            this.movesEl.innerHTML = `Шаги: <b>${moves}</b>`;
+        }
+    }
+
+    // =====================================================
+    // ROUND READY (optional hook)
+    // =====================================================
+
+    showRoundReady(round) {
+        // можно добавить small animation / notification
+    }
+
+    // =====================================================
+    // ROUND START
+    // =====================================================
+
+    startRound() {
+        this.hideLoading();
+        this.hideResult();
+    }
+
+    // =====================================================
+    // RESULT SCREEN (ROUND END)
+    // =====================================================
+
+    showRoundResult(data) {
+        this.showResult();
+
+        const progress = (data.score / 5000) * 100;
+
+        if (this.progressBar) {
+            this.progressBar.style.width = `{progress}%`;
+        }
+
+        if (this.textEls?.length >= 2) {
+            this.textEls[0].innerText =
+                `Вы в ${data.niceDistance || ""} от места`;
+
+            this.textEls[1].innerText =
+                `Счёт: ${data.score} | Итог: ${data.totalScore}`;
+        }
+
+        if (this.nextBtn) {
+            this.nextBtn.style.display = "inline-block";
+        }
+
+        if (this.endButtons) {
+            this.endButtons.style.display = "none";
+        }
+    }
+
+    // =====================================================
+    // GAME END SCREEN
+    // =====================================================
+
+    showGameResult(data) {
+        this.showResult();
+
+        const progress =
+            (data.totalScore / (5000 * data.roundCount)) * 100;
+
+        if (this.progressBar) {
+            this.progressBar.style.width = `${progress}%`;
+        }
+
+        const last = data.history?.at(-1);
+
+        if (this.textEls?.length >= 2) {
+            this.textEls[0].innerText =
+                `Вы в ${last?.niceDistance || ""} от места`;
+            this.textEls[1].innerText =
+                `Итоговый счёт: ${data.totalScore}`;
+        }
+
+        if (this.nextBtn) {
+            this.nextBtn.style.display = "none";
+        }
+
+        if (this.endButtons) {
+            this.endButtons.style.display = "block";
+        }
+    }
+
+    // =====================================================
+    // SCREEN CONTROL
+    // =====================================================
+
+    showResult() {
+        if (this.resultScreen) {
+            this.resultScreen.style.transform = "translateY(0%)";
+        }
+    }
+
+    hideResult() {
+        if (this.resultScreen) {
+            this.resultScreen.style.transform = "translateY(100%)";
+        }
+    }
+
+    // =====================================================
+    // FORM (optional hook)
+    // =====================================================
+
+    bindScoreSubmit(handler) {
+        if (!this.form) return;
+
+        this.form.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            const input = this.form.querySelector(".username-input");
+
+            handler?.(input?.value);
+        });
+    }
+}
