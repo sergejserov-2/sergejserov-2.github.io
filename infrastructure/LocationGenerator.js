@@ -7,9 +7,7 @@ export class LocationGenerator {
         this.maxTriesPerPoint = 100;
     }
 
-    // =====================================================
     // MAIN
-    // =====================================================
 
     async generate(area) {
         const polygon = area.polygon;
@@ -37,9 +35,7 @@ export class LocationGenerator {
         );
     }
 
-    // =====================================================
     // INTERNAL: POINT SEARCH
-    // =====================================================
 
     findPointInArea(bounds, polygon) {
         let tries = 0;
