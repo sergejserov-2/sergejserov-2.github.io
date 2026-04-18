@@ -166,11 +166,11 @@ label {
     <div class="section">
         <div class="title">Раунды</div>
         <div class="row" id="rounds">
-            <div class="btn active" data-rounds="1">1</div>
+            <div class="btn" data-rounds="1">1</div>
             <div class="btn" data-rounds="2">2</div>
             <div class="btn" data-rounds="3">3</div>
             <div class="btn" data-rounds="4">4</div>
-            <div class="btn" data-rounds="5">5</div>
+            <div class="btn active" data-rounds="5">5</div>
         </div>
     </div>
 
@@ -200,21 +200,24 @@ label {
     <div class="section">
         <div class="title">Карта</div>
         <div class="row" id="areas">
-            <div class="btn active" data-area="France">🇫🇷 France</div>
-            <div class="btn" data-area="Germany">🇩🇪 Germany</div>
-            <div class="btn" data-area="Europe">🌍 Europe</div>
-            <div class="btn" data-area="Asia">🌏 Asia</div>
+            <div class="btn active" data-area="europe">Европа</div>
+            <div class="btn" data-area="asia">Азия</div>
+            <div class="btn" data-area="northAmerica">Северная Америка</div>
+            <div class="btn" data-area="latinAmerica">Латинская Америка</div>
+            <div class="btn" data-area="oceania">Океания</div>
+            <div class="btn" data-area="middleEast">Ближний Восток</div>
+            <div class="btn" data-area="sovietUnion">Советский союз</div>        
         </div>
     </div>
 
     <!-- START -->
-    <div class="start" id="start">START</div>
+    <div class="start" id="start">Начать игру</div>
 
 </div>
 
 <script>
 let mode = "solo";
-let area = "france";
+let area = "europe";
 let rounds = 5;
 // =========================
 // MODE
