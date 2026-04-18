@@ -111,3 +111,41 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+
+
+import { Game } from "./core/Game.js";
+import { LocationGenerator } from "./Infrastructure/LocationGenerator.js";
+import { Scoring } from "./core/Scoring.js";
+import { Geometry } from "./core/Geometry.js";
+import { MapAdapter } from "./Infrastructure/MapAdapter.js";
+
+// =====================
+// CORE SYSTEMS
+// =====================
+
+const mapAdapter = new MapAdapter(google);
+
+const geometry = new Geometry();
+const scoring = new Scoring(geometry);
+
+const generator = new LocationGenerator(mapAdapter);
+
+// =====================
+// GAME INSTANCE
+// =====================
+
+const game = new Game({
+    area,
+    element,
+    rules,
+    generator,
+    scoring,
+    mapAdapter
+});
+
+// =====================
+// START
+// =====================
+
+game.startGame();
