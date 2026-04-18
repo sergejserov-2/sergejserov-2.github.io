@@ -102,7 +102,7 @@ console.log("[Game] playArea =", playArea);
     
         // 🔥 ВАЖНО: не блокируем UI
         setTimeout(() => {
-            this.nextDestinationPromise = this.locationGenerator.getRandomLocation();
+            this.nextDestinationPromise = this.generator.getRandomLocation();
     
             this.nextDestinationPromise
                 .then(location => {
