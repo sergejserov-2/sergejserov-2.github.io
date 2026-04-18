@@ -1,6 +1,6 @@
 import { GeoMap } from "./GeoMap.js";
 
-export class MapManager {
+export class Area {
     async initialize() {
         let response = await fetch("../data/countries.json");
         this.countries = await response.json();
