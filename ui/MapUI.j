@@ -1,203 +1,82 @@
-
 export class MapUI {
-    constructor({ element } = {}) {
-        // =====================================================
-        // DOM
-        // =====================================================
-        this.embedMapElement = document.querySelector(".embed-map");
-        this.overviewMapElement = document.querySelector(".overview-map");
-        this.streetViewElement = document.querySelector(".streetview");
-        this.guessMapElement = document.querySelector(".guess-map");
+    constructor({ adapter, mapElement, overviewElement }) {
+        this.adapter = adapter;
+        this.mapElement = mapElement;
+        this.overviewElement = overviewElement;
 
-        // =====================================================
-        // MAP INSTANCES
-        // =====================================================
-        this.googleMap = null;
+        this.map = null;
         this.overviewMap = null;
-        this.panorama = null;
 
-        // =====================================================
-        // STATE
-        // =====================================================
-        this.isGuessLocked = false;
-        this.isGuessMode = false;
-
-        this.lastGuess = null;
         this.guessMarker = null;
-
-        // 💥 FIX: tracking overview objects
-        this.overviewLines = [];
         this.overviewMarkers = [];
+        this.overviewLines = [];
 
+        this.isGuessLocked = false;
         this.onGuessCallback = null;
-
-        this._resizeBound = false;
-
-        this.initGuessMap();
-        this.initOverviewMap();
     }
 
-    // =====================================================
-    // INIT MAPS
-    // =====================================================
+    init() {
+        this.map = this.adapter.createMap(this.mapElement, { zoom: 2 });
+        this.overviewMap = this.adapter.createMap(this.overviewElement, { zoom: 2 });
 
-    initGuessMap() {
-        if (this.googleMap) return;
+        this.map.addListener("click", (e) => {
+            if (this.isGuessLocked) return;
 
-        this.googleMap = new google.maps.Map(this.embedMapElement, {
-            center: { lat: 0, lng: 0 },
-            zoom: 2,
-            disableDefaultUI: true,
-            clickableIcons: false
-        });
-
-        this.googleMap.addListener("click", (e) => {
-            if (!this.isGuessMode || this.isGuessLocked) return;
-
-            const point = {
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng()
-            };
-
-            this.lastGuess = point;
+            const point = [e.latLng.lat(), e.latLng.lng()];
+            this.placeGuessMarker(point);
 
             this.onGuessCallback?.(point);
         });
-
-        this.initResize();
     }
 
-    initOverviewMap() {
-        if (this.overviewMap) return;
-
-        this.overviewMap = new google.maps.Map(this.overviewMapElement, {
-            center: { lat: 0, lng: 0 },
-            zoom: 2,
-            disableDefaultUI: true
-        });
-    }
-
-    initStreetView(location) {
-        if (this.panorama) return;
-
-        this.panorama = new google.maps.StreetViewPanorama(
-            this.streetViewElement,
-            {
-                position: location || { lat: 0, lng: 0 },
-                addressControl: false,
-                linksControl: true,
-                panControl: true,
-                zoomControl: false,
-                fullscreenControl: false,
-                motionTracking: false,
-                clickToGo: true,
-                scrollwheel: true
-            }
-        );
-
-        this.googleMap?.setStreetView(this.panorama);
-
-        setTimeout(() => {
-            google.maps.event.trigger(this.panorama, "resize");
-        }, 0);
-    }
-
-    // =====================================================
-    // FLOW API
-    // =====================================================
-
-    beginRound({ location }) {
-        this.isGuessMode = true;
-        this.isGuessLocked = false;
-
-        this.clearGuessMarker();
-        this.clearOverview();
-
-        if (this.googleMap) {
-            this.googleMap.setCenter(location);
-            this.googleMap.setZoom(2);
-        }
-
-        if (this.panorama) {
-            this.panorama.setPosition(location);
-
-            setTimeout(() => {
-                google.maps.event.trigger(this.panorama, "resize");
-            }, 50);
-        }
-    }
-
-    // =====================================================
-    // GUESS
-    // =====================================================
-
-    updateGuessPreview(point) {
-        if (!this.googleMap || !point) return;
+    placeGuessMarker([lat, lng]) {
+        if (!this.map) return;
 
         this.clearGuessMarker();
 
-        this.guessMarker = new google.maps.Marker({
-            position: point,
-            map: this.googleMap
-        });
-    }
-
-    placeGuessMarker(location) {
-        if (!this.googleMap || !location) return;
-
-        this.clearGuessMarker();
-
-        this.guessMarker = new google.maps.Marker({
-            position: location,
-            map: this.googleMap
-        });
+        this.guessMarker = this.adapter.createMarker(this.map, [lat, lng]);
     }
 
     clearGuessMarker() {
-        if (this.guessMarker) {
-            this.guessMarker.setMap(null);
-            this.guessMarker = null;
-        }
+        if (!this.guessMarker) return;
+
+        this.adapter.removeMarker(this.guessMarker);
+        this.guessMarker = null;
     }
 
-    lockGuess() {
+    lock() {
         this.isGuessLocked = true;
-        this.isGuessMode = false;
     }
 
-    // =====================================================
-    // OVERVIEW (FIXED)
-    // =====================================================
+    reset() {
+        this.isGuessLocked = false;
+        this.clearGuessMarker();
+        this.clearOverview();
+    }
 
-    renderOverview({ guess, actual }) {
+    renderOverview(round) {
+        const guess = round.guesses?.[0]?.guess;
+        const actual = round.actualLocation;
+
         if (!this.overviewMap || !guess || !actual) return;
 
         this.clearOverview();
 
-        const bounds = new google.maps.LatLngBounds();
-        bounds.extend(guess);
-        bounds.extend(actual);
-
-        this.overviewMap.fitBounds(bounds);
-
-        const guessMarker = new google.maps.Marker({
-            position: guess,
-            map: this.overviewMap
-        });
-
-        const actualMarker = new google.maps.Marker({
-            position: actual,
-            map: this.overviewMap
-        });
+        const guessMarker = this.adapter.createMarker(this.overviewMap, guess);
+        const actualMarker = this.adapter.createMarker(this.overviewMap, actual);
 
         const line = new google.maps.Polyline({
-            path: [guess, actual],
+            path: [
+                { lat: guess[0], lng: guess[1] },
+                { lat: actual[0], lng: actual[1] }
+            ],
             geodesic: true,
-            strokeColor: "#ffcc00",
             strokeOpacity: 1,
             strokeWeight: 2,
             map: this.overviewMap
         });
+
+        this.adapter.fitToMarkers(this.overviewMap, [guessMarker, actualMarker]);
 
         this.overviewMarkers.push(guessMarker, actualMarker);
         this.overviewLines.push(line);
@@ -205,69 +84,11 @@ export class MapUI {
 
     clearOverview() {
         this.overviewLines.forEach(l => l.setMap(null));
-        this.overviewMarkers.forEach(m => m.setMap(null));
+        this.overviewMarkers.forEach(m => this.adapter.removeMarker(m));
 
         this.overviewLines = [];
         this.overviewMarkers = [];
     }
-
-    // =====================================================
-    // RESIZE
-    // =====================================================
-
-    initResize() {
-        if (this._resizeBound) return;
-
-        const el = this.guessMapElement;
-        const handle = el?.querySelector(".resize-handle");
-
-        if (!handle) return;
-
-        let resizing = false;
-        let startX, startY, startW, startH, startTop;
-
-        handle.addEventListener("mousedown", (e) => {
-            resizing = true;
-
-            startX = e.clientX;
-            startY = e.clientY;
-
-            const rect = el.getBoundingClientRect();
-
-            startW = rect.width;
-            startH = rect.height;
-            startTop = rect.top;
-
-            document.body.style.userSelect = "none";
-        });
-
-        window.addEventListener("mousemove", (e) => {
-            if (!resizing) return;
-
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-
-            const newW = Math.max(180, startW + dx);
-            const newH = Math.max(120, startH - dy);
-
-            const realDy = startH - newH;
-
-            el.style.width = `${newW}px`;
-            el.style.height = `${newH}px`;
-            el.style.top = `${startTop + realDy}px`;
-        });
-
-        window.addEventListener("mouseup", () => {
-            resizing = false;
-            document.body.style.userSelect = "";
-        });
-
-        this._resizeBound = true;
-    }
-
-    // =====================================================
-    // EVENTS
-    // =====================================================
 
     onGuess(cb) {
         this.onGuessCallback = cb;
