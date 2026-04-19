@@ -20,113 +20,96 @@ import { StreetViewUI } from "./ui/components/StreetViewUI.js";
 import { StaticUI } from "./ui/components/StaticUI.js";
 
 export async function init() {
+ try {
+  console.log("INIT ENTER");
 
- console.log("🚀 INIT START");
+  // =========================
+  // ADAPTERS
+  // =========================
+  const mapAdapter = new MapAdapter();
 
- // =========================
- // ADAPTERS
- // =========================
- console.log("1️⃣ ADAPTERS");
+  // =========================
+  // DOMAIN
+  // =========================
+  const geometry = new Geometry();
+  const area = AreaRegistry.get("europe");
+  const difficulty = new Difficulty({ area });
 
- const mapAdapter = new MapAdapter();
- console.log("   ✔ MapAdapter created");
+  const scoring = new Scoring({
+   geometry,
+   difficulty
+  });
 
- // =========================
- // DOMAIN
- // =========================
- console.log("2️⃣ DOMAIN");
+  const generator = new LocationGenerator({
+   mapAdapter,
+   geometry
+  });
 
- const geometry = new Geometry();
- console.log("   ✔ Geometry");
+  // =========================
+  // CORE
+  // =========================
+  const gameState = new GameState();
 
- console.log("   → loading area...");
- const area = AreaRegistry.get("europe");
- console.log("   ✔ Area loaded:", area.name);
+  const game = new Game({
+   gameState,
+   players: ["p1"]
+  });
 
- console.log("   → Difficulty...");
- const difficulty = new Difficulty({ area });
- console.log("   ✔ Difficulty");
+  const gameFlow = new GameFlow({
+   game,
+   generator,
+   scoring,
+   area
+  });
 
- console.log("   → Scoring...");
- const scoring = new Scoring({ geometry, difficulty });
- console.log("   ✔ Scoring");
+  // =========================
+  // UI
+  // =========================
+  const mapUI = new MapUI({
+   adapter: mapAdapter,
+   mapElement: document.querySelector(".map"),
+   overviewElement: document.querySelector(".overview-map")
+  });
 
- console.log("   → LocationGenerator...");
- const generator = new LocationGenerator({
-  mapAdapter,
-  geometry
- });
- console.log("   ✔ Generator");
+  const streetViewUI = new StreetViewUI({
+   adapter: mapAdapter,
+   element: document.querySelector(".streetview")
+  });
 
- // =========================
- // CORE
- // =========================
- console.log("3️⃣ CORE");
+  const staticUI = new StaticUI({
+   element: document.querySelector(".ui")
+  });
 
- const gameState = new GameState();
- console.log("   ✔ GameState");
+  const uiFlow = new UIFlow({
+   gameFlow,
+   mapUI,
+   streetViewUI,
+   staticUI,
+   uiState: new UIState(),
+   uiBuilder: new UIBuilder()
+  });
 
- const game = new Game({
-  gameState,
-  players: ["p1"]
- });
- console.log("   ✔ Game");
+  // =========================
+  // INIT UI
+  // =========================
+  mapUI.init();
+  streetViewUI.init();
 
- const gameFlow = new GameFlow({
-  game,
-  generator,
-  scoring,
-  area
- });
- console.log("   ✔ GameFlow");
+  // =========================
+  // START GAME
+  // =========================
+  await gameFlow.startGame();
 
- // =========================
- // UI
- // =========================
- console.log("4️⃣ UI");
+  console.log("INIT EXIT");
 
- const mapUI = new MapUI({
-  adapter: mapAdapter,
-  mapElement: document.querySelector(".map"),
-  overviewElement: document.querySelector(".overview-map")
- });
- console.log("   ✔ MapUI");
-
- const streetViewUI = new StreetViewUI({
-  adapter: mapAdapter,
-  element: document.querySelector(".street-view")
- });
- console.log("   ✔ StreetViewUI");
-
- const staticUI = new StaticUI({
-  element: document.querySelector(".ui")
- });
- console.log("   ✔ StaticUI");
-
- const uiState = new UIState();
- const uiBuilder = new UIBuilder();
-
- const uiFlow = new UIFlow({
-  gameFlow,
-  mapUI,
-  streetViewUI,
-  staticUI,
-  uiState,
-  uiBuilder
- });
- console.log("   ✔ UIFlow");
-
- // =========================
- // INIT UI
- // =========================
- console.log("5️⃣ INIT UI COMPONENTS");
-
- mapUI.init();
- streetViewUI.init();
-
- console.log("6️⃣ START GAME");
-
- await gameFlow.startGame();
-
- console.log("🎮 GAME STARTED");
+ } catch (err) {
+  console.error("INIT ERROR:", err);
+ }
 }
+
+// =========================
+// AUTO BOOTSTRAP
+// =========================
+init().catch(err => {
+ console.error("BOOTSTRAP CRASH:", err);
+});
