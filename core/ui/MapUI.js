@@ -1,23 +1,23 @@
 export class MapUI {
     constructor({ element } = {}) {
-        // =========================
+        // =====================================================
         // DOM
-        // =========================
+        // =====================================================
         this.embedMapElement = document.querySelector(".embed-map");
         this.overviewMapElement = document.querySelector(".overview-map");
         this.streetViewElement = document.querySelector(".streetview");
         this.guessMapElement = document.querySelector(".guess-map");
 
-        // =========================
+        // =====================================================
         // MAP INSTANCES (LIFETIME = GAME)
-        // =========================
-        this.googleMap = null;     // guess map (persistent)
-        this.overviewMap = null;   // result map (persistent)
-        this.panorama = null;      // streetview (persistent or per-round reset)
+        // =====================================================
+        this.googleMap = null;
+        this.overviewMap = null;
+        this.panorama = null;
 
-        // =========================
+        // =====================================================
         // STATE
-        // =========================
+        // =====================================================
         this.isGuessMode = false;
         this.guessMarker = null;
         this.overviewLines = [];
@@ -28,19 +28,19 @@ export class MapUI {
         // resize
         this._resizeBound = false;
 
-        // DOM events
+        // init dom
         this.initDOMEvents();
     }
 
     // =====================================================
-    // INIT (CALLED ONCE FROM INIT.JS)
+    // INIT (ONCE)
     // =====================================================
 
-    initGuessMap(location) {
+    initGuessMap() {
         if (this.googleMap) return;
 
         this.googleMap = new google.maps.Map(this.embedMapElement, {
-            center: location,
+            center: { lat: 0, lng: 0 },
             zoom: 2,
             disableDefaultUI: true,
             clickableIcons: false
@@ -65,19 +65,19 @@ export class MapUI {
         if (this.overviewMap) return;
 
         this.overviewMap = new google.maps.Map(this.overviewMapElement, {
-            zoom: 2,
             center: { lat: 0, lng: 0 },
+            zoom: 2,
             disableDefaultUI: true
         });
     }
 
-    initStreetView(location) {
+    initStreetView(initialLocation) {
         if (this.panorama) return;
 
         this.panorama = new google.maps.StreetViewPanorama(
             this.streetViewElement,
             {
-                position: location,
+                position: initialLocation || { lat: 0, lng: 0 },
                 addressControl: false,
                 linksControl: true,
                 panControl: true,
@@ -89,11 +89,25 @@ export class MapUI {
             }
         );
 
+        // 💥 FIX: ensures correct render
+        setTimeout(() => {
+            google.maps.event.trigger(this.panorama, "resize");
+        }, 0);
+
         this.googleMap?.setStreetView(this.panorama);
     }
 
+    setStreetView(location) {
+        if (!this.panorama || !location) return;
+
+        this.panorama.setPosition(location);
+
+        // 💥 FIX white screen after reuse
+        google.maps.event.trigger(this.panorama, "resize");
+    }
+
     // =====================================================
-    // ROUND CONTROL (NO RECREATION)
+    // ROUND CONTROL
     // =====================================================
 
     startRound({ location }) {
@@ -118,12 +132,10 @@ export class MapUI {
 
     enableGuessMode() {
         this.isGuessMode = true;
-        this.googleMap?.setOptions({ draggable: true });
     }
 
     disableGuessMode() {
         this.isGuessMode = false;
-        this.googleMap?.setOptions({ draggable: false });
     }
 
     // =====================================================
@@ -140,6 +152,7 @@ export class MapUI {
             map: this.googleMap
         });
     }
+
     clearGuessMarker() {
         if (this.guessMarker) {
             this.guessMarker.setMap(null);
@@ -148,7 +161,7 @@ export class MapUI {
     }
 
     // =====================================================
-    // OVERVIEW (RESULT)
+    // OVERVIEW
     // =====================================================
 
     renderOverview({ guess, actual }) {
@@ -259,8 +272,8 @@ export class MapUI {
     // EVENTS
     // =====================================================
 
-    onGuess(callback) {
-        this.onGuessCallback = callback;
+    onGuess(cb) {
+        this.onGuessCallback = cb;
     }
 
     emitGuess(point) {
