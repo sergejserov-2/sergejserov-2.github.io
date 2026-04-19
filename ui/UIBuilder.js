@@ -1,20 +1,20 @@
 export class UIBuilder {
 
- buildHUD(state, round) {
+ buildHUD(round) {
   return {
-   roundText: `Раунд: ${round.index + 1}/${state.rounds.length + 1}`,
-   scoreText: `Счёт: ${this.getTotalScore(state)}`
+   roundText: `Раунд: ${round.index + 1}`
   };
  }
 
- buildRoundVM(state, round) {
+ buildRoundVM(round, result) {
   const g = round.guesses?.[0];
-  const score = g?.score ?? 0;
+
+  const distance = g?.distance ?? result.distance ?? 0;
+  const score = g?.score ?? result.score ?? 0;
 
   return {
-   distanceText: `Вы в ${g?.distance ?? 0} км от места`,
-   scoreText: `Счёт: ${score}`,
-   totalScoreText: `Итог: ${this.getTotalScore(state)}`,
+   distanceText: `Вы в ${distance} км от места`,
+   totalScoreText: `Счёт: ${score}`,
    progress: this.getProgress(score, 5000)
   };
  }
@@ -34,10 +34,10 @@ export class UIBuilder {
  }
 
  getTotalScore(state) {
-  return state.rounds.reduce(
-   (sum, r) => sum + (r.result?.score || 0),
-   0
-  );
+  return state.rounds.reduce((sum, r) => {
+   const g = r.guesses?.[0];
+   return sum + (g?.score || 0);
+  }, 0);
  }
 
  getProgress(value, max) {
