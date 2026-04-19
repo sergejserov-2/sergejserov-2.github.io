@@ -54,18 +54,26 @@ export class MapAdapter {
          });
     }
 
-    // ✔ теперь без логики — просто API ответ
     getStreetViewMeta([lat, lng]) {
-        return new Promise(resolve => {
-            this.svService.getPanorama(
-                {
-                    location: { lat, lng },
-                    radius: 50000
-                },
-                (data, status) => {
-                    resolve({ data, status });
-                }
-            );
-        });
+         return new Promise(resolve => {
+          this.svService.getPanorama(
+           {
+            location: { lat, lng },
+            radius: 50000
+           },
+           (data, status) => {
+        
+            const valid =
+             status === "OK" &&
+             data?.location &&
+             data?.location?.latLng;
+        
+            resolve({
+             valid,
+             location: data?.location?.latLng || null
+            });
+           }
+          );
+         });
     }
 }
