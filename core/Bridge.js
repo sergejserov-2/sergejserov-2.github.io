@@ -1,51 +1,62 @@
 export class Bridge {
-    constructor({ game, ui, vm }) {
-        this.game = game;
-        this.ui = ui;
-        this.vm = vm;
+constructor({ game, mapUI, streetViewUI, staticUI, viewModelBuilder }) {
+this.game = game;
+this.mapUI = mapUI;
+this.streetViewUI = streetViewUI;
+this.staticUI = staticUI;
+this.vm = viewModelBuilder;
 
-        this.bind();
-    }
+this.bind();
+}
 
-    bind() {
-        this.game.on("gameStarted", () => {
-            this.ui.static.showGame();
-        });
+bind() {
 
-        this.game.on("roundStarted", ({ round, actual }) => {
-            const state = this.game.state;
+/* GAME START */
+this.game.on("gameStarted", () => {
+this.staticUI.hideLoading();
+});
 
-            this.ui.static.updateHUD(
-                this.vm.buildHUD(state, { index: round })
-            );
+/* ROUND START */
+this.game.on("roundStarted", ({ round, roundCount }) => {
+this.staticUI.updateHUD(
+this.vm.buildHUD(this.game.state, this.game.state.currentRound)
+);
 
-            this.ui.streetview?.setLocation(actual);
-            this.ui.map?.reset?.();
-        });
+this.streetViewUI.setLocation(this.game.state.currentRound.actualLocation);
+this.mapUI.resetGuess();
+});
 
-        this.game.on("guessFinished", ({ round }) => {
-            const state = this.game.state;
+/* GUESS UPDATE */
+this.game.on("guessUpdated", ({ playerId, guess }) => {
+this.mapUI.placeGuessMarker(guess);
+});
 
-            this.ui.static.updateHUD(
-                this.vm.buildHUD(state, { index: round })
-            );
-        });
+/* GUESS FINISHED */
+this.game.on("guessFinished", ({ result }) => {
 
-        this.game.on("roundCommitted", () => {
-            const state = this.game.state;
-            const round = state.rounds.at(-1);
+const vm = this.vm.buildRoundVM(
+this.game.state,
+this.game.state.currentRound
+);
 
-            this.ui.map?.lock?.();
+this.staticUI.showRoundResult(vm);
+this.mapUI.renderOverview({
+guess: result.guess,
+actual: result.actual
+});
+});
 
-            this.ui.static.showRoundResult(
-                this.vm.buildRoundVM(state, round)
-            );
-        });
+/* ROUND COMMIT */
+this.game.on("roundCommitted", () => {
+this.game.startRound(this.game.state.area);
+});
 
-        this.game.on("gameEnded", () => {
-            this.ui.static.showGameResult(
-                this.vm.buildGameVM(this.game.state)
-            );
-        });
-    }
+/* GAME END */
+this.game.on("gameEnded", () => {
+
+const vm = this.vm.buildGameVM(this.game.state);
+
+this.staticUI.showGameResult(vm);
+});
+}
 }
