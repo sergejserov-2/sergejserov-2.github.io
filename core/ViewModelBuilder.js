@@ -1,25 +1,19 @@
 export class ViewModelBuilder {
-    constructor(game) {
-        this.game = game;
-    }
-
-    buildHUD(round) {
-        const state = this.game.state;
-
+    buildHUD(state, round) {
         return {
             roundText: `Раунд: ${round.index + 1}`,
             scoreText: `Счёт: ${this.getTotalScore(state)}`
         };
     }
 
-    buildRoundVM(round) {
+    buildRoundVM(state, round) {
         const g = round.guesses?.[0];
         const score = g?.score ?? 0;
 
         return {
             distanceText: `Вы в ${g?.distance ?? 0} км от места`,
             scoreText: `Счёт: ${score}`,
-            totalScoreText: `Итог: ${this.getTotalScore(this.game.state)}`,
+            totalScoreText: `Итог: ${this.getTotalScore(state)}`,
             progress: (score / 5000) * 100
         };
     }
