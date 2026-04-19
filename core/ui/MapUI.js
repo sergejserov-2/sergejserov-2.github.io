@@ -1,4 +1,4 @@
-[19.04.2026 4:06] Сергей Серов: export class MapUI {
+export class MapUI {
     constructor({ element }) {
         this.root = element;
 
@@ -151,7 +151,7 @@
         bounds.extend(actual);
 
         this.googleMap.fitBounds(bounds);
-[19.04.2026 4:06] Сергей Серов: const line = new google.maps.Polyline({
+        const line = new google.maps.Polyline({
             path: [guess, actual],
             geodesic: true,
             strokeColor: "#ffcc00",
