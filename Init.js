@@ -1,13 +1,14 @@
 import { Game } from "./core/Game.js";
 import { GameFlow } from "./core/GameFlow.js";
+import { GameState } from "./core/GameState.js";
 import { Bridge } from "./core/Bridge.js";
 import { ViewModelBuilder } from "./core/ViewModelBuilder.js";
 import { Scoring } from "./core/Scoring.js";
 
 import { Geometry } from "./domain/Geometry.js";
-import { LocationGenerator } from "./domain/LocationGenerator.js";
 
 import { MapAdapter } from "./adapters/MapAdapter.js";
+import { LocationGenerator } from "./adapters/LocationGenerator.js";
 
 import { MapUI } from "./ui/MapUI.js";
 import { StreetViewUI } from "./ui/StreetViewUI.js";
@@ -48,8 +49,10 @@ async function bootstrap() {
 
     const scoring = new Scoring(geometry);
 
+    const gameState = new GameState();
+
     const game = new Game({
-        gameState: config.gameState,
+        gameState,
         scoring
     });
 
@@ -61,4 +64,33 @@ async function bootstrap() {
 
     const mapUI = new MapUI({
         adapter: mapAdapter,
-        mapElement: root
+        mapElement: root.querySelector(".map"),
+        overviewElement: root.querySelector(".overview")
+    });
+
+    const streetViewUI = new StreetViewUI({
+        adapter: mapAdapter,
+        element: root.querySelector(".streetview")
+    });
+
+    const staticUI = new StaticUI({ element: root });
+
+    const vm = new ViewModelBuilder();
+
+    mapUI.init();
+    streetViewUI.init();
+
+    new Bridge({
+        game,
+        ui: {
+            map: mapUI,
+            streetview: streetViewUI,
+            static: staticUI
+        },
+        vm
+    });
+
+    gameFlow.startGame();
+}
+
+bootstrap();
