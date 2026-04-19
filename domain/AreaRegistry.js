@@ -1,12 +1,12 @@
-import Europe from "./regions/Europe.js";
-import Asia from "./regions/Asia.js";
-import Africa from "./regions/Africa.js";
-import NorthAmerica from "./regions/NorthAmerica.js";
-import LatinAmerica from "./regions/LatinAmerica.js";
-import Oceania from "./regions/Oceania.js";
-import MiddleEast from "./regions/MiddleEast.js";
-import SovietUnion from "./regions/SovietUnion.js";
-import Moscow from "./test/Moscow.js";
+import Europe from "./area/regions/Europe.js";
+import Asia from "./area/regions/Asia.js";
+import Africa from "./area/regions/Africa.js";
+import NorthAmerica from "./area/regions/NorthAmerica.js";
+import LatinAmerica from "./area/regions/LatinAmerica.js";
+import Oceania from "./area/regions/Oceania.js";
+import MiddleEast from "./area/regions/MiddleEast.js";
+import SovietUnion from "./area/regions/SovietUnion.js";
+import Moscow from "./area/test/Moscow.js";
 
 export const AreaRegistry = {
     moscow: Moscow, //test
