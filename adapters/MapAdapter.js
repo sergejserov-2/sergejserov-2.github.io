@@ -11,14 +11,34 @@ export class MapAdapter {
         });
     }
 
-    createPanorama(element) {
-        return new google.maps.StreetViewPanorama(element, {
-            disableDefaultUI: true
+    createMarker(map, [lat, lng]) {
+        return new google.maps.Marker({
+            position: { lat, lng },
+            map
         });
     }
 
-    setPanoramaPosition(panorama, lat, lng) {
-        panorama.setPosition({ lat, lng });
+    removeMarker(marker) {
+        marker.setMap(null);
+    }
+
+    fitToMarkers(map, markers) {
+        const bounds = new google.maps.LatLngBounds();
+        markers.forEach(m => {
+            const p = m.getPosition();
+            if (p) bounds.extend(p);
+        });
+        map.fitBounds(bounds);
+    }
+
+    createPolyline(map, path) {
+        return new google.maps.Polyline({
+            path,
+            geodesic: true,
+            strokeOpacity: 1,
+            strokeWeight: 2,
+            map
+        });
     }
 
     async hasStreetView(lat, lng) {
@@ -30,33 +50,5 @@ export class MapAdapter {
                 }
             );
         });
-    }
-
-    createMarker(map, [lat, lng]) {
-        return new google.maps.Marker({
-            position: { lat, lng },
-            map
-        });
-    }
-
-    moveMarker(marker, [lat, lng]) {
-        marker.setPosition({ lat, lng });
-    }
-
-    removeMarker(marker) {
-        marker.setMap(null);
-    }
-
-    fitToMarkers(map, markers) {
-        const bounds = new google.maps.LatLngBounds();
-        markers.forEach(m => {
-            const pos = m.getPosition();
-            if (pos) bounds.extend(pos);
-        });
-        map.fitBounds(bounds);
-    }
-
-    resetPanorama(panorama) {
-        panorama.setPov({ heading: 0, pitch: 0 });
     }
 }
