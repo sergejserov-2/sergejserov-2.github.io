@@ -4,25 +4,22 @@ export class ViewModelBuilder {
     }
 
     buildHUD(round) {
-        const state = this.game.getState();
+        const state = this.game.state;
 
         return {
             roundText: `Раунд: ${round.index + 1}`,
-            scoreText: `Счёт: ${state.totalScore ?? 0}`,
-            timeText: `Время: ${state.time ?? 0}`,
-            movesText: `Шагов: ${state.moves ?? 0}`
+            scoreText: `Счёт: ${this.getTotalScore(state)}`
         };
     }
 
     buildRoundVM(round) {
         const g = round.guesses?.[0];
         const score = g?.score ?? 0;
-        const total = this.game.getState().totalScore ?? 0;
 
         return {
             distanceText: `Вы в ${g?.distance ?? 0} км от места`,
             scoreText: `Счёт: ${score}`,
-            totalScoreText: `Итог: ${total}`,
+            totalScoreText: `Итог: ${this.getTotalScore(this.game.state)}`,
             progress: (score / 5000) * 100
         };
     }
@@ -32,8 +29,16 @@ export class ViewModelBuilder {
 
         return {
             lastRoundText: `Последний результат: ${last?.guesses?.[0]?.distance ?? 0} км`,
-            finalScoreText: `Итоговый счёт: ${state.totalScore ?? 0}`,
-            progress: (state.totalScore / (5000 * (state.rounds.length || 1))) * 100
+            finalScoreText: `Итоговый счёт: ${this.getTotalScore(state)}`,
+            progress: this.getTotalScore(state) /
+                (5000 * (state.rounds.length || 1))
         };
+    }
+
+    getTotalScore(state) {
+        return state.rounds.reduce(
+            (sum, r) => sum + (r.result?.score || 0),
+            0
+        );
     }
 }
