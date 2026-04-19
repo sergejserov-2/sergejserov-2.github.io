@@ -54,22 +54,23 @@ export class Bridge {
 
         this.game.on("roundEnded", (data) => {
             this.staticUI.showRoundResult({
-                result,
-                totalScore: this.game.score
+                ...data.result,
+                totalScore: data.totalScore
             });
+        
             this.mapUI.renderOverview({
-                guess: this.game.getCurrentGuess(),
-                actual: this.game.current
+                guess: data.guess,
+                actual: data.actual
             });
         });
-
+        
         this.game.on("gameEnded", (data) => {
             this.staticUI.showGameResult({
-                result,
-                totalScore: this.game.score
+                totalScore: data.totalScore,
+                roundCount: data.roundCount,
+                history: data.history
             });
         });
-    }
 
     // =====================================================
     // MAP → GAME
