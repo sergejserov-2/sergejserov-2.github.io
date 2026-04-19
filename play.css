@@ -93,18 +93,12 @@ body {
 }
 
 /* =========================
-   STREETVIEW + MAP LAYERS
+   STREETVIEW
 ========================= */
 .streetview {
     position: absolute;
     inset: 0;
     z-index: 0;
-}
-
-.map-element {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
 }
 
 /* =========================
@@ -127,11 +121,10 @@ body {
     background: #111;
 }
 
-/* RESIZE HANDLE */
 .resize-handle {
     position: absolute;
     right: 0;
-    bottom: 0;
+    top: 0;
 
     width: 14px;
     height: 14px;
