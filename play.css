@@ -141,8 +141,9 @@ body {
 
 /* GUESS BUTTON */
 .guess-button {
-    bottom: 10px;
+    position: absolute;
     right: 10px;
+    bottom: 10px;
 
     background: #4ea1ff;
     padding: 10px;
@@ -151,5 +152,5 @@ body {
     color: white;
     cursor: pointer;
 
-    z-index: 10;
+    z-index: 30;
 }
