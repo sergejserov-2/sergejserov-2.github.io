@@ -56,10 +56,22 @@ export class Game extends Emitter {
         this.fire("guessFinished", {
             round: round.index,
             result,
-            totalScore: this.getTotalScore(),
             guess: guess.guess,
             actual: round.actualLocation
         });
     }
 
-    commit
+    commitRound() {
+        this.state.commitRound();
+
+        this.fire("roundCommitted");
+    }
+
+    endGame() {
+        this.state.endGame();
+
+        this.fire("gameEnded", {
+            rounds: this.state.rounds
+        });
+    }
+}
