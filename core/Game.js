@@ -1,4 +1,4 @@
-import { Emitter } from "./Emitter.js";
+[19.04.2026 3:17] Сергей Серов: import { Emitter } from "./Emitter.js";
 
 // GAME (PURE ORCHESTRATOR / DI VERSION)
 
@@ -141,4 +141,92 @@ export class Game extends Emitter {
         this.fire("guessFinished", {
             playerId,
             actual: this.current,
-            round
+            round: this.currentRound,
+            result
+        });
+
+        this.endRound({ result });
+    }
+
+    // =====================================================
+    // ROUND END
+    // =====================================================
+
+    endRound(payload = {}) {
+        this.stopTimer();
+[19.04.2026 3:17] Сергей Серов: Object.values(this.players).forEach(p => {
+            p.state = "idle";
+        });
+
+        this.roundState = "ended";
+
+        this.history.push(payload);
+
+        this.fire("roundEnded", {
+            ...payload,
+            totalScore: this.score,
+            round: this.currentRound
+        });
+
+        const isLast = this.currentRound >= this.maxRounds;
+
+        setTimeout(() => {
+            if (isLast) {
+                this.endGame();
+                return;
+            }
+
+            this.currentRound++;
+            this.current = null;
+
+            this.prepareNextRound();
+
+        }, 1200);
+    }
+
+    // =====================================================
+    // TIMER
+    // =====================================================
+
+    startTimer() {
+        this.timer = setInterval(() => {
+            this.time++;
+            this.fire("hudUpdated", this.getHUDState());
+        }, 1000);
+    }
+
+    stopTimer() {
+        clearInterval(this.timer);
+        this.timer = null;
+    }
+
+    // =====================================================
+    // HUD
+    // =====================================================
+
+    getHUDState() {
+        return {
+            round: this.currentRound,
+            roundCount: this.maxRounds,
+            score: this.score,
+            time: this.time,
+            moves: this.moves
+        };
+    }
+
+    // =====================================================
+    // END GAME
+    // =====================================================
+
+    endGame() {
+        if (this.gameState === "ended") return;
+
+        this.gameState = "ended";
+
+        this.fire("gameEnded", {
+            totalScore: this.score,
+            roundCount: this.maxRounds,
+            history: this.history
+        });
+    }
+}
