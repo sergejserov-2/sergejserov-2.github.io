@@ -15,7 +15,15 @@ this.text = document.querySelectorAll(".score-text p");
 this.endButtons = element.querySelector(".game-end-buttons");
 }
 
-/* hud */
+/* visibility */
+show() { this.element.classList.remove("hidden"); }
+hide() { this.element.classList.add("hidden"); }
+
+/* loading */
+showLoading() { this.loading && (this.loading.style.display = "flex"); }
+hideLoading() { this.loading && (this.loading.style.display = "none"); }
+
+/* HUD */
 updateHUD(vm) {
 if (this.roundEl) this.roundEl.innerHTML = vm.roundText;
 if (this.scoreEl) this.scoreEl.innerHTML = vm.scoreText;
@@ -23,38 +31,29 @@ if (this.timeEl) this.timeEl.innerHTML = vm.timeText;
 if (this.movesEl) this.movesEl.innerHTML = vm.movesText;
 }
 
-/* loading */
-showLoading() { this.loading && (this.loading.style.display = "flex"); }
-hideLoading() { this.loading && (this.loading.style.display = "none"); }
-
-/* round */
-startRound() {
-this.hideLoading();
-this.hideResult();
-}
-
-/* result */
+/* round result */
 showRoundResult(vm) {
 this.showResult();
 
 if (this.progress) this.progress.style.width = vm.progress + "%";
 
 if (this.text?.length >= 2) {
-this.text[0].innerText = vm.line1;
-this.text[1].innerText = vm.line2;
+this.text[0].innerText = vm.distanceText;
+this.text[1].innerText = vm.totalScoreText;
 }
 
 if (this.endButtons) this.endButtons.style.display = "none";
 }
 
+/* game result */
 showGameResult(vm) {
 this.showResult();
 
 if (this.progress) this.progress.style.width = vm.progress + "%";
 
 if (this.text?.length >= 2) {
-this.text[0].innerText = vm.line1;
-this.text[1].innerText = vm.line2;
+this.text[0].innerText = vm.lastResultText;
+this.text[1].innerText = vm.finalScoreText;
 }
 
 if (this.endButtons) this.endButtons.style.display = "flex";
