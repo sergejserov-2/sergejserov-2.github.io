@@ -1,21 +1,32 @@
 export class GameFlow {
-    constructor({ game, generator, area }) {
-        this.game = game;
-        this.generator = generator;
-        this.area = area;
-    }
+ constructor({ game, generator, area }) {
+  this.game = game;
+  this.generator = generator;
+  this.area = area;
 
-    async startGame() {
-        this.game.startGame();
-        await this.nextRound();
-    }
+  this.roundsLeft = 10;
+ }
 
-    async nextRound() {
-        const location = await this.generator.generate(this.area);
-        this.game.startRound(location);
-    }
+ async startGame() {
+  this.game.startGame();
+  await this.nextRound();
+ }
 
-    endGame() {
-        this.game.endGame();
-    }
+ async nextRound() {
+  if (this.roundsLeft <= 0) {
+   this.game.endGame();
+   return;
+  }
+
+  this.roundsLeft--;
+
+  const location = await this.generator.generate(this.area);
+
+  this.game.startRound(location);
+ }
+
+ // вызывается из Bridge после commitRound
+ onRoundCommitted() {
+  this.nextRound();
+ }
 }
