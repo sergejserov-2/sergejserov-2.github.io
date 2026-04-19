@@ -1,30 +1,32 @@
 export class Bridge {
     constructor({ game, ui }) {
+        this.game = game;
         this.ui = ui;
-        this.bind(game);
+        this.bind();
     }
 
-    bind(game) {
-        game.on("gameStarted", (state) => this.ui.static.showGame(state));
-
-        game.on("roundStarted", (round) => {
-            this.ui.static.updateHUD(round);
-            this.ui.map.reset?.();
-            this.ui.street.setLocation?.(round.actualLocation);
+    bind() {
+        this.game.on("gameStarted", (state) => {
+            this.ui.static?.showGame(state);
         });
 
-        game.on("guessFinished", (round) => {
-            this.ui.static.updateHUD(round);
-            this.ui.map.lock?.();
+        this.game.on("roundStarted", (round) => {
+            this.ui.static?.updateHUD(round);
+            this.ui.map?.reset?.();
         });
 
-        game.on("roundCommitted", (round) => {
-            this.ui.static.showRoundResult(round);
-            this.ui.map.showResult?.(round);
+        this.game.on("guessFinished", (round) => {
+            this.ui.static?.updateHUD(round);
         });
 
-        game.on("gameEnded", (state) => {
-            this.ui.static.showGameResult(state);
+        this.game.on("roundCommitted", (round) => {
+            this.ui.map?.lock?.();
+            this.ui.map?.renderOverview?.(round);
+            this.ui.static?.showRoundResult?.(round);
+        });
+
+        this.game.on("gameEnded", (state) => {
+            this.ui.static?.showGameResult(state);
         });
     }
 }
