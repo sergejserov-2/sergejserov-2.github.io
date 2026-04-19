@@ -1,13 +1,17 @@
-
 export class MapUI {
     constructor({ element } = {}) {
+
         // =====================================================
-        // DOM
+        // DOM (SAFE)
         // =====================================================
         this.embedMapElement = document.querySelector(".embed-map");
         this.overviewMapElement = document.querySelector(".overview-map");
         this.streetViewElement = document.querySelector(".streetview");
         this.guessMapElement = document.querySelector(".guess-map");
+
+        if (!this.embedMapElement) {
+            console.error("[MapUI] embedMapElement missing");
+        }
 
         // =====================================================
         // MAP INSTANCES
@@ -31,16 +35,16 @@ export class MapUI {
 
         this._resizeBound = false;
 
-        this.initGuessMap();
-        this.initOverviewMap();
+        // ❗ DO NOT INIT GOOGLE MAPS HERE
+        // Init is now lifecycle-driven from Init.js / Bridge flow
     }
 
     // =====================================================
-    // INIT MAPS (ONCE)
+    // INIT (CALLED ONCE FROM INIT.JS)
     // =====================================================
 
     initGuessMap() {
-        if (this.googleMap) return;
+        if (this.googleMap || !this.embedMapElement) return;
 
         this.googleMap = new google.maps.Map(this.embedMapElement, {
             center: { lat: 0, lng: 0 },
@@ -59,8 +63,6 @@ export class MapUI {
 
             this.lastGuess = point;
 
-            console.log("[MAPUI] guess selected", point);
-
             this.onGuessCallback?.(point);
         });
 
@@ -68,7 +70,7 @@ export class MapUI {
     }
 
     initOverviewMap() {
-        if (this.overviewMap) return;
+        if (this.overviewMap || !this.overviewMapElement) return;
 
         this.overviewMap = new google.maps.Map(this.overviewMapElement, {
             center: { lat: 0, lng: 0 },
@@ -77,13 +79,17 @@ export class MapUI {
         });
     }
 
-    initStreetView(location) {
-        if (this.panorama) return;
+    // =====================================================
+    // STREETVIEW LIFECYCLE (FIXED)
+    // =====================================================
+
+    initStreetView() {
+        if (this.panorama || !this.streetViewElement) return;
 
         this.panorama = new google.maps.StreetViewPanorama(
             this.streetViewElement,
             {
-                position: location || { lat: 0, lng: 0 },
+                position: { lat: 0, lng: 0 },
                 addressControl: false,
                 linksControl: true,
                 panControl: true,
@@ -95,47 +101,52 @@ export class MapUI {
             }
         );
 
+        // bind map
         this.googleMap?.setStreetView(this.panorama);
+    }
 
+    setStreetViewLocation(location) {
+        if (!this.panorama || !location) return;
+
+        this.panorama.setPosition(location);
+
+        // IMPORTANT: ensure render
         setTimeout(() => {
             google.maps.event.trigger(this.panorama, "resize");
-        }, 0);
+        }, 100);
     }
 
     // =====================================================
-    // FLOW API (MATCHES BRIDGE EXACTLY)
+    // ROUND FLOW API (USED BY BRIDGE)
     // =====================================================
 
     beginRound({ location }) {
-        console.log("[MAPUI] beginRound", location);
-
         this.isGuessMode = true;
         this.isGuessLocked = false;
 
-        // reset state
         this.clearGuessMarker();
         this.clearOverview();
 
-        // move map
+        // MAP
         if (this.googleMap) {
             this.googleMap.setCenter(location);
             this.googleMap.setZoom(2);
         }
 
-        // update streetview each round
-        if (this.panorama) {
-            this.panorama.setPosition(location);
-
-            setTimeout(() => {
-                google.maps.event.trigger(this.panorama, "resize");
-            }, 50);
+        // STREETVIEW (SAFE LIFECYCLE)
+        if (!this.panorama) {
+            this.initStreetView();
         }
+
+        this.setStreetViewLocation(location);
     }
+
+    // =====================================================
+    // GUESS SYSTEM
+    // =====================================================
 
     updateGuessPreview(point) {
         if (!this.googleMap || !point) return;
-
-        console.log("[MAPUI] preview guess", point);
 
         this.clearGuessMarker();
 
@@ -157,16 +168,16 @@ export class MapUI {
     }
 
     lockGuess() {
-        console.log("[MAPUI] lock guess");
-
         this.isGuessLocked = true;
         this.isGuessMode = false;
     }
 
+    // =====================================================
+    // OVERVIEW
+    // =====================================================
+
     renderOverview({ guess, actual }) {
         if (!this.overviewMap || !guess || !actual) return;
-
-        console.log("[MAPUI] render overview");
 
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(guess);
@@ -209,14 +220,14 @@ export class MapUI {
     }
 
     // =====================================================
-    // RESIZE
+    // RESIZE (UNCHANGED BUT SAFE)
     // =====================================================
 
     initResize() {
-        if (this._resizeBound) return;
+        if (this._resizeBound || !this.guessMapElement) return;
 
         const el = this.guessMapElement;
-        const handle = el?.querySelector(".resize-handle");
+        const handle = el.querySelector(".resize-handle");
 
         if (!handle) return;
 
