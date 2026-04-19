@@ -26,7 +26,7 @@ export class UIFlow {
 
  connectInput() {
 
-  // 📍 выбор точки на карте
+  // 📍 выбор точки
   this.mapUI.bindGuess((point) => {
    this.gameFlow.onGuess("p1", point);
   });
@@ -50,10 +50,7 @@ export class UIFlow {
   this.gameFlow.on("roundStarted", ({ round, actual }) => {
    this.setScreen("round");
 
-   const hud = this.uiBuilder.buildHUD(
-    this.gameFlow.game.state,
-    round
-   );
+   const hud = this.uiBuilder.buildHUD(round);
 
    this.staticUI.updateHUD(hud);
 
@@ -65,27 +62,20 @@ export class UIFlow {
    this.mapUI.placeGuessMarker(guess);
   });
 
-  this.gameFlow.on("guessFinished", ({ result }) => {
+  this.gameFlow.on("guessFinished", ({ result, round }) => {
    this.setScreen("result");
 
-   const vm = this.uiBuilder.buildRoundVM(
-    this.gameFlow.game.state,
-    this.gameFlow.game.state.getCurrentRound()
-   );
+   const vm = this.uiBuilder.buildRoundVM(round, result);
 
    this.staticUI.showRoundResult(vm);
 
-   this.mapUI.renderOverview(
-    this.gameFlow.game.state.getCurrentRound()
-   );
+   this.mapUI.renderOverview(round);
   });
 
-  this.gameFlow.on("gameEnded", () => {
+  this.gameFlow.on("gameEnded", ({ state }) => {
    this.setScreen("result");
 
-   const vm = this.uiBuilder.buildGameVM(
-    this.gameFlow.game.state
-   );
+   const vm = this.uiBuilder.buildGameVM(state);
 
    this.staticUI.showGameResult(vm);
   });
