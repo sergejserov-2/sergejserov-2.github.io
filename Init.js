@@ -79,7 +79,8 @@ async function bootstrap() {
   });
 
   const streetViewUI = new StreetViewUI({
-   element: root.querySelector(".streetview")
+   element: root.querySelector(".streetview"),
+   adapter: mapAdapter
   });
 
   const staticUI = new StaticUI({ element: root });
