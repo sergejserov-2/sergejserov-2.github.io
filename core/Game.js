@@ -175,31 +175,35 @@ export class Game extends Emitter {
     // ROUND END
     // =====================================================
 
-    endRound(payload = {}) {
+    endRound({ result } = {}) {
         this.stopTimer();
-
-        Object.values(this.players).forEach(p => {
-            p.state = "idle";
-        });
-
         this.roundState = "ended";
-
-        const snapshot = {
-            result,
-            guess: this.currentGuess,
-            actual: this.current,
-            totalScore: this.score,
-            round: this.currentRound
-        };
-
-        this.history.push(snapshot);
-
+        this.history.push({ result });
+    
+        const score = result?.score ?? 0;
+        const distance = result?.distance ?? null;
+    
         this.fire("roundEnded", {
-            score: payload.result?.score ?? 0,
-            distance: payload.result?.distance ?? null,
+            score,
+            distance,
             totalScore: this.score,
             round: this.currentRound
         });
+    
+        const isLast = this.currentRound >= this.maxRounds;
+    
+        setTimeout(() => {
+            if (isLast) {
+                this.endGame();
+                return;
+            }
+    
+            this.currentRound++;
+            this.current = null;
+    
+            this.prepareNextRound();
+        }, 1200);
+    }
 
         const isLast = this.currentRound >= this.maxRounds;
 
