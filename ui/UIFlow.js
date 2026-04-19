@@ -1,4 +1,4 @@
-export class Bridge {
+export class UIFlow {
  constructor({
   game,
   gameFlow,
