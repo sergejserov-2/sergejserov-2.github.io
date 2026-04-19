@@ -92,6 +92,12 @@ export class StaticUI {
     // RESULT SCREEN (ROUND END)
     // =====================================================
 
+    formatDistance(km) {
+        if (km < 1) { return `${Math.round(km * 1000)} м`; }
+        if (km < 100) { return `${km.toFixed(1)} км`; }
+        return `${Math.round(km)} км`;
+    }
+    
     showRoundResult(data) {
         this.showResult();
         const progress = (data.score / 5000) * 100;
@@ -100,7 +106,7 @@ export class StaticUI {
         }
         if (this.textEls?.length >= 2) {
             this.textEls[0].innerText =
-                `Вы в ${data.distance} от места`;
+                `Вы в ${this.formatDistance(data.distance)} от места`;
             this.textEls[1].innerText =
                 `Счёт: ${data.score} | Итог: ${data.totalScore}`;
         }
@@ -122,7 +128,7 @@ showGameResult(data) {
     const last = data.history?.at(-1);
     if (this.textEls?.length >= 2) {
         this.textEls[0].innerText =
-            `Последний результат: ${last?.result?.distance || "-"}`;
+            `Последний результат: ${this.formatDistance(last?.result?.distance || "-")}`;
         this.textEls[1].innerText =
             `Итоговый счёт: ${data.totalScore}`;
     }
