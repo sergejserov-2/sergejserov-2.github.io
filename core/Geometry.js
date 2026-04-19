@@ -69,19 +69,22 @@ export class Geometry {
 
     isInsidePolygon(point, polygon) {
         let inside = false;
-
+    
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const [xi, yi] = polygon[i];
-            const [xj, yj] = polygon[j];
-
+    
+            const [lat1, lng1] = polygon[i];
+            const [lat2, lng2] = polygon[j];
+    
             const intersect =
-                yi > point.lat !== yj > point.lat &&
-                point.lng <
-                    ((xj - xi) * (point.lat - yi)) / (yj - yi + 1e-9) + xi;
-
+                (lng1 > point.lng) !== (lng2 > point.lng) &&
+                point.lat <
+                    ((lat2 - lat1) * (point.lng - lng1)) /
+                    ((lng2 - lng1) + 1e-9) +
+                    lat1;
+    
             if (intersect) inside = !inside;
         }
-
+    
         return inside;
     }
 }
