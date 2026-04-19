@@ -1,8 +1,6 @@
 import { Game } from "./core/Game.js";
-import { GameFlow } from "./core/GameFlow.js";
 import { GameState } from "./core/GameState.js";
 import { Bridge } from "./core/Bridge.js";
-import { Emitter } from "./core/Emitter.js";
 import { ViewModelBuilder } from "./core/ViewModelBuilder.js";
 
 import { Geometry } from "./domain/Geometry.js";
@@ -13,77 +11,103 @@ import { MapAdapter } from "./adapters/MapAdapter.js";
 import { LocationGenerator } from "./adapters/LocationGenerator.js";
 
 import { MapUI } from "./ui/MapUI.js";
-import { StreetViewUI } from "./ui/StreetviewUI.js";
+import { StreetViewUI } from "./ui/StreetViewUI.js";
 import { StaticUI } from "./ui/StaticUI.js";
 import { tweaks } from "./ui/Tweaks.js";
 
 function waitForGoogle() {
-    return new Promise(resolve => {
-        const check = () => {
-            if (window.google?.maps) resolve();
-            else setTimeout(check, 50);
-        };
-        check();
-    });
+return new Promise(resolve => {
+const check = () => {
+if (window.google?.maps) resolve();
+else setTimeout(check, 50);
+};
+check();
+});
 }
 
 function loadConfig() {
-    const raw = localStorage.getItem("gameConfig");
-    if (!raw) throw new Error("No gameConfig found");
-    return JSON.parse(raw);
+const raw = localStorage.getItem("gameConfig");
+if (!raw) throw new Error("No gameConfig found");
+return JSON.parse(raw);
 }
 
 async function bootstrap() {
-    try {
-        console.log("[Init] START");
+try {
+console.log("[Init] START");
 
-        await waitForGoogle();
+await waitForGoogle();
 
-        tweaks();
+tweaks();
 
-        const config = loadConfig();
-        const area = AreaRegistry[config.area];
+const config = loadConfig();
+const area = AreaRegistry[config.area];
 
-        const element = document.querySelector(".game");
+const root = document.querySelector(".game");
 
-        const geometry = new Geometry();
-        const mapAdapter = new MapAdapter(window.google);
+/* =========================
+   DOMAIN
+========================= */
+const geometry = new Geometry();
+const scoring = new Scoring(geometry);
 
-        const generator = new LocationGenerator({
-            mapAdapter,
-            geometry
-        });
+/* =========================
+   ADAPTERS
+========================= */
+const mapAdapter = new MapAdapter(window.google);
 
-        const scoring = new Scoring(geometry);
+const generator = new LocationGenerator({
+mapAdapter,
+geometry
+});
 
-        const game = new Game({
-            gameState: new GameState(),
-            generator,
-            scoring
-        });
+/* =========================
+   CORE
+========================= */
+const game = new Game({
+gameState: new GameState(),
+generator,
+scoring
+});
 
-        const mapUI = new MapUI({ element });
-        const streetViewUI = new StreetViewUI({ element });
-        const staticUI = new StaticUI({ element });
+/* =========================
+   UI
+========================= */
+const mapUI = new MapUI({
+adapter: mapAdapter,
+mapElement: root.querySelector(".map"),
+overviewElement: root.querySelector(".overview-map")
+});
 
-        mapUI.initGuessMap();
-        mapUI.initOverviewMap();
-        streetViewUI.init();
+const streetViewUI = new StreetViewUI({
+element: root.querySelector(".streetview")
+});
 
-        new Bridge({
-            game,
-            mapUI,
-            streetViewUI,
-            staticUI,
-            viewModelBuilder: new ViewModelBuilder()
-        });
+const staticUI = new StaticUI({ element: root });
 
-        game.startGame();
+mapUI.init();
+streetViewUI.init();
 
-        console.log("[Init] SUCCESS");
-    } catch (err) {
-        console.error("[Init] FAILED:", err);
-    }
+/* =========================
+   BRIDGE
+========================= */
+new Bridge({
+game,
+mapUI,
+streetViewUI,
+staticUI,
+viewModelBuilder: new ViewModelBuilder()
+});
+
+/* =========================
+   START
+========================= */
+game.startGame();
+
+console.log("[Init] SUCCESS");
+
+} catch (err) {
+console.error("[Init] FAILED:", err);
+}
 }
 
 bootstrap();
