@@ -9,7 +9,7 @@ export class Game extends Emitter {
     }
 
     startGame() {
-        this.state.reset();
+        this.state.start();
         this.state.status = "active";
         this.fire("gameStarted");
     }
