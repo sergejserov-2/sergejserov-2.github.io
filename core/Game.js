@@ -1,4 +1,3 @@
-
 import { Emitter } from "./Emitter.js";
 
 export class Game extends Emitter {
