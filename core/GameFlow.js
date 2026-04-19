@@ -1,7 +1,8 @@
 export class GameFlow {
- constructor({ game, generator, area }) {
+ constructor({ game, generator, scoring, area }) {
   this.game = game;
   this.generator = generator;
+  this.scoring = scoring;
   this.area = area;
 
   this.listeners = {};
@@ -33,7 +34,6 @@ export class GameFlow {
   });
  }
 
- // 👇 ВАЖНО: теперь это единая точка входа для guess
  onGuess(playerId, point) {
   this.game.setGuess(playerId, point);
 
@@ -44,12 +44,25 @@ export class GameFlow {
  }
 
  finishGuess(playerId = "p1") {
-  const result = this.game.finishGuess(playerId);
-  if (!result) return;
+  const round = this.game.state.getCurrentRound();
+  if (!round) return;
+
+  const guess = this.game.state.getPlayerGuess(playerId);
+  if (!guess || guess.isFinished) return;
+
+  const result = this.scoring.calculateResult({
+   guess: guess.guess,
+   actual: round.actualLocation,
+   area: this.area
+  });
+
+  guess.distance = result.distance;
+  guess.score = result.score;
+  guess.isFinished = true;
 
   this.emit("guessFinished", {
    result,
-   round: this.game.state.getCurrentRound()
+   round
   });
 
   if (this.game.areAllPlayersFinished()) {
