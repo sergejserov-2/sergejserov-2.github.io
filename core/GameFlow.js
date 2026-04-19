@@ -1,56 +1,36 @@
 export class GameFlow {
-    constructor({ game, generator, streetView, emitter, maxRetries = 10 }) {
+    constructor({ game, generator, area }) {
         this.game = game;
         this.generator = generator;
-        this.streetView = streetView;
-        this.emitter = emitter;
-        this.maxRetries = maxRetries;
+        this.area = area;
+
+        this.currentRound = 0;
     }
 
-    startGame() {
-        this.game.start();
-        this.emitter.emit("gameStarted", this.game.getState());
-        this.startRound();
+    async startGame() {
+        this.currentRound = 0;
+        this.game.startGame();
+
+        await this.nextRound();
     }
 
-    async startRound() {
-        const area = this.game.getCurrentArea();
-        let point = null;
-        let tries = 0;
+    async nextRound() {
+        const location = await this.generator.generate(this.area);
 
-        while (tries < this.maxRetries) {
-            const candidate = this.generator.generate(area);
-            const ok = await this.streetView.trySetLocation(candidate);
-            if (ok) {
-                point = candidate;
-                break;
-            }
-            tries++;
-        }
+        this.game.startRound(location);
 
-        if (!point) throw new Error("Failed to find valid StreetView point");
-
-        this.game.startRound(point);
-        this.emitter.emit("roundStarted", this.game.getCurrentRound());
+        this.currentRound++;
     }
 
-    onGuessFinished(data) {
-        this.game.finishGuess(data);
-        const round = this.game.getCurrentRound();
-        this.emitter.emit("guessFinished", round);
-        this.commitRound();
-    }
-
-    commitRound() {
+    onGuessFinish() {
         this.game.commitRound();
-        const round = this.game.getCurrentRound();
-        this.emitter.emit("roundCommitted", round);
-        if (this.game.isLastRound()) this.endGame();
-        else this.startRound();
+    }
+
+    async continue() {
+        await this.nextRound();
     }
 
     endGame() {
-        this.game.end();
-        this.emitter.emit("gameEnded", this.game.getState());
+        this.game.endGame();
     }
 }
