@@ -1,5 +1,12 @@
 export class Bridge {
- constructor({ game, gameFlow, mapUI, streetViewUI, staticUI, viewModelBuilder }) {
+ constructor({
+  game,
+  gameFlow,
+  mapUI,
+  streetViewUI,
+  staticUI,
+  viewModelBuilder
+ }) {
   this.game = game;
   this.gameFlow = gameFlow;
   this.mapUI = mapUI;
@@ -11,8 +18,6 @@ export class Bridge {
  }
 
  bind() {
-  this.onRoundStart();
-
   this.mapUI.onGuess((point) => {
    this.game.setGuess("p1", point);
 
@@ -39,7 +44,7 @@ export class Bridge {
 
   this.staticUI.playAgainButton?.addEventListener("click", () => {
    this.gameFlow.commitRound();
-   this.onRoundStart();
+   this.sync();
   });
 
   this.game.endGame = () => {
@@ -49,7 +54,7 @@ export class Bridge {
   };
  }
 
- onRoundStart() {
+ sync() {
   const round = this.game.state.currentRound;
   if (!round) return;
 
