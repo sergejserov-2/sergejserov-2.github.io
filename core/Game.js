@@ -1,4 +1,4 @@
-[19.04.2026 3:17] Сергей Серов: import { Emitter } from "./Emitter.js";
+import { Emitter } from "./Emitter.js";
 
 // GAME (PURE ORCHESTRATOR / DI VERSION)
 
@@ -154,7 +154,7 @@ export class Game extends Emitter {
 
     endRound(payload = {}) {
         this.stopTimer();
-[19.04.2026 3:17] Сергей Серов: Object.values(this.players).forEach(p => {
+        Object.values(this.players).forEach(p => {
             p.state = "idle";
         });
 
