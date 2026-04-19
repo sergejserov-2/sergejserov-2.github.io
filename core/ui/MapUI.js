@@ -32,7 +32,7 @@ export class MapUI {
         // =========================
         // MAP
         // =========================
-        this.googleMap = new google.maps.Map(this.mapElement, {
+        this.googleMap = new google.maps.Map(this.guessMapElement, {
             center: location,
             zoom: 2,
             disableDefaultUI: true,
