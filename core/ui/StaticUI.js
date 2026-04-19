@@ -1,20 +1,27 @@
+
 export class StaticUI {
     constructor({ element }) {
         this.element = element;
 
+        // =====================================================
         // HUD
+        // =====================================================
         this.roundEl = element.querySelector(".round");
         this.scoreEl = element.querySelector(".total-score");
         this.timeEl = element.querySelector(".time-left");
         this.movesEl = element.querySelector(".moves-left");
 
+        // =====================================================
         // SCREENS
+        // =====================================================
         this.loadingOverlay = element.querySelector(".loading-screen");
         this.resultScreen = element.querySelector(".guess-overview");
 
-        // RESULT UI
-        this.progressBar = element.querySelector(".score-progress");
-        this.textEls = element.querySelectorAll(".score-text p");
+        // =====================================================
+        // RESULT UI (GLOBAL SCOPE SAFE)
+        // =====================================================
+        this.progressBar = document.querySelector(".score-progress");
+        this.textEls = document.querySelectorAll(".score-text p");
         this.nextBtn = element.querySelector(".next-round-button");
         this.endButtons = element.querySelector(".game-end-buttons");
 
@@ -22,7 +29,7 @@ export class StaticUI {
     }
 
     // =====================================================
-    // GAME STATES
+    // GAME VISIBILITY
     // =====================================================
 
     showGame() {
@@ -38,15 +45,11 @@ export class StaticUI {
     // =====================================================
 
     showLoading() {
-        if (this.loadingOverlay) {
-            this.loadingOverlay.style.display = "flex";
-        }
+        this.loadingOverlay?.style && (this.loadingOverlay.style.display = "flex");
     }
 
     hideLoading() {
-        if (this.loadingOverlay) {
-            this.loadingOverlay.style.display = "none";
-        }
+        this.loadingOverlay?.style && (this.loadingOverlay.style.display = "none");
     }
 
     // =====================================================
@@ -59,29 +62,23 @@ export class StaticUI {
         }
 
         if (this.scoreEl) {
-            this.scoreEl.innerHTML = `Счёт: <b>${score}</b>`;
+            this.scoreEl.innerHTML = `Счёт: <b>${score ?? 0}</b>`;
         }
 
         if (this.timeEl) {
-            this.timeEl.innerHTML = `Время: <b>${time}</b>`;
+            this.timeEl.innerHTML = `Время: <b>${time ?? 0}</b>`;
         }
 
         if (this.movesEl) {
-            this.movesEl.innerHTML = `Шагов: <b>${moves}</b>`;
+            this.movesEl.innerHTML = `Шагов: <b>${moves ?? 0}</b>`;
         }
     }
 
     // =====================================================
-    // ROUND READY
+    // ROUND FLOW
     // =====================================================
 
-    showRoundReady(round) {
-        // optional animation
-    }
-
-    // =====================================================
-    // ROUND START
-    // =====================================================
+    showRoundReady() {}
 
     startRound() {
         this.hideLoading();
@@ -89,67 +86,86 @@ export class StaticUI {
     }
 
     // =====================================================
-    // RESULT SCREEN (ROUND END)
+    // RESULT LOGIC
     // =====================================================
 
     formatDistance(km) {
-        if (km < 1) { return `${Math.round(km * 1000)} м`; }
-        if (km < 100) { return `${km.toFixed(1)} км`; }
+        if (typeof km !== "number" || isNaN(km)) return "-";
+
+        if (km < 1) return `${Math.round(km * 1000)} м`;
+        if (km < 100) return `${km.toFixed(1)} км`;
         return `${Math.round(km)} км`;
     }
-    
+
     showRoundResult(data) {
         this.showResult();
-        const progress = (data.score / 5000) * 100;
+
+        const score = data?.score ?? 0;
+        const distance = data?.distance;
+
+        const progress = Math.min((score / 5000) * 100, 100);
+
         if (this.progressBar) {
             this.progressBar.style.width = `${progress}%`;
         }
+
         if (this.textEls?.length >= 2) {
             this.textEls[0].innerText =
-                `Вы в ${this.formatDistance(data.distance)} от места`;
+                `Вы в ${this.formatDistance(distance)} от места`;
+
             this.textEls[1].innerText =
-                `Счёт: ${data.score} | Итог: ${data.totalScore}`;
+                `Счёт: ${score} | Итог: ${data?.totalScore ?? 0}`;
         }
-        this.nextBtn.style.display = "inline-block";
-        this.endButtons.style.display = "none";
+
+        if (this.nextBtn) {
+            this.nextBtn.style.display = "inline-block";
+        }
+
+        if (this.endButtons) {
+            this.endButtons.style.display = "none";
+        }
     }
 
-    // =====================================================
-    // GAME END SCREEN
-    // =====================================================
+    showGameResult(data) {
+        this.showResult();
 
-showGameResult(data) {
-    this.showResult();
-    const progress =
-        (data.totalScore / (5000 * data.roundCount)) * 100;
-    if (this.progressBar) {
-        this.progressBar.style.width = `${progress}%`;
+        const progress =
+            (data?.totalScore ?? 0) /
+            ((5000 * (data?.roundCount ?? 1)));
+
+        if (this.progressBar) {
+            this.progressBar.style.width = `${Math.min(progress * 100, 100)}%`;
+        }
+
+        const last = data?.history?.at?.(-1);
+
+        if (this.textEls?.length >= 2) {
+            this.textEls[0].innerText =
+                `Последний результат: ${this.formatDistance(last?.result?.distance)}`;
+
+            this.textEls[1].innerText =
+                `Итоговый счёт: ${data?.totalScore ?? 0}`;
+        }
+
+        if (this.nextBtn) {
+            this.nextBtn.style.display = "none";
+        }
+
+        if (this.endButtons) {
+            this.endButtons.style.display = "block";
+        }
     }
-    const last = data.history?.at(-1);
-    if (this.textEls?.length >= 2) {
-        this.textEls[0].innerText =
-            `Последний результат: ${this.formatDistance(last?.result?.distance || "-")}`;
-        this.textEls[1].innerText =
-            `Итоговый счёт: ${data.totalScore}`;
-    }
-    this.nextBtn.style.display = "none";
-    this.endButtons.style.display = "block";
-}
 
     // =====================================================
     // SCREEN CONTROL
     // =====================================================
 
     showResult() {
-        if (this.resultScreen) {
-            this.resultScreen.classList.add("active");
-        }
+        this.resultScreen?.classList.add("active");
     }
 
     hideResult() {
-        if (this.resultScreen) {
-            this.resultScreen.classList.remove("active");
-        }
+        this.resultScreen?.classList.remove("active");
     }
 
     // =====================================================
@@ -163,8 +179,10 @@ showGameResult(data) {
             e.preventDefault();
 
             const input = this.form.querySelector(".username-input");
-
             handler?.(input?.value);
         });
     }
 }
+
+
+
