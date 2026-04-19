@@ -1,12 +1,5 @@
 export class Bridge {
- constructor({
-  game,
-  gameFlow,
-  mapUI,
-  streetViewUI,
-  staticUI,
-  viewModelBuilder
- }) {
+ constructor({ game, gameFlow, mapUI, streetViewUI, staticUI, viewModelBuilder }) {
   this.game = game;
   this.gameFlow = gameFlow;
   this.mapUI = mapUI;
@@ -18,54 +11,53 @@ export class Bridge {
  }
 
  bind() {
+  this.onRoundStart();
 
-  /* GAME START */
-  this.game.on("gameStarted", () => {
-   this.staticUI.hideLoading();
-  });
+  this.mapUI.onGuess((point) => {
+   this.game.setGuess("p1", point);
 
-  /* ROUND START */
-  this.game.on("roundStarted", ({ actual }) => {
-   this.staticUI.updateHUD(
-    this.vm.buildHUD(this.game.state, this.game.state.getCurrentRound())
-   );
+   const round = this.game.state.currentRound;
+   const guess = round.guesses?.at(-1)?.guess;
 
-   this.streetViewUI.setLocation(actual);
-   this.mapUI.reset();
-  });
-
-  /* GUESS UPDATE */
-  this.game.on("guessUpdated", ({ guess }) => {
    this.mapUI.placeGuessMarker(guess);
   });
 
-  /* GUESS FINISHED */
-  this.game.on("guessFinished", ({ result }) => {
+  document.getElementById("makeGuess")?.addEventListener("click", () => {
+   this.game.finishGuess("p1");
 
-   const vm = this.vm.buildRoundVM(
-    this.game.state,
-    this.game.state.getCurrentRound()
+   const round = this.game.state.currentRound;
+
+   this.staticUI.showRoundResult(
+    this.vm.buildRoundVM(this.game.state, round)
    );
 
-   this.staticUI.showRoundResult(vm);
-
    this.mapUI.renderOverview({
-    guess: result.guess,
-    actual: result.actual
+    guess: round.guesses?.at(-1)?.guess,
+    actual: round.actualLocation
    });
   });
 
-  /* ROUND COMMITTED → ONLY FLOW */
-  this.game.on("roundCommitted", () => {
+  this.staticUI.playAgainButton?.addEventListener("click", () => {
    this.gameFlow.commitRound();
+   this.onRoundStart();
   });
 
-  /* GAME END */
-  this.game.on("gameEnded", () => {
+  this.game.endGame = () => {
+   this.staticUI.showGameResult(
+    this.vm.buildGameVM(this.game.state)
+   );
+  };
+ }
 
-   const vm = this.vm.buildGameVM(this.game.state);
+ onRoundStart() {
+  const round = this.game.state.currentRound;
+  if (!round) return;
 
-   this.staticUI.showGameResult(vm);
-  });
+  this.staticUI.updateHUD(
+   this.vm.buildHUD(this.game.state, round)
+  );
+
+  this.streetViewUI.setLocation(round.actualLocation);
+  this.mapUI.reset();
  }
 }
