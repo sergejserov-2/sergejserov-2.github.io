@@ -54,8 +54,10 @@ export class Bridge {
         });
 
         this.game.on("roundEnded", (data) => {
-            this.staticUI.showRoundResult(data);
-
+            this.staticUI.showRoundResult({
+                result,
+                totalScore: this.game.score
+            });
             this.mapUI.renderOverview({
                 guess: this.game.getCurrentGuess(),
                 actual: this.game.current
@@ -63,7 +65,10 @@ export class Bridge {
         });
 
         this.game.on("gameEnded", (data) => {
-            this.staticUI.showGameResult(data);
+            this.staticUI.showRoundResult({
+                result,
+                totalScore: this.game.score
+            });
         });
     }
 
