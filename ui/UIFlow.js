@@ -25,13 +25,10 @@ export class UIFlow {
  }
 
  connectInput() {
-
-  // 📍 выбор точки
   this.mapUI.bindGuess((point) => {
    this.gameFlow.onGuess("p1", point);
   });
 
-  // 🎯 кнопка "Сделать выбор"
   const btn = document.getElementById("makeGuess");
 
   if (btn) {
@@ -50,7 +47,10 @@ export class UIFlow {
   this.gameFlow.on("roundStarted", ({ round, actual }) => {
    this.setScreen("round");
 
-   const hud = this.uiBuilder.buildHUD(round);
+   const hud = this.uiBuilder.buildHUD(
+    this.gameFlow.game.state,
+    round
+   );
 
    this.staticUI.updateHUD(hud);
 
@@ -62,20 +62,32 @@ export class UIFlow {
    this.mapUI.placeGuessMarker(guess);
   });
 
-  this.gameFlow.on("guessFinished", ({ result, round }) => {
+  this.gameFlow.on("guessFinished", ({ result }) => {
    this.setScreen("result");
 
-   const vm = this.uiBuilder.buildRoundVM(round, result);
+   const vm = this.uiBuilder.buildRoundVM(
+    this.gameFlow.game.state,
+    this.gameFlow.game.state.getCurrentRound()
+   );
 
    this.staticUI.showRoundResult(vm);
 
-   this.mapUI.renderOverview(round);
+   this.mapUI.renderOverview(
+    this.gameFlow.game.state.getCurrentRound()
+   );
   });
 
-  this.gameFlow.on("gameEnded", ({ state }) => {
+  // 💣 ВАЖНО: теперь именно здесь задержка следующего раунда
+  this.gameFlow.on("roundCommitted", async () => {
+   await this.gameFlow.startNextRoundWithDelay(1500);
+  });
+
+  this.gameFlow.on("gameEnded", () => {
    this.setScreen("result");
 
-   const vm = this.uiBuilder.buildGameVM(state);
+   const vm = this.uiBuilder.buildGameVM(
+    this.gameFlow.game.state
+   );
 
    this.staticUI.showGameResult(vm);
   });
