@@ -1,4 +1,5 @@
 export class GameState {
+
  constructor() {
   this.status = "idle";
   this.currentRoundIndex = 0;
@@ -31,7 +32,7 @@ export class GameState {
   return round?.guesses.find(g => g.playerId === playerId);
  }
 
- addGuess(playerId, guess, result) {
+ addGuess(playerId, guess) {
   const round = this.getCurrentRound();
   if (!round) return;
 
@@ -41,9 +42,9 @@ export class GameState {
     lat: guess.lat,
     lng: guess.lng
    },
-   distance: result.distance,
-   score: result.score,
-   isFinished: result.isFinished ?? false
+   distance: null,
+   score: null,
+   isFinished: false
   });
  }
 
