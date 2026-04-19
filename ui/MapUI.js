@@ -1,88 +1,92 @@
 export class MapUI {
-    constructor({ adapter, mapElement, overviewElement }) {
-        this.adapter = adapter;
-        this.mapElement = mapElement;
-        this.overviewElement = overviewElement;
+ constructor({ adapter, mapElement, overviewElement }) {
+  this.adapter = adapter;
+  this.mapElement = mapElement;
+  this.overviewElement = overviewElement;
 
-        this.map = null;
-        this.overviewMap = null;
+  this.map = null;
+  this.overviewMap = null;
 
-        this.guessMarker = null;
-        this.overviewMarkers = [];
-        this.overviewLines = [];
+  this.guessMarker = null;
+  this.overviewMarkers = [];
+  this.overviewLines = [];
 
-        this.isGuessLocked = false;
-        this.onGuessCallback = null;
-    }
+  this.isGuessLocked = false;
+  this.onGuessCallback = null;
+ }
 
-    init() {
-        this.map = this.adapter.createMap(this.mapElement, { zoom: 2 });
-        this.overviewMap = this.adapter.createMap(this.overviewElement, { zoom: 2 });
+ init() {
+  this.map = this.adapter.createMap(this.mapElement, { zoom: 2 });
+  this.overviewMap = this.adapter.createMap(this.overviewElement, { zoom: 2 });
 
-        this.map.addListener("click", (e) => {
-            if (this.isGuessLocked) return;
+  this.map.addListener("click", (e) => {
+   if (this.isGuessLocked) return;
 
-            const point = [e.latLng.lat(), e.latLng.lng()];
-            this.placeGuessMarker(point);
-            this.onGuessCallback?.(point);
-        });
-    }
+   const point = {
+    lat: e.latLng.lat(),
+    lng: e.latLng.lng()
+   };
 
-    placeGuessMarker([lat, lng]) {
-        if (!this.map) return;
+   this.placeGuessMarker(point);
+   this.onGuessCallback?.(point);
+  });
+ }
 
-        this.clearGuessMarker();
-        this.guessMarker = this.adapter.createMarker(this.map, [lat, lng]);
-    }
+ placeGuessMarker({ lat, lng }) {
+  if (!this.map) return;
 
-    clearGuessMarker() {
-        if (!this.guessMarker) return;
+  this.clearGuessMarker();
+  this.guessMarker = this.adapter.createMarker(this.map, { lat, lng });
+ }
 
-        this.adapter.removeMarker(this.guessMarker);
-        this.guessMarker = null;
-    }
+ clearGuessMarker() {
+  if (!this.guessMarker) return;
 
-    lock() {
-        this.isGuessLocked = true;
-    }
+  this.adapter.removeMarker(this.guessMarker);
+  this.guessMarker = null;
+ }
 
-    reset() {
-        this.isGuessLocked = false;
-        this.clearGuessMarker();
-        this.clearOverview();
-    }
+ lock() {
+  this.isGuessLocked = true;
+ }
 
-    renderOverview(round) {
-        const guess = round.guesses?.[0]?.guess;
-        const actual = round.actualLocation;
+ reset() {
+  this.isGuessLocked = false;
+  this.clearGuessMarker();
+  this.clearOverview();
+ }
 
-        if (!guess || !actual) return;
+ renderOverview(round) {
+  const guess = round.guesses?.[0]?.guess;
+  const actual = round.actualLocation;
 
-        this.clearOverview();
+  if (!guess || !actual) return;
 
-        const guessMarker = this.adapter.createMarker(this.overviewMap, guess);
-        const actualMarker = this.adapter.createMarker(this.overviewMap, actual);
+  this.clearOverview();
 
-        const line = this.adapter.createPolyline(this.overviewMap, [
-            { lat: guess[0], lng: guess[1] },
-            { lat: actual[0], lng: actual[1] }
-        ]);
+  const guessMarker = this.adapter.createMarker(this.overviewMap, guess);
+  const actualMarker = this.adapter.createMarker(this.overviewMap, actual);
 
-        this.adapter.fitToMarkers(this.overviewMap, [guessMarker, actualMarker]);
+  const line = this.adapter.createPolyline(this.overviewMap, [
+   guess,
+   actual
+  ]);
 
-        this.overviewMarkers.push(guessMarker, actualMarker);
-        this.overviewLines.push(line);
-    }
+  this.adapter.fitToMarkers(this.overviewMap, [guessMarker, actualMarker]);
 
-    clearOverview() {
-        this.overviewLines.forEach(l => l.setMap(null));
-        this.overviewMarkers.forEach(m => this.adapter.removeMarker(m));
+  this.overviewMarkers.push(guessMarker, actualMarker);
+  this.overviewLines.push(line);
+ }
 
-        this.overviewLines = [];
-        this.overviewMarkers = [];
-    }
+ clearOverview() {
+  this.overviewLines.forEach(l => l.setMap(null));
+  this.overviewMarkers.forEach(m => this.adapter.removeMarker(m));
 
-    onGuess(cb) {
-        this.onGuessCallback = cb;
-    }
+  this.overviewLines = [];
+  this.overviewMarkers = [];
+ }
+
+ onGuess(cb) {
+  this.onGuessCallback = cb;
+ }
 }
