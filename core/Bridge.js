@@ -54,4 +54,24 @@ export class Bridge {
   });
 
   // следующий раунд
-  this.staticUI
+  this.staticUI.element
+   ?.querySelector(".guess-overview")
+   ?.addEventListener("click", () => {
+    this.staticUI.hideResult();
+    this.game.commitRound();
+    this.gameFlow.onRoundCommitted();
+   });
+ }
+
+ sync() {
+  const round = this.game.state.getCurrentRound();
+  if (!round) return;
+
+  this.staticUI.updateHUD(
+   this.vm.buildHUD(this.game.state, round)
+  );
+
+  this.streetViewUI.setLocation(round.actualLocation);
+  this.mapUI.reset();
+ }
+}
