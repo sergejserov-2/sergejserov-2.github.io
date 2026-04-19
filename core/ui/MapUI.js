@@ -1,3 +1,4 @@
+
 export class MapUI {
     constructor({ element } = {}) {
         // =====================================================
@@ -9,7 +10,7 @@ export class MapUI {
         this.guessMapElement = document.querySelector(".guess-map");
 
         // =====================================================
-        // MAP INSTANCES (LIFETIME = GAME)
+        // MAP INSTANCES
         // =====================================================
         this.googleMap = null;
         this.overviewMap = null;
@@ -18,22 +19,24 @@ export class MapUI {
         // =====================================================
         // STATE
         // =====================================================
+        this.isGuessLocked = false;
         this.isGuessMode = false;
-        this.guessMarker = null;
-        this.overviewLines = [];
+
         this.lastGuess = null;
+        this.guessMarker = null;
+
+        this.overviewLines = [];
 
         this.onGuessCallback = null;
 
-        // resize
         this._resizeBound = false;
 
-        // init dom
-        this.initDOMEvents();
+        this.initGuessMap();
+        this.initOverviewMap();
     }
 
     // =====================================================
-    // INIT (ONCE)
+    // INIT MAPS (ONCE)
     // =====================================================
 
     initGuessMap() {
@@ -47,7 +50,7 @@ export class MapUI {
         });
 
         this.googleMap.addListener("click", (e) => {
-            if (!this.isGuessMode) return;
+            if (!this.isGuessMode || this.isGuessLocked) return;
 
             const point = {
                 lat: e.latLng.lat(),
@@ -55,7 +58,10 @@ export class MapUI {
             };
 
             this.lastGuess = point;
-            this.emitGuess(point);
+
+            console.log("[MAPUI] guess selected", point);
+
+            this.onGuessCallback?.(point);
         });
 
         this.initResize();
@@ -71,13 +77,13 @@ export class MapUI {
         });
     }
 
-    initStreetView(initialLocation) {
+    initStreetView(location) {
         if (this.panorama) return;
 
         this.panorama = new google.maps.StreetViewPanorama(
             this.streetViewElement,
             {
-                position: initialLocation || { lat: 0, lng: 0 },
+                position: location || { lat: 0, lng: 0 },
                 addressControl: false,
                 linksControl: true,
                 panControl: true,
@@ -89,58 +95,55 @@ export class MapUI {
             }
         );
 
-        // 💥 FIX: ensures correct render
+        this.googleMap?.setStreetView(this.panorama);
+
         setTimeout(() => {
             google.maps.event.trigger(this.panorama, "resize");
         }, 0);
-
-        this.googleMap?.setStreetView(this.panorama);
-    }
-
-    setStreetView(location) {
-        if (!this.panorama || !location) return;
-
-        this.panorama.setPosition(location);
-
-        // 💥 FIX white screen after reuse
-        google.maps.event.trigger(this.panorama, "resize");
     }
 
     // =====================================================
-    // ROUND CONTROL
+    // FLOW API (MATCHES BRIDGE EXACTLY)
     // =====================================================
 
-    startRound({ location }) {
+    beginRound({ location }) {
+        console.log("[MAPUI] beginRound", location);
+
         this.isGuessMode = true;
+        this.isGuessLocked = false;
 
+        // reset state
+        this.clearGuessMarker();
+        this.clearOverview();
+
+        // move map
         if (this.googleMap) {
             this.googleMap.setCenter(location);
             this.googleMap.setZoom(2);
         }
 
+        // update streetview each round
+        if (this.panorama) {
+            this.panorama.setPosition(location);
+
+            setTimeout(() => {
+                google.maps.event.trigger(this.panorama, "resize");
+            }, 50);
+        }
+    }
+
+    updateGuessPreview(point) {
+        if (!this.googleMap || !point) return;
+
+        console.log("[MAPUI] preview guess", point);
+
         this.clearGuessMarker();
-        this.clearOverview();
+
+        this.guessMarker = new google.maps.Marker({
+            position: point,
+            map: this.googleMap
+        });
     }
-
-    endRound() {
-        this.isGuessMode = false;
-    }
-
-    // =====================================================
-    // GUESS MODE
-    // =====================================================
-
-    enableGuessMode() {
-        this.isGuessMode = true;
-    }
-
-    disableGuessMode() {
-        this.isGuessMode = false;
-    }
-
-    // =====================================================
-    // MARKERS
-    // =====================================================
 
     placeGuessMarker(location) {
         if (!this.googleMap || !location) return;
@@ -153,19 +156,17 @@ export class MapUI {
         });
     }
 
-    clearGuessMarker() {
-        if (this.guessMarker) {
-            this.guessMarker.setMap(null);
-            this.guessMarker = null;
-        }
-    }
+    lockGuess() {
+        console.log("[MAPUI] lock guess");
 
-    // =====================================================
-    // OVERVIEW
-    // =====================================================
+        this.isGuessLocked = true;
+        this.isGuessMode = false;
+    }
 
     renderOverview({ guess, actual }) {
         if (!this.overviewMap || !guess || !actual) return;
+
+        console.log("[MAPUI] render overview");
 
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(guess);
@@ -200,8 +201,15 @@ export class MapUI {
         this.overviewLines = [];
     }
 
+    clearGuessMarker() {
+        if (this.guessMarker) {
+            this.guessMarker.setMap(null);
+            this.guessMarker = null;
+        }
+    }
+
     // =====================================================
-    // RESIZE (GUESS MAP WINDOW)
+    // RESIZE
     // =====================================================
 
     initResize() {
@@ -236,19 +244,14 @@ export class MapUI {
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
 
-            const minW = 180;
-            const minH = 120;
-
-            const newW = Math.max(minW, startW + dx);
-            const newH = Math.max(minH, startH - dy);
+            const newW = Math.max(180, startW + dx);
+            const newH = Math.max(120, startH - dy);
 
             const realDy = startH - newH;
 
             el.style.width = `${newW}px`;
             el.style.height = `${newH}px`;
             el.style.top = `${startTop + realDy}px`;
-
-            this.triggerMapResize();
         });
 
         window.addEventListener("mouseup", () => {
@@ -259,36 +262,11 @@ export class MapUI {
         this._resizeBound = true;
     }
 
-    triggerMapResize() {
-        if (!this.googleMap) return;
-
-        google.maps.event.trigger(this.googleMap, "resize");
-
-        const center = this.googleMap.getCenter();
-        if (center) this.googleMap.setCenter(center);
-    }
-
     // =====================================================
     // EVENTS
     // =====================================================
 
     onGuess(cb) {
         this.onGuessCallback = cb;
-    }
-
-    emitGuess(point) {
-        this.onGuessCallback?.(point);
-    }
-
-    initDOMEvents() {
-        const btn = document.getElementById("makeGuess");
-
-        if (!btn) return;
-
-        btn.addEventListener("click", () => {
-            if (!this.lastGuess) return;
-
-            this.emitGuess(this.lastGuess);
-        });
     }
 }
