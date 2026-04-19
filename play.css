@@ -1,5 +1,3 @@
-<style>
-/* ===== BASIC RESET ===== */
 body {
     margin: 0;
     background: #000;
@@ -13,7 +11,9 @@ body {
     position: relative;
 }
 
-/* ===== SCREENS LAYER ===== */
+/* =========================
+   SCREENS LAYER
+========================= */
 .screens {
     position: absolute;
     inset: 0;
@@ -21,28 +21,46 @@ body {
     pointer-events: none;
 }
 
-/* ===== LOADING ===== */
+/* =========================
+   LOADING
+========================= */
 .loading-screen {
     position: absolute;
     inset: 0;
     display: none;
+
     justify-content: center;
     align-items: center;
+
     background: rgba(0,0,0,0.8);
     color: white;
+
     pointer-events: auto;
 }
 
-/* ===== RESULT ===== */
+/* =========================
+   RESULT OVERLAY
+========================= */
 .guess-overview {
     position: absolute;
     inset: 0;
+
     background: rgba(0,0,0,0.75);
+
     transform: translateY(100%);
     transition: transform 0.3s ease;
+
     display: flex;
     justify-content: center;
     align-items: center;
+
+    pointer-events: none;
+    z-index: 50;
+}
+
+/* ✔ ACTIVE STATE */
+.guess-overview.active {
+    transform: translateY(0%);
     pointer-events: auto;
 }
 
@@ -53,14 +71,18 @@ body {
     border-radius: 12px;
 }
 
-/* ===== GAME SCENE ===== */
+/* =========================
+   GAME SCENE
+========================= */
 .game-scene {
     position: absolute;
     inset: 0;
     z-index: 0;
 }
 
-/* ===== HUD ===== */
+/* =========================
+   HUD
+========================= */
 .info-view {
     position: absolute;
     top: 10px;
@@ -70,15 +92,24 @@ body {
     pointer-events: none;
 }
 
-/* ===== MAP + STREETVIEW ===== */
-.streetview,
-.map-element {
+/* =========================
+   STREETVIEW + MAP LAYERS
+========================= */
+.streetview {
     position: absolute;
     inset: 0;
     z-index: 0;
 }
 
-/* ===== GUESS UI ===== */
+.map-element {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+/* =========================
+   GUESS MAP WINDOW
+========================= */
 .guess-map {
     position: absolute;
     left: 20px;
@@ -93,14 +124,14 @@ body {
     overflow: hidden;
 
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-
     background: #111;
 }
 
+/* RESIZE HANDLE */
 .resize-handle {
     position: absolute;
     right: 0;
-    top: 0;
+    bottom: 0;
 
     width: 14px;
     height: 14px;
@@ -111,11 +142,13 @@ body {
     z-index: 20;
 }
 
+/* EMBED MAP */
 .embed-map {
     width: 100%;
     height: 100%;
 }
 
+/* GUESS BUTTON */
 .guess-button {
     position: absolute;
     bottom: 10px;
@@ -130,4 +163,3 @@ body {
 
     z-index: 10;
 }
-</style>
