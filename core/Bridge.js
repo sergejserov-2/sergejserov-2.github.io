@@ -28,7 +28,7 @@ export class Bridge {
     this.vm.buildHUD(this.game.state, round)
    );
 
-   this.mapUI.resetGuess();
+   this.mapUI.reset();
   });
 
   /* GUESS UPDATE */
