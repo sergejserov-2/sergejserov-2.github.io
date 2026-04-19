@@ -1,4 +1,4 @@
-export class MapUI {
+[19.04.2026 4:06] Сергей Серов: export class MapUI {
     constructor({ element }) {
         this.root = element;
 
@@ -7,145 +7,181 @@ export class MapUI {
         this.streetViewElement = this.root.querySelector(".streetview");
         this.embedMapElement = this.root.querySelector(".embed-map");
 
-        if (!this.mapElement || !this.streetViewElement || !this.embedMapElement) {
+        if (!this.mapElement  !this.streetViewElement  !this.embedMapElement) {
             throw new Error("MapUI: missing DOM nodes");
         }
 
-        // Google instances
-        this.map = null;
-        this.streetView = null;
+        // GOOGLE STATE
+        this.googleMap = null;
+        this.panorama = null;
 
-        // state
-        this.isGuessMode = true;
-        this.guessCallback = null;
+        // MARKERS
+        this.guessMarker = null;
+        this.overviewLines = [];
+
+        // STATE
+        this.isGuessMode = false;
+
+        // EVENTS
+        this.onGuessCallback = null;
     }
 
     // =====================================================
-    // ROUND INIT (CALLED EVERY ROUND)
+    // ROUND LIFECYCLE
     // =====================================================
 
     initRound({ location }) {
         this.destroyRound();
 
-        this.initStreetView(location);
-        this.initMap();
-    }
-
-    // =====================================================
-    // MAP
-    // =====================================================
-
-    initMap() {
-        this.map = new google.maps.Map(this.mapElement, {
+        // =========================
+        // MAP
+        // =========================
+        this.googleMap = new google.maps.Map(this.mapElement, {
+            center: location,
             zoom: 2,
-            center: { lat: 0, lng: 0 },
             disableDefaultUI: true,
             clickableIcons: false
         });
 
-        this.map.addListener("click", (e) => {
-            if (!this.isGuessMode) return;
-
-            this.emitGuess(e.latLng);
-        });
-
-        // ensure DOM placement
-        this.embedMapElement.appendChild(this.mapElement);
-    }
-
-    // =====================================================
-    // STREET VIEW
-    // =====================================================
-
-    initStreetView(location) {
-        this.streetView = new google.maps.StreetViewPanorama(
+        // =========================
+        // STREETVIEW
+        // =========================
+        this.panorama = new google.maps.StreetViewPanorama(
             this.streetViewElement,
             {
                 position: location,
-                pov: { heading: 0, pitch: 0 },
-                zoom: 1,
-                disableDefaultUI: true
+
+                addressControl: false,
+                linksControl: true,
+                panControl: true,
+                zoomControl: false,
+                fullscreenControl: false,
+                motionTracking: false,
+                clickToGo: true,
+                scrollwheel: true
             }
         );
-    }
 
-    // =====================================================
-    // GUESS
-    // =====================================================
+        // связка (не обязательна, но полезна)
+        this.googleMap.setStreetView(this.panorama);
 
-    onGuess(cb) {
-        this.guessCallback = cb;
-    }
+        // =========================
+        // CLICK HANDLER (guess)
+        // =========================
+        this.googleMap.addListener("click", (e) => {
+            if (!this.isGuessMode) return;
 
-    emitGuess(latLng) {
-        if (!this.guessCallback) return;
-
-        this.guessCallback({
-            lat: latLng.lat(),
-            lng: latLng.lng()
+            this.emitGuess({
+                lat: e.latLng.lat(),
+                lng: e.latLng.lng()
+            });
         });
     }
+
+    destroyRound() {
+        // MAP
+        if (this.googleMap) {
+            this.googleMap = null;
+        }
+
+        // STREETVIEW
+        if (this.panorama) {
+            google.maps.event.clearInstanceListeners(this.panorama);
+            this.panorama.setVisible(false);
+            this.panorama = null;
+        }
+
+        // MARKERS
+        this.clearGuessMarker();
+        this.clearOverview();
+    }
+
+    // =====================================================
+    // GUESS MODE
+    // =====================================================
+
+    enableGuessMode() {
+        this.isGuessMode = true;
+
+        if (this.googleMap) {
+            this.googleMap.setOptions({ draggable: true });
+        }
+    }
+
+    disableGuessMode() {
+        this.isGuessMode = false;
+
+        if (this.googleMap) {
+            this.googleMap.setOptions({ draggable: false });
+        }
+    }
+
+    // =====================================================
+    // GUESS MARKER
+    // =====================================================
 
     placeGuessMarker(location) {
-        if (!this.map) return;
+        if (!this.googleMap) return;
 
-        if (this.marker) this.marker.setMap(null);
+        this.clearGuessMarker();
 
-        this.marker = new google.maps.Marker({
+        this.guessMarker = new google.maps.Marker({
             position: location,
-            map: this.map
+            map: this.googleMap
         });
     }
 
+    clearGuessMarker() {
+        if (this.guessMarker) {
+            this.guessMarker.setMap(null);
+            this.guessMarker = null;
+        }
+    }
+
     // =====================================================
-    // OVERVIEW (RESULT SCREEN)
+    // OVERVIEW (ROUND RESULT)
     // =====================================================
 
     renderOverview({ guess, actual }) {
+        if (!this.googleMap) return;
+
         const bounds = new google.maps.LatLngBounds();
 
         bounds.extend(guess);
         bounds.extend(actual);
 
-        this.map.fitBounds(bounds);
-
-        new google.maps.Polyline({
+        this.googleMap.fitBounds(bounds);
+[19.04.2026 4:06] Сергей Серов: const line = new google.maps.Polyline({
             path: [guess, actual],
+            geodesic: true,
             strokeColor: "#ffcc00",
             strokeOpacity: 1,
             strokeWeight: 2,
-            map: this.map
+            map: this.googleMap
         });
+
+        this.overviewLines.push(line);
     }
 
-    // =====================================================
-    // MODE
-    // =====================================================
-
-    enableGuessMode() {
-        this.isGuessMode = true;
-        this.map?.setOptions({ draggable: true });
-    }
-
-    disableGuessMode() {
-        this.isGuessMode = false;
-        this.map?.setOptions({ draggable: false });
-    }
-
-    // =====================================================
-    // CLEANUP
-    // =====================================================
-
-    destroyRound() {
-        if (this.marker) {
-            this.marker.setMap(null);
-            this.marker = null;
+    clearOverview() {
+        for (const line of this.overviewLines) {
+            line.setMap(null);
         }
 
-        this.map = null;
-        this.streetView = null;
+        this.overviewLines = [];
+    }
 
-        this.embedMapElement.innerHTML = "";
-        this.streetViewElement.innerHTML = "";
+    // =====================================================
+    // EVENTS
+    // =====================================================
+
+    onGuess(callback) {
+        this.onGuessCallback = callback;
+    }
+
+    emitGuess(point) {
+        if (this.onGuessCallback) {
+            this.onGuessCallback(point);
+        }
     }
 }
