@@ -2,10 +2,12 @@ import { Game } from "./core/Game.js";
 import { GameFlow } from "./core/GameFlow.js";
 import { GameState } from "./core/GameState.js";
 import { Bridge } from "./core/Bridge.js";
+import { Emitter } from "./core/Emitter.js";
 import { ViewModelBuilder } from "./core/ViewModelBuilder.js";
-import { Scoring } from "./core/Scoring.js";
 
 import { Geometry } from "./domain/Geometry.js";
+import { Scoring } from "./domain/Scoring.js";
+import { AreaRegistry } from "./domain/area/AreaRegistry.js";
 
 import { MapAdapter } from "./adapters/MapAdapter.js";
 import { LocationGenerator } from "./adapters/LocationGenerator.js";
@@ -13,14 +15,16 @@ import { LocationGenerator } from "./adapters/LocationGenerator.js";
 import { MapUI } from "./ui/MapUI.js";
 import { StreetViewUI } from "./ui/StreetViewUI.js";
 import { StaticUI } from "./ui/StaticUI.js";
-import { Tweaks } from "./ui/Tweaks.js";
+import { tweaks } from "./ui/Tweaks.js";
 
-import { AreaRegistry } from "./area/AreaRegistry.js";
-
-async function waitForGoogle() {
-    while (!window.google?.maps) {
-        await new Promise(r => setTimeout(r, 50));
-    }
+function waitForGoogle() {
+    return new Promise(resolve => {
+        const check = () => {
+            if (window.google?.maps) resolve();
+            else setTimeout(check, 50);
+        };
+        check();
+    });
 }
 
 function loadConfig() {
@@ -30,67 +34,56 @@ function loadConfig() {
 }
 
 async function bootstrap() {
-    await waitForGoogle();
+    try {
+        console.log("[Init] START");
 
-    Tweaks();
+        await waitForGoogle();
 
-    const config = loadConfig();
-    const area = AreaRegistry[config.area];
+        tweaks();
 
-    const root = document.querySelector(".game");
+        const config = loadConfig();
+        const area = AreaRegistry[config.area];
 
-    const geometry = new Geometry();
-    const mapAdapter = new MapAdapter();
+        const element = document.querySelector(".game");
 
-    const generator = new LocationGenerator({
-        mapAdapter,
-        geometry
-    });
+        const geometry = new Geometry();
+        const mapAdapter = new MapAdapter(window.google);
 
-    const scoring = new Scoring(geometry);
+        const generator = new LocationGenerator({
+            mapAdapter,
+            geometry
+        });
 
-    const gameState = new GameState();
+        const scoring = new Scoring(geometry);
 
-    const game = new Game({
-        gameState,
-        scoring
-    });
+        const game = new Game({
+            gameState: new GameState(),
+            generator,
+            scoring
+        });
 
-    const gameFlow = new GameFlow({
-        game,
-        generator,
-        area
-    });
+        const mapUI = new MapUI({ element });
+        const streetViewUI = new StreetViewUI({ element });
+        const staticUI = new StaticUI({ element });
 
-    const mapUI = new MapUI({
-        adapter: mapAdapter,
-        mapElement: root.querySelector(".map"),
-        overviewElement: root.querySelector(".overview")
-    });
+        mapUI.initGuessMap();
+        mapUI.initOverviewMap();
+        streetViewUI.init();
 
-    const streetViewUI = new StreetViewUI({
-        adapter: mapAdapter,
-        element: root.querySelector(".streetview")
-    });
+        new Bridge({
+            game,
+            mapUI,
+            streetViewUI,
+            staticUI,
+            viewModelBuilder: new ViewModelBuilder()
+        });
 
-    const staticUI = new StaticUI({ element: root });
+        game.startGame();
 
-    const vm = new ViewModelBuilder();
-
-    mapUI.init();
-    streetViewUI.init();
-
-    new Bridge({
-        game,
-        ui: {
-            map: mapUI,
-            streetview: streetViewUI,
-            static: staticUI
-        },
-        vm
-    });
-
-    gameFlow.startGame();
+        console.log("[Init] SUCCESS");
+    } catch (err) {
+        console.error("[Init] FAILED:", err);
+    }
 }
 
 bootstrap();
