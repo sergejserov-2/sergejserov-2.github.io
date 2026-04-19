@@ -10,7 +10,7 @@ export class Bridge {
     }
 
     // =====================================================
-    // GAME FLOW (MAIN SCENARIO)
+    // GAME → UI (PURE RENDER MAPPING)
     // =====================================================
 
     bindGameEvents() {
@@ -27,35 +27,26 @@ export class Bridge {
         // ROUND START
         // =========================
         this.game.on("roundStarted", ({ location }) => {
-            console.log("[BRIDGE] roundStarted");
-
             this.staticUI.hideLoading();
             this.staticUI.startRound();
 
-            // 💥 FULL VISUAL RESET FOR NEW ROUND
-            this.mapUI.beginRound({
-                location
-            });
+            // 💥 ONLY VISUAL RESET
+            this.mapUI.beginRound({ location });
 
             this.staticUI.updateHUD(this.game.getHUDState());
         });
 
         // =========================
-        // GUESS MADE (GAME STATE UPDATED)
+        // GUESS UPDATED (LIVE STATE)
         // =========================
         this.game.on("guessUpdated", ({ point }) => {
-            console.log("[BRIDGE] guessUpdated", point);
-
-            // optional visual feedback
             this.mapUI.updateGuessPreview(point);
         });
 
         // =========================
-        // GUESS FINISHED
+        // GUESS FINISHED (FINAL LOCK)
         // =========================
         this.game.on("guessFinished", ({ result }) => {
-            console.log("[BRIDGE] guessFinished");
-
             this.mapUI.lockGuess();
 
             this.staticUI.showRoundResult({
@@ -65,11 +56,9 @@ export class Bridge {
         });
 
         // =========================
-        // ROUND END
+        // ROUND ENDED (OVERVIEW)
         // =========================
         this.game.on("roundEnded", (data) => {
-            console.log("[BRIDGE] roundEnded");
-
             this.mapUI.renderOverview({
                 guess: this.game.getCurrentGuess(),
                 actual: this.game.current
@@ -77,7 +66,7 @@ export class Bridge {
         });
 
         // =========================
-        // GAME END
+        // GAME ENDED
         // =========================
         this.game.on("gameEnded", (data) => {
             this.staticUI.showGameResult(data);
@@ -90,8 +79,6 @@ export class Bridge {
 
     bindMapEvents() {
         this.mapUI.onGuess((point) => {
-            console.log("[BRIDGE] map guess", point);
-
             this.game.setGuess("p1", point);
         });
     }
@@ -109,10 +96,10 @@ export class Bridge {
 
                 if (!guess) return;
 
-                console.log("[BRIDGE] submit guess");
-
+                // 💥 ONLY VISUAL
                 this.mapUI.placeGuessMarker(guess);
 
+                // 💥 GAME DECIDES EVERYTHING ELSE
                 this.game.finishGuess("p1");
             });
         }
