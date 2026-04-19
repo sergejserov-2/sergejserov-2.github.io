@@ -5,11 +5,11 @@ export class StaticUI {
         // HUD
         this.roundEl = element.querySelector(".round");
         this.scoreEl = element.querySelector(".total-score");
-        this.timeEl = element.querySelector(".time");
-        this.movesEl = element.querySelector(".moves");
+        this.timeEl = element.querySelector(".time-left");
+        this.movesEl = element.querySelector(".moves-left");
 
         // SCREENS
-        this.loadingOverlay = element.querySelector(".loading-overlay");
+        this.loadingOverlay = element.querySelector(".loading-screen");
         this.resultScreen = element.querySelector(".guess-overview");
 
         // RESULT UI
@@ -67,16 +67,16 @@ export class StaticUI {
         }
 
         if (this.movesEl) {
-            this.movesEl.innerHTML = `Шаги: <b>${moves}</b>`;
+            this.movesEl.innerHTML = `Шагов: <b>${moves}</b>`;
         }
     }
 
     // =====================================================
-    // ROUND READY (optional hook)
+    // ROUND READY
     // =====================================================
 
     showRoundReady(round) {
-        // можно добавить small animation / notification
+        // optional animation
     }
 
     // =====================================================
@@ -95,18 +95,18 @@ export class StaticUI {
     showRoundResult(data) {
         this.showResult();
 
-        const progress = (data.score / 5000) * 100;
+        const progress = (data.result.score / 5000) * 100; // ✔ FIX
 
         if (this.progressBar) {
-            this.progressBar.style.width = `{progress}%`;
+            this.progressBar.style.width = `${progress}%`; // ✔ FIX STRING
         }
 
         if (this.textEls?.length >= 2) {
             this.textEls[0].innerText =
-                `Вы в ${data.niceDistance || ""} от места`;
+                `Вы в ${data.result?.distance || ""} от места`;
 
             this.textEls[1].innerText =
-                `Счёт: ${data.score} | Итог: ${data.totalScore}`;
+                `Счёт: ${data.result.score} | Итог: ${data.totalScore}`;
         }
 
         if (this.nextBtn) {
@@ -136,7 +136,8 @@ export class StaticUI {
 
         if (this.textEls?.length >= 2) {
             this.textEls[0].innerText =
-                `Вы в ${last?.niceDistance || ""} от места`;
+                `Последний результат: ${last?.result?.distance || ""}`;
+
             this.textEls[1].innerText =
                 `Итоговый счёт: ${data.totalScore}`;
         }
@@ -167,7 +168,7 @@ export class StaticUI {
     }
 
     // =====================================================
-    // FORM (optional hook)
+    // FORM
     // =====================================================
 
     bindScoreSubmit(handler) {
