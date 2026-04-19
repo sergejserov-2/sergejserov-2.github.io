@@ -93,8 +93,20 @@ body {
 .streetview,
 .map-element {
     position: absolute;
-    inset: 0;
-    z-index: 0;
+    left: 20px;
+    bottom: 20px;
+
+    width: 260px;
+    height: 180px;
+
+    z-index: 5;
+
+    border-radius: 10px;
+    overflow: hidden;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+
+    cursor: grab;
 }
 
 /* ===== GUESS UI ===== */
@@ -189,9 +201,6 @@ body {
 
         <!-- STREETVIEW -->
         <div class="streetview"></div>
-
-        <!-- MAP -->
-        <div class="map-element"></div>
 
         <!-- HUD -->
         <div class="info-view">
