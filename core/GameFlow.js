@@ -25,8 +25,7 @@ export class GameFlow {
   this.game.startRound(location);
  }
 
- // вызывается из Bridge после commitRound
- onRoundCommitted() {
+ commitRound() {
   this.nextRound();
  }
 }
