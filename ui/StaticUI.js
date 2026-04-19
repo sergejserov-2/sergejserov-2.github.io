@@ -1,65 +1,66 @@
 export class StaticUI {
-    constructor({ element }) {
-        this.element = element;
-        this.roundEl = element.querySelector(".round");
-        this.scoreEl = element.querySelector(".total-score");
-        this.timeEl = element.querySelector(".time-left");
-        this.movesEl = element.querySelector(".moves-left");
-        this.loadingOverlay = element.querySelector(".loading-screen");
-        this.resultScreen = element.querySelector(".guess-overview");
-        this.progressBar = document.querySelector(".score-progress");
-        this.textEls = document.querySelectorAll(".score-text p");
-        this.nextBtn = element.querySelector(".next-round-button");
-        this.endButtons = element.querySelector(".game-end-buttons");
-        this.form = element.querySelector(".high-score-form");
-    }
+constructor({ element }) {
+this.element = element;
 
-    showGame(){this.element.classList.remove("hidden");}
-    hideGame(){this.element.classList.add("hidden");}
-    showLoading(){this.loadingOverlay?.style&&(this.loadingOverlay.style.display="flex");}
-    hideLoading(){this.loadingOverlay?.style&&(this.loadingOverlay.style.display="none");}
+this.roundEl = element.querySelector(".round");
+this.scoreEl = element.querySelector(".total-score");
+this.timeEl = element.querySelector(".time-left");
+this.movesEl = element.querySelector(".moves-left");
 
-    updateHUD(vm){
-        if(!vm)return;
-        if(this.roundEl)this.roundEl.innerHTML=vm.roundText;
-        if(this.scoreEl)this.scoreEl.innerHTML=vm.scoreText;
-        if(this.timeEl)this.timeEl.innerHTML=vm.timeText;
-        if(this.movesEl)this.movesEl.innerHTML=vm.movesText;
-    }
+this.loading = element.querySelector(".loading-screen");
+this.result = element.querySelector(".guess-overview");
 
-    startRound(){
-        this.hideLoading();
-        this.hideResult();
-    }
+this.progress = document.querySelector(".score-progress");
+this.text = document.querySelectorAll(".score-text p");
+this.endButtons = element.querySelector(".game-end-buttons");
+}
 
-    showRoundResult(vm){
-        this.showResult();
-        if(this.progressBar)this.progressBar.style.width=`${vm.progress}%`;
-        if(this.textEls?.length>=2){
-            this.textEls[0].innerText=vm.distanceText;
-            this.textEls[1].innerText=vm.scoreText+" | "+vm.totalScoreText;
-        }
-        if(this.nextBtn)this.nextBtn.style.display="inline-block";
-        if(this.endButtons)this.endButtons.style.display="none";
-    }
+/* hud */
+updateHUD(vm) {
+if (this.roundEl) this.roundEl.innerHTML = vm.roundText;
+if (this.scoreEl) this.scoreEl.innerHTML = vm.scoreText;
+if (this.timeEl) this.timeEl.innerHTML = vm.timeText;
+if (this.movesEl) this.movesEl.innerHTML = vm.movesText;
+}
 
-    showGameResult(vm){
-        this.showResult();
-        if(this.progressBar)this.progressBar.style.width=`${vm.progress}%`;
-        if(this.textEls?.length>=2){
-            this.textEls[0].innerText=vm.lastRoundText;
-            this.textEls[1].innerText=vm.finalScoreText;
-        }
-        if(this.nextBtn)this.nextBtn.style.display="none";
-        if(this.endButtons)this.endButtons.style.display="block";
-    }
+/* loading */
+showLoading() { this.loading && (this.loading.style.display = "flex"); }
+hideLoading() { this.loading && (this.loading.style.display = "none"); }
 
-    showResult(){this.resultScreen?.classList.add("active");}
-    hideResult(){this.resultScreen?.classList.remove("active");}
+/* round */
+startRound() {
+this.hideLoading();
+this.hideResult();
+}
 
-    bindScoreSubmit(handler){
-        if(!this.form)return;
-        this.form.addEventListener("submit",e=>{
-            e.preventDefault();
-            const input=this.form.querySelector(".username-input");
-            handler
+/* result */
+showRoundResult(vm) {
+this.showResult();
+
+if (this.progress) this.progress.style.width = vm.progress + "%";
+
+if (this.text?.length >= 2) {
+this.text[0].innerText = vm.line1;
+this.text[1].innerText = vm.line2;
+}
+
+if (this.endButtons) this.endButtons.style.display = "none";
+}
+
+showGameResult(vm) {
+this.showResult();
+
+if (this.progress) this.progress.style.width = vm.progress + "%";
+
+if (this.text?.length >= 2) {
+this.text[0].innerText = vm.line1;
+this.text[1].innerText = vm.line2;
+}
+
+if (this.endButtons) this.endButtons.style.display = "flex";
+}
+
+/* screens */
+showResult() { this.result?.classList.add("active"); }
+hideResult() { this.result?.classList.remove("active"); }
+}
