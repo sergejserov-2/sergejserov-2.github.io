@@ -1,4 +1,4 @@
-[19.04.2026 7:43] Сергей Серов: export class MapUI {
+export class MapUI {
     constructor() {
         // =========================
         // DOM
