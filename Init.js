@@ -19,9 +19,11 @@ import { MapUI } from "./ui/components/MapUI.js";
 import { StreetViewUI } from "./ui/components/StreetViewUI.js";
 import { StaticUI } from "./ui/components/StaticUI.js";
 
+import { tweaks } from "./ui/tweaks.js";
+
 export async function init() {
  try {
-  console.log("INIT ENTER");
+  console.log("🚀 INIT ENTER");
 
   // =========================
   // ADAPTERS
@@ -31,8 +33,10 @@ export async function init() {
   // =========================
   // DOMAIN
   // =========================
-  const geometry = new Geometry();
+  const geometry = Geometry; // 👈 используем static напрямую
+
   const area = AreaRegistry.get("europe");
+
   const difficulty = new Difficulty({ area });
 
   const scoring = new Scoring({
@@ -41,8 +45,7 @@ export async function init() {
   });
 
   const generator = new LocationGenerator({
-   mapAdapter,
-   geometry
+   mapAdapter
   });
 
   // =========================
@@ -90,20 +93,21 @@ export async function init() {
   });
 
   // =========================
-  // INIT UI
+  // INIT UI + TWEAKS
   // =========================
   mapUI.init();
   streetViewUI.init();
+  tweaks(); // 👈 подключаем наблюдатели
 
   // =========================
   // START GAME
   // =========================
   await gameFlow.startGame();
 
-  console.log("INIT EXIT");
+  console.log("🎮 INIT EXIT");
 
  } catch (err) {
-  console.error("INIT ERROR:", err);
+  console.error("💥 INIT ERROR:", err);
  }
 }
 
@@ -111,5 +115,5 @@ export async function init() {
 // AUTO BOOTSTRAP
 // =========================
 init().catch(err => {
- console.error("BOOTSTRAP CRASH:", err);
+ console.error("💥 BOOTSTRAP CRASH:", err);
 });
