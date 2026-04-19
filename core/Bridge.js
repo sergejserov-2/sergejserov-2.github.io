@@ -44,7 +44,6 @@ export class Bridge {
         });
 
         this.game.on("guessFinished", ({ result, guess }) => {
-            this.mapUI.placeGuessMarker(guess);
             this.mapUI.disableGuessMode();
             this.staticUI.showRoundResult(result);
         });
@@ -70,7 +69,7 @@ export class Bridge {
     bindMapEvents() {
         this.mapUI.onGuess((point) => {
             this.game.setGuess("p1", point);
-            this.game.finishGuess("p1");
+            this.mapUI.placeGuessMarker(point);
         });
     }
 }
