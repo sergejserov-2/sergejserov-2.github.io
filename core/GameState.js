@@ -42,7 +42,8 @@ export class GameState {
     lng: guess.lng
    },
    distance: result.distance,
-   score: result.score
+   score: result.score,
+   isFinished: result.isFinished ?? false
   });
  }
 
