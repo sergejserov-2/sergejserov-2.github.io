@@ -1,20 +1,32 @@
-import { Geometry } from "./math/Geometry.js";
-import { Difficulty } from "./math/Difficulty.js";
-
 export class Scoring {
+ constructor({ geometry, difficulty }) {
+  this.geometry = geometry;
+  this.difficulty = difficulty;
 
- constructor({ maxScore = 5000, k = 500 } = {}) {
-  this.maxScore = maxScore;
-  this.k = k;
+  this.MAX_SCORE = 5000;
+  this.DISTANCE_K = 2000;
  }
 
  calculateResult({ guess, actual, area }) {
 
-  const distance = Geometry.distance(guess, actual);
+  const distance = this.geometry.distance(guess, actual);
 
-  const difficulty = Difficulty.fromArea(area);
+  // =========================
+  // DISTANCE CURVE (EXP decay)
+  // =========================
+  const distanceFactor = Math.exp(-distance / this.DISTANCE_K);
 
-  const score = this.calculateScore(distance, difficulty);
+  // =========================
+  // DIFFICULTY CURVE
+  // =========================
+  const difficultyFactor = this.getDifficultyFactor(area);
+
+  // =========================
+  // FINAL SCORE
+  // =========================
+  const score = Math.round(
+   this.MAX_SCORE * distanceFactor * difficultyFactor
+  );
 
   return {
    distance,
@@ -22,13 +34,14 @@ export class Scoring {
   };
  }
 
- calculateScore(distance, difficulty = 1) {
-  const normalizedDifficulty = Math.max(0.2, difficulty);
+ getDifficultyFactor(area) {
+  const d = this.difficulty.get(area);
 
-  const score =
-   this.maxScore *
-   Math.exp(-distance / (this.k * normalizedDifficulty));
+  // нормализация (балансировка)
+  return this.clamp(d, 0.5, 2.0);
+ }
 
-  return Math.round(Math.max(0, score));
+ clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
  }
 }
