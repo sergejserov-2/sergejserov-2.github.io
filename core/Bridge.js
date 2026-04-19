@@ -72,7 +72,7 @@ export class Bridge {
 
     bindMapEvents() {
         this.mapUI.onGuess((point) => {
-            this.game.setGuess("p1", point);
+            this.game.setCurrentGuess();
         });
     }
 
