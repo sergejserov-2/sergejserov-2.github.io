@@ -45,11 +45,11 @@ pointer-events:none;
 ========================= */
 .map-wrapper {
 position:absolute;
-left:20px;
-bottom:20px;
+bottom:10px;
+left:10px;
 
-width:300px;
-height:200px;
+width:400px;
+height:300px;
 
 z-index:var(--z-map);
 }
