@@ -186,7 +186,7 @@ export class Game extends Emitter {
         this.history.push(payload);
 
         this.fire("roundEnded", {
-            ...payload,
+            result: payload.result,
             totalScore: this.score,
             round: this.currentRound
         });
