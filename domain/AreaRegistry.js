@@ -1,21 +1,51 @@
-import Europe from "./area/regions/Europe.js";
-import Asia from "./area/regions/Asia.js";
-import Africa from "./area/regions/Africa.js";
-import NorthAmerica from "./area/regions/NorthAmerica.js";
-import LatinAmerica from "./area/regions/LatinAmerica.js";
-import Oceania from "./area/regions/Oceania.js";
-import MiddleEast from "./area/regions/MiddleEast.js";
-import SovietUnion from "./area/regions/SovietUnion.js";
-import Moscow from "./area/test/Moscow.js";
+import europe from "./area/regions/Europe.js";
+import asia from "./area/regions/Asia.js";
+import africa from "./area/regions/Africa.js";
+import northAmerica from "./area/regions/NorthAmerica.js";
+import latinAmerica from "./area/regions/LatinAmerica.js";
+import oceania from "./area/regions/Oceania.js";
+import middleEast from "./area/regions/MiddleEast.js";
+import sovietUnion from "./area/regions/SovietUnion.js";
+import moscow from "./area/test/Moscow.js";
 
+import { europe } from "./areas/europe.js";
+import { asia } from "./areas/asia.js";
+
+const rawAreas = {
+    europe, asia, africa, northAmerica, latinAmerica, oceania, middleEast, sovietUnion,
+    moscow
+};
+
+/**
+ * Convert [lat, lng] → { lat, lng }
+ */
+function toRuntime(area) {
+ return {
+  name: area.name,
+  minDistance: area.minDistance,
+
+  polygon: area.polygon.map(([lat, lng]) => ({
+   lat,
+   lng
+  }))
+ };
+}
+
+/**
+ * PUBLIC API
+ */
 export const AreaRegistry = {
-    moscow: Moscow, //test
-    europe: Europe,
-    asia: Asia,
-    africa: Africa,
-    north_america: NorthAmerica,
-    latin_america: LatinAmerica,
-    oceania: Oceania,
-    middleEast: MiddleEast,
-    sovietUnion: SovietUnion,
+ get(name) {
+  const area = rawAreas[name];
+
+  if (!area) {
+   throw new Error(`Area "${name}" not found`);
+  }
+
+  return toRuntime(area);
+ },
+
+ list() {
+  return Object.keys(rawAreas);
+ }
 };
