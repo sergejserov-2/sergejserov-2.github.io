@@ -13,36 +13,19 @@ const rawAreas = {
     moscow
 };
 
-/**
- * Convert [lat, lng] → { lat, lng }
- */
 function toRuntime(area) {
  return {
   name: area.name,
   minDistance: area.minDistance,
-
-  polygon: area.polygon.map(([lat, lng]) => ({
-   lat,
-   lng
-  }))
+  polygon: area.polygon.map(([lat, lng]) => ({ lat, lng }))
  };
 }
 
-/**
- * PUBLIC API
- */
 export const AreaRegistry = {
  get(name) {
   const area = rawAreas[name];
-
-  if (!area) {
-   throw new Error(`Area "${name}" not found`);
-  }
-
+  if (!area) { throw new Error(`Area "${name}" not found`); }
   return toRuntime(area);
  },
-
- list() {
-  return Object.keys(rawAreas);
- }
+ list() { return Object.keys(rawAreas); }
 };
