@@ -2,28 +2,31 @@ export class StreetViewUI {
     constructor({ adapter, element }) {
         this.adapter = adapter;
         this.element = element;
-        this.pano = null;
+        this.panorama = null;
     }
 
     init() {
-        this.pano = new google.maps.StreetViewPanorama(this.element, {
-            addressControl: false,
-            showRoadLabels: false,
-            fullscreenControl: false,
-            zoomControl: true
-        });
+        this.panorama = this.adapter.createStreetView(this.element);
     }
 
     setLocation([lat, lng]) {
-        this.pano?.setPosition({ lat, lng });
+        this.panorama?.setPosition({ lat, lng });
     }
 
     lock() {
-        this.pano.setOptions({ disableDefaultUI: true });
+        this.panorama?.setOptions({
+            disableDefaultUI: true,
+            scrollwheel: false,
+            clickToGo: false
+        });
     }
 
     unlock() {
-        this.pano.setOptions({ disableDefaultUI: false });
+        this.panorama?.setOptions({
+            disableDefaultUI: false,
+            scrollwheel: true,
+            clickToGo: true
+        });
     }
 
     reset() {
