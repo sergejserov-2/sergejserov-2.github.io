@@ -22,15 +22,6 @@ export class MapAdapter {
         marker.setMap(null);
     }
 
-    fitToMarkers(map, markers) {
-        const bounds = new google.maps.LatLngBounds();
-        markers.forEach(m => {
-            const p = m.getPosition();
-            if (p) bounds.extend(p);
-        });
-        map.fitBounds(bounds);
-    }
-
     createPolyline(map, path) {
         return new google.maps.Polyline({
             path,
@@ -41,14 +32,12 @@ export class MapAdapter {
         });
     }
 
-    async hasStreetView(lat, lng) {
-        return new Promise(resolve => {
-            this.svService.getPanorama(
-                { location: { lat, lng }, radius: 50000 },
-                (data, status) => {
-                    resolve(status === google.maps.StreetViewStatus.OK);
-                }
-            );
+    fitToMarkers(map, markers) {
+        const bounds = new google.maps.LatLngBounds();
+        markers.forEach(m => {
+            const p = m.getPosition();
+            if (p) bounds.extend(p);
         });
+        map.fitBounds(bounds);
     }
 }
