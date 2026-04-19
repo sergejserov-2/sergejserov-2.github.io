@@ -44,12 +44,14 @@ export class MapAdapter {
     }
 
     createStreetView(element) {
-        return new google.maps.StreetViewPanorama(element, {
-            addressControl: false,
-            showRoadLabels: false,
-            fullscreenControl: false,
-            zoomControl: true
-        });
+         return new google.maps.StreetViewPanorama(element, {
+              position: { lat: 0, lng: 0 },
+              pov: { heading: 0, pitch: 0 },
+              addressControl: false,
+              showRoadLabels: false,
+              fullscreenControl: false,
+              zoomControl: true
+         });
     }
 
     // ✔ теперь без логики — просто API ответ
