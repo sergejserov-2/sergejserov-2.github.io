@@ -1,6 +1,14 @@
 export class Bridge {
- constructor({ game, mapUI, streetViewUI, staticUI, viewModelBuilder }) {
+ constructor({
+  game,
+  gameFlow,
+  mapUI,
+  streetViewUI,
+  staticUI,
+  viewModelBuilder
+ }) {
   this.game = game;
+  this.gameFlow = gameFlow;
   this.mapUI = mapUI;
   this.streetViewUI = streetViewUI;
   this.staticUI = staticUI;
@@ -17,22 +25,17 @@ export class Bridge {
   });
 
   /* ROUND START */
-  this.game.on("roundStarted", () => {
-
-   const round = this.game.state.currentRound;
-   const location = round.actualLocation;
-
-   this.streetViewUI.init(location);
-
+  this.game.on("roundStarted", ({ round, actual }) => {
    this.staticUI.updateHUD(
-    this.vm.buildHUD(this.game.state, round)
+    this.vm.buildHUD(this.game.state, this.game.state.getCurrentRound())
    );
 
-   this.mapUI.reset();
+   this.streetViewUI.setLocation(actual);
+   this.mapUI.resetGuess();
   });
 
   /* GUESS UPDATE */
-  this.game.on("guessUpdated", ({ guess }) => {
+  this.game.on("guessUpdated", ({ playerId, guess }) => {
    this.mapUI.placeGuessMarker(guess);
   });
 
@@ -41,7 +44,7 @@ export class Bridge {
 
    const vm = this.vm.buildRoundVM(
     this.game.state,
-    this.game.state.currentRound
+    this.game.state.getCurrentRound()
    );
 
    this.staticUI.showRoundResult(vm);
@@ -52,9 +55,9 @@ export class Bridge {
    });
   });
 
-  /* ROUND COMMIT */
+  /* ROUND COMMITTED */
   this.game.on("roundCommitted", () => {
-   this.game.startRound(this.game.state.area);
+   this.gameFlow.onRoundCommitted();
   });
 
   /* GAME END */
