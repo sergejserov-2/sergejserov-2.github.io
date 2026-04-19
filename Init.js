@@ -7,7 +7,7 @@ import { ViewModelBuilder } from "./core/ViewModelBuilder.js";
 
 import { Geometry } from "./domain/Geometry.js";
 import { Scoring } from "./domain/Scoring.js";
-import { AreaRegistry } from "./domain/area/AreaRegistry.js";
+import { AreaRegistry } from "./domain/AreaRegistry.js";
 
 import { MapAdapter } from "./adapters/MapAdapter.js";
 import { LocationGenerator } from "./adapters/LocationGenerator.js";
