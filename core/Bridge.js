@@ -48,10 +48,9 @@ export class Bridge {
 
         this.game.on("guessFinished", ({ result }) => {
             const guess = this.game.getCurrentGuess();
-
             this.mapUI.disableGuessMode();
             this.staticUI.showRoundResult(result);
-            this.mapUI.placeGuessMarker(this.game.players.p1.lastGuess);
+            this.mapUI.placeGuessMarker(guess);
         });
 
         this.game.on("roundEnded", (data) => {
