@@ -1,15 +1,12 @@
-import europe from "./area/regions/Europe.js";
-import asia from "./area/regions/Asia.js";
-import africa from "./area/regions/Africa.js";
-import northAmerica from "./area/regions/NorthAmerica.js";
-import latinAmerica from "./area/regions/LatinAmerica.js";
-import oceania from "./area/regions/Oceania.js";
-import middleEast from "./area/regions/MiddleEast.js";
-import sovietUnion from "./area/regions/SovietUnion.js";
-import moscow from "./area/test/Moscow.js";
-
-import { europe } from "./areas/europe.js";
-import { asia } from "./areas/asia.js";
+import { europe } from "./area/regions/Europe.js";
+import { asia } from "./area/regions/Asia.js";
+import { africa } from "./area/regions/Africa.js";
+import { northAmerica } from "./area/regions/NorthAmerica.js";
+import { latinAmerica } from "./area/regions/LatinAmerica.js";
+import { oceania } from "./area/regions/Oceania.js";
+import { middleEast } from "./area/regions/MiddleEast.js";
+import { sovietUnion } from "./area/regions/SovietUnion.js";
+import { moscow } from "./area/test/Moscow.js";
 
 const rawAreas = {
     europe, asia, africa, northAmerica, latinAmerica, oceania, middleEast, sovietUnion,
