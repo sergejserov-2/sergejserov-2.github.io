@@ -14,64 +14,75 @@ export class Bridge {
   this.staticUI = staticUI;
   this.vm = viewModelBuilder;
 
+  this.uiState = {
+   screen: "loading" // loading | round | result
+  };
+
   this.bind();
+ }
+
+ setScreen(screen) {
+  this.uiState.screen = screen;
+
+  this.staticUI.setScreen(screen);
  }
 
  bind() {
 
-  // выбор точки
-  this.mapUI.onGuess((point) => {
-   const round = this.game.state.getCurrentRound();
-   if (!round) return;
-
-   this.game.setGuess("p1", point);
-
-   const guess = this.game.state.getPlayerGuess("p1");
-   if (guess) this.mapUI.placeGuessMarker(guess.guess);
+  /* GAME START */
+  this.game.on("gameStarted", () => {
+   this.setScreen("round");
   });
 
-  // кнопка "угадать"
-  const guessBtn = document.getElementById("makeGuess");
+  /* ROUND START */
+  this.game.on("roundStarted", ({ round, actual }) => {
 
-  guessBtn?.addEventListener("click", () => {
-   const round = this.game.state.getCurrentRound();
-   if (!round) return;
+   this.setScreen("round");
 
-   const result = this.game.finishGuess("p1");
-   if (!result) return;
+   this.staticUI.updateHUD(
+    this.vm.buildHUD(this.game.state, this.game.state.getCurrentRound())
+   );
 
-   // ждём остальных игроков
-   if (!this.game.areAllPlayersFinished()) return;
+   this.streetViewUI.setLocation(actual);
+   this.mapUI.reset();
+  });
 
-   const vm = this.vm.buildRoundVM(this.game.state, round);
+  /* GUESS UPDATE */
+  this.game.on("guessUpdated", ({ playerId, guess }) => {
+   this.mapUI.placeGuessMarker(guess);
+  });
+
+  /* GUESS FINISHED */
+  this.game.on("guessFinished", ({ result }) => {
+
+   this.setScreen("result");
+
+   const vm = this.vm.buildRoundVM(
+    this.game.state,
+    this.game.state.getCurrentRound()
+   );
 
    this.staticUI.showRoundResult(vm);
 
    this.mapUI.renderOverview({
-    guess: this.game.state.getPlayerGuess("p1")?.guess,
-    actual: round.actualLocation
+    guess: result.guess,
+    actual: result.actual
    });
   });
 
-  // следующий раунд
-  this.staticUI.element
-   ?.querySelector(".guess-overview")
-   ?.addEventListener("click", () => {
-    this.staticUI.hideResult();
-    this.game.commitRound();
-    this.gameFlow.onRoundCommitted();
-   });
- }
+  /* ROUND COMMITTED */
+  this.game.on("roundCommitted", () => {
+   this.gameFlow.onRoundCommitted();
+  });
 
- sync() {
-  const round = this.game.state.getCurrentRound();
-  if (!round) return;
+  /* GAME END */
+  this.game.on("gameEnded", () => {
 
-  this.staticUI.updateHUD(
-   this.vm.buildHUD(this.game.state, round)
-  );
+   this.setScreen("result");
 
-  this.streetViewUI.setLocation(round.actualLocation);
-  this.mapUI.reset();
+   const vm = this.vm.buildGameVM(this.game.state);
+
+   this.staticUI.showGameResult(vm);
+  });
  }
 }
