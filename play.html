@@ -100,10 +100,20 @@ body {
 /* ===== GUESS UI ===== */
 .guess-map {
     position: absolute;
-    bottom: 0;
-    width: 100%;
-    height: 40%;
-    z-index: 5;
+    left: 20px;
+    bottom: 20px;
+
+    width: 260px;
+    height: 180px;
+
+    z-index: 10;
+
+    border-radius: 10px;
+    overflow: hidden;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+
+    background: #111;
 }
 
 .embed-map {
@@ -200,9 +210,8 @@ body {
 
         <!-- GUESS -->
         <div class="guess-map">
-
             <div class="embed-map"></div>
-
+            <dic class="resize-handle"></dic>div>
             <div class="guess-button" id="makeGuess">
                 Сделать выбор
             </div>
