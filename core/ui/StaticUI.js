@@ -94,21 +94,16 @@ export class StaticUI {
 
     showRoundResult(data) {
         this.showResult();
-    
         const progress = (data.score / 5000) * 100;
-    
         if (this.progressBar) {
             this.progressBar.style.width = `${progress}`%;
         }
-    
         if (this.textEls?.length >= 2) {
             this.textEls[0].innerText =
                 `Вы в ${data.distance} от места`;
-    
             this.textEls[1].innerText =
                 `Счёт: ${data.score} | Итог: ${data.totalScore}`;
         }
-    
         this.nextBtn.style.display = "inline-block";
         this.endButtons.style.display = "none";
     }
@@ -117,34 +112,23 @@ export class StaticUI {
     // GAME END SCREEN
     // =====================================================
 
-    showGameResult(data) {
-        this.showResult();
-
-        const progress =
-            (data.totalScore / (5000 * data.roundCount)) * 100;
-
-        if (this.progressBar) {
-            this.progressBar.style.width = `${progress}%`;
-        }
-
-        const last = data.history?.at(-1);
-
-        if (this.textEls?.length >= 2) {
-            this.textEls[0].innerText =
-                `Последний результат: ${last?.result?.distance || ""}`;
-
-            this.textEls[1].innerText =
-                `Итоговый счёт: ${data.totalScore}`;
-        }
-
-        if (this.nextBtn) {
-            this.nextBtn.style.display = "none";
-        }
-
-        if (this.endButtons) {
-            this.endButtons.style.display = "block";
-        }
+showGameResult(data) {
+    this.showResult();
+    const progress =
+        (data.totalScore / (5000 * data.roundCount)) * 100;
+    if (this.progressBar) {
+        this.progressBar.style.width = `${progress}%`;
     }
+    const last = data.history?.at(-1);
+    if (this.textEls?.length >= 2) {
+        this.textEls[0].innerText =
+            `Последний результат: ${last?.result?.distance || "-"`};
+        this.textEls[1].innerText =
+            `Итоговый счёт: ${data.totalScore}`;
+    }
+    this.nextBtn.style.display = "none";
+    this.endButtons.style.display = "block";
+}
 
     // =====================================================
     // SCREEN CONTROL
