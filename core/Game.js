@@ -1,8 +1,8 @@
 export class Game {
- constructor({ gameState, scoring }) {
+ constructor({ gameState, scoring, players = ["p1"] }) {
   this.state = gameState;
   this.scoring = scoring;
-  this.isLocked = false;
+  this.players = players;
  }
 
  startGame() {
@@ -11,28 +11,31 @@ export class Game {
 
  startRound(location) {
   this.state.startRound(location);
-  this.isLocked = false;
  }
 
  setGuess(playerId, point) {
   const round = this.state.getCurrentRound();
-  if (!round || this.isLocked) return;
+  if (!round) return;
 
   const existing = this.state.getPlayerGuess(playerId);
 
   if (existing) {
    existing.guess = point;
   } else {
-   this.state.addGuess(playerId, point, { distance: 0, score: 0 });
+   this.state.addGuess(playerId, point, {
+    distance: 0,
+    score: 0,
+    isFinished: false
+   });
   }
  }
 
  finishGuess(playerId = "p1") {
   const round = this.state.getCurrentRound();
-  if (!round || this.isLocked) return;
+  if (!round) return;
 
   const guess = this.state.getPlayerGuess(playerId);
-  if (!guess) return;
+  if (!guess || guess.isFinished) return;
 
   const result = this.scoring.calculateResult({
    guess: guess.guess,
@@ -41,17 +44,13 @@ export class Game {
 
   guess.distance = result.distance;
   guess.score = result.score;
-
-  this.isLocked = true;
+  guess.isFinished = true;
 
   return result;
  }
 
- commitRound() {
-  this.state.commitRound();
- }
+ areAllPlayersFinished() {
+  const round = this.state.getCurrentRound();
+  if (!round) return false;
 
- endGame() {
-  this.state.end();
- }
-}
+  return this.players.every(playerId
