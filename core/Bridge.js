@@ -50,13 +50,13 @@ export class Bridge {
 
         this.game.on("guessFinished", ({ result }) => {
             this.mapUI.disableGuessMode();
+        });
+
+        this.game.on("roundEnded", (data) => {
             this.staticUI.showRoundResult({
                 result,
                 totalScore: this.game.score
             });
-        });
-
-        this.game.on("roundEnded", (data) => {
             this.mapUI.renderOverview({
                 guess: this.game.getCurrentGuess(),
                 actual: this.game.current
@@ -64,7 +64,7 @@ export class Bridge {
         });
 
         this.game.on("gameEnded", (data) => {
-            this.staticUI.showRoundResult({
+            this.staticUI.showGameResult({
                 result,
                 totalScore: this.game.score
             });
