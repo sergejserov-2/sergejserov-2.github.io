@@ -1,75 +1,75 @@
 export class GameState {
-    constructor() { this.reset(); }
+    constructor() {
+        this.status = "idle"; // idle | active | ended
+        this.rounds = [];
+        this.currentRound = null;
+        this.currentRoundIndex = 0;
+    }
+
+    // =========================
+    // round = {
+    //   index: number,
+    //   actualLocation: { lat, lng },
+    //   guesses: [
+    //     { playerId, guess, distance, score }
+    //   ],
+    //   result: { distance, score } | null
+    // }
+    // =========================
 
     reset() {
         this.status = "idle";
-        this.currentRoundIndex = 0;
-        this.currentRound = null;
         this.rounds = [];
+        this.currentRound = null;
+        this.currentRoundIndex = 0;
     }
 
     startRound(actualLocation) {
         this.currentRound = {
-            index: this.currentRoundIndex + 1,
+            index: this.currentRoundIndex,
             actualLocation,
             guesses: [],
             result: null
         };
-        this.status = "active";
+        this.rounds.push(this.currentRound);
     }
 
-    addGuess(playerId, guess) {
+    setGuess(playerId, point) {
         if (!this.currentRound) return;
-        this.currentRound.guesses.push({
+
+        const g = this.currentRound.guesses.find(x => x.playerId === playerId);
+
+        if (g) g.guess = point;
+        else this.currentRound.guesses.push({
             playerId,
-            guess,
+            guess: point,
             distance: null,
             score: null
         });
     }
 
-    setGuessResult(playerId, result) {
-        if (!this.currentRound) return;
-        const g = this.currentRound.guesses.find(x => x.playerId === playerId);
+    getGuess(playerId) {
+        return this.currentRound?.guesses.find(g => g.playerId === playerId) || null;
+    }
+
+    applyGuessResult(playerId, result) {
+        const g = this.getGuess(playerId);
         if (!g) return;
+
         g.distance = result.distance;
         g.score = result.score;
     }
 
     finishRound(result) {
-        if (!this.currentRound) return;
-        this.currentRound.result = result;
+        if (this.currentRound) this.currentRound.result = result;
     }
 
     commitRound() {
-        if (!this.currentRound) return;
-        this.rounds.push(this.currentRound);
         this.currentRoundIndex++;
         this.currentRound = null;
     }
 
     endGame() {
         this.status = "ended";
-    }
-
-    isActive() {
-        return this.status === "active";
-    }
-
-    getCurrentRound() {
-        return this.currentRound;
-    }
-
-    getLastRound() {
-        return this.rounds[this.rounds.length - 1] || null;
-    }
-
-    toJSON() {
-        return {
-            status: this.status,
-            currentRoundIndex: this.currentRoundIndex,
-            currentRound: this.currentRound,
-            rounds: this.rounds
-        };
     }
 }
