@@ -16,98 +16,98 @@ import { StaticUI } from "./ui/StaticUI.js";
 import { tweaks } from "./ui/Tweaks.js";
 
 function waitForGoogle() {
-return new Promise(resolve => {
-const check = () => {
-if (window.google?.maps) resolve();
-else setTimeout(check, 50);
-};
-check();
-});
+ return new Promise(resolve => {
+  const check = () => {
+   if (window.google?.maps) resolve();
+   else setTimeout(check, 50);
+  };
+  check();
+ });
 }
 
 function loadConfig() {
-const raw = localStorage.getItem("gameConfig");
-if (!raw) throw new Error("No gameConfig found");
-return JSON.parse(raw);
+ const raw = localStorage.getItem("gameConfig");
+ if (!raw) throw new Error("No gameConfig found");
+ return JSON.parse(raw);
 }
 
 async function bootstrap() {
-try {
-console.log("[Init] START");
+ try {
+  console.log("[Init] START");
 
-await waitForGoogle();
+  await waitForGoogle();
 
-tweaks();
+  tweaks();
 
-const config = loadConfig();
-const area = AreaRegistry[config.area];
+  const config = loadConfig();
+  const area = AreaRegistry[config.area];
 
-const root = document.querySelector(".game");
+  const root = document.querySelector(".game");
 
-/* =========================
-   DOMAIN
-========================= */
-const geometry = new Geometry();
-const scoring = new Scoring(geometry);
+  /* =========================
+     DOMAIN
+  ========================= */
+  const geometry = new Geometry();
+  const scoring = new Scoring(geometry);
 
-/* =========================
-   ADAPTERS
-========================= */
-const mapAdapter = new MapAdapter(window.google);
+  /* =========================
+     ADAPTERS
+  ========================= */
+  const mapAdapter = new MapAdapter(window.google);
 
-const generator = new LocationGenerator({
-mapAdapter,
-geometry
-});
+  const generator = new LocationGenerator({
+   mapAdapter,
+   geometry
+  });
 
-/* =========================
-   CORE
-========================= */
-const game = new Game({
-gameState: new GameState(),
-generator,
-scoring
-});
+  /* =========================
+     CORE
+  ========================= */
+  const game = new Game({
+   gameState: new GameState(),
+   generator,
+   scoring
+  });
 
-/* =========================
-   UI
-========================= */
-const mapUI = new MapUI({
-adapter: mapAdapter,
-mapElement: root.querySelector(".map"),
-overviewElement: root.querySelector(".overview-map")
-});
+  /* =========================
+     UI
+  ========================= */
+  const mapUI = new MapUI({
+   adapter: mapAdapter,
+   mapElement: root.querySelector(".map"),
+   overviewElement: root.querySelector(".overview-map")
+  });
 
-const streetViewUI = new StreetViewUI({
-element: root.querySelector(".streetview")
-});
+  const streetViewUI = new StreetViewUI({
+   element: root.querySelector(".streetview")
+  });
 
-const staticUI = new StaticUI({ element: root });
+  const staticUI = new StaticUI({ element: root });
 
-mapUI.init();
-streetViewUI.init();
+  mapUI.init();
+  streetViewUI.init();
 
-/* =========================
-   BRIDGE
-========================= */
-new Bridge({
-game,
-mapUI,
-streetViewUI,
-staticUI,
-viewModelBuilder: new ViewModelBuilder()
-});
+  /* =========================
+     BRIDGE
+  ========================= */
+  new Bridge({
+   game,
+   mapUI,
+   streetViewUI,
+   staticUI,
+   viewModelBuilder: new ViewModelBuilder()
+  });
 
-/* =========================
-   START
-========================= */
-game.startGame();
+  /* =========================
+     START
+  ========================= */
+  game.startGame();
 
-console.log("[Init] SUCCESS");
+  console.log("[Init] SUCCESS");
 
-} catch (err) {
-console.error("[Init] FAILED:", err);
-}
+ } catch (err) {
+  console.error("[Init] FAILED:", err);
+ }
 }
 
 bootstrap();
