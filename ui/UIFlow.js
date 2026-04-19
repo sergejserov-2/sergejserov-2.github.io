@@ -5,25 +5,23 @@ export class UIFlow {
   mapUI,
   streetViewUI,
   staticUI,
-  viewModelBuilder
+  uiState,
+  uiBuilder
  }) {
   this.game = game;
   this.gameFlow = gameFlow;
   this.mapUI = mapUI;
   this.streetViewUI = streetViewUI;
   this.staticUI = staticUI;
-  this.vm = viewModelBuilder;
 
-  this.uiState = {
-   screen: "loading" // loading | round | result
-  };
+  this.uiState = uiState;
+  this.uiBuilder = uiBuilder;
 
   this.bind();
  }
 
  setScreen(screen) {
-  this.uiState.screen = screen;
-
+  this.uiState.setScreen(screen);
   this.staticUI.setScreen(screen);
  }
 
@@ -39,16 +37,19 @@ export class UIFlow {
 
    this.setScreen("round");
 
-   this.staticUI.updateHUD(
-    this.vm.buildHUD(this.game.state, this.game.state.getCurrentRound())
+   const hud = this.uiBuilder.buildHUD(
+    this.game.state,
+    this.game.state.getCurrentRound()
    );
+
+   this.staticUI.updateHUD(hud);
 
    this.streetViewUI.setLocation(actual);
    this.mapUI.reset();
   });
 
   /* GUESS UPDATE */
-  this.game.on("guessUpdated", ({ playerId, guess }) => {
+  this.game.on("guessUpdated", ({ guess }) => {
    this.mapUI.placeGuessMarker(guess);
   });
 
@@ -57,7 +58,7 @@ export class UIFlow {
 
    this.setScreen("result");
 
-   const vm = this.vm.buildRoundVM(
+   const vm = this.uiBuilder.buildRoundVM(
     this.game.state,
     this.game.state.getCurrentRound()
    );
@@ -70,7 +71,7 @@ export class UIFlow {
    });
   });
 
-  /* ROUND COMMITTED */
+  /* ROUND END */
   this.game.on("roundCommitted", () => {
    this.gameFlow.onRoundCommitted();
   });
@@ -80,7 +81,7 @@ export class UIFlow {
 
    this.setScreen("result");
 
-   const vm = this.vm.buildGameVM(this.game.state);
+   const vm = this.uiBuilder.buildGameVM(this.game.state);
 
    this.staticUI.showGameResult(vm);
   });
