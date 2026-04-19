@@ -1,6 +1,4 @@
-import { Area } from "../Area.js"
-export default new Area({
-  name: "latinAmerica",
+export const latinAmerica = {
   polygon: [
     // 1–10 Север Мексики / граница США
     [32,-115], [31,-112], [30,-110], [29,-108], [28,-106], [27,-104], [26,-102], [25,-100], [24,-98], [23,-96],
@@ -27,4 +25,4 @@ export default new Area({
     // 111–113 замыкание
     [25,-100], [28,-105], [32,-115]
   ]
-});
+};
