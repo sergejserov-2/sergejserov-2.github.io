@@ -11,16 +11,18 @@ export class MapUI {
   this.overviewMarkers = [];
   this.overviewLines = [];
 
-  this.isGuessLocked = false;
-  this.onGuessCallback = null;
+  this.isLocked = false;
+  this.onGuess = null;
  }
 
  init() {
+  if (!this.mapElement || !this.overviewElement) return;
+
   this.map = this.adapter.createMap(this.mapElement, { zoom: 2 });
   this.overviewMap = this.adapter.createMap(this.overviewElement, { zoom: 2 });
 
   this.map.addListener("click", (e) => {
-   if (this.isGuessLocked) return;
+   if (this.isLocked) return;
 
    const point = {
     lat: e.latLng.lat(),
@@ -28,15 +30,19 @@ export class MapUI {
    };
 
    this.placeGuessMarker(point);
-   this.onGuessCallback?.(point);
+   this.onGuess?.(point);
   });
  }
 
- placeGuessMarker({ lat, lng }) {
-  if (!this.map) return;
+ bindGuess(callback) {
+  this.onGuess = callback;
+ }
+
+ placeGuessMarker(point) {
+  if (!this.map || !point) return;
 
   this.clearGuessMarker();
-  this.guessMarker = this.adapter.createMarker(this.map, { lat, lng });
+  this.guessMarker = this.adapter.createMarker(this.map, point);
  }
 
  clearGuessMarker() {
@@ -47,16 +53,22 @@ export class MapUI {
  }
 
  lock() {
-  this.isGuessLocked = true;
+  this.isLocked = true;
+ }
+
+ unlock() {
+  this.isLocked = false;
  }
 
  reset() {
-  this.isGuessLocked = false;
+  this.unlock();
   this.clearGuessMarker();
   this.clearOverview();
  }
 
  renderOverview(round) {
+  if (!this.overviewMap) return;
+
   const guess = round.guesses?.[0]?.guess;
   const actual = round.actualLocation;
 
@@ -84,9 +96,5 @@ export class MapUI {
 
   this.overviewLines = [];
   this.overviewMarkers = [];
- }
-
- onGuess(cb) {
-  this.onGuessCallback = cb;
  }
 }
