@@ -144,7 +144,7 @@ export class MapUI {
     // =====================================================
     
     renderOverview({ guess, actual }) {
-        if (!this.googleMap  !guess  !actual) return;
+        if (!this.googleMap || !guess || !actual) return;
 
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(guess);
