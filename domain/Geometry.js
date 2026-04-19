@@ -1,90 +1,42 @@
 export class Geometry {
 
-    // =====================================================
-    // GEODESIC DISTANCE (Haversine)
-    // =====================================================
+ getRandomPointInPolygon(polygon) {
+  // polygon = [{lat,lng}]
 
-    distance(from, to) {
-        const R = 6371000;
+  const lats = polygon.map(p => p.lat);
+  const lngs = polygon.map(p => p.lng);
 
-        const toRad = (deg) => deg * Math.PI / 180;
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
 
-        const dLat = toRad(to.lat - from.lat);
-        const dLng = toRad(to.lng - from.lng);
+  while (true) {
+   const point = {
+    lat: minLat + Math.random() * (maxLat - minLat),
+    lng: minLng + Math.random() * (maxLng - minLng)
+   };
 
-        const a =
-            Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(from.lat)) *
-            Math.cos(toRad(to.lat)) *
-            Math.sin(dLng / 2) ** 2;
+   if (this.isPointInPolygon(point, polygon)) {
+    return point;
+   }
+  }
+ }
 
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+ isPointInPolygon(point, polygon) {
+  let inside = false;
 
-        return R * c;
-    }
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+   const xi = polygon[i].lat, yi = polygon[i].lng;
+   const xj = polygon[j].lat, yj = polygon[j].lng;
 
-    // =====================================================
-    // UTILS
-    // =====================================================
+   const intersect =
+    (yi > point.lng) !== (yj > point.lng) &&
+    point.lat < (xj - xi) * (point.lng - yi) / (yj - yi + 0.0000001) + xi;
 
-    clamp(value, min, max) {
-        return Math.max(min, Math.min(max, value));
-    }
+   if (intersect) inside = !inside;
+  }
 
-    normalize(value, min, max) {
-        if (max === min) return 0;
-        return (value - min) / (max - min);
-    }
-
-    easeOut(value, power = 2) {
-        return 1 - Math.pow(1 - value, power);
-    }
-
-    // =====================================================
-    // POLYGON GEOMETRY
-    // =====================================================
-
-    getBounds(polygon) {
-        let minLat = Infinity;
-        let maxLat = -Infinity;
-        let minLng = Infinity;
-        let maxLng = -Infinity;
-
-        for (const [lat, lng] of polygon) {
-            minLat = Math.min(minLat, lat);
-            maxLat = Math.max(maxLat, lat);
-            minLng = Math.min(minLng, lng);
-            maxLng = Math.max(maxLng, lng);
-        }
-
-        return { minLat, maxLat, minLng, maxLng };
-    }
-
-    randomPointInBounds(bounds) {
-        return {
-            lat: bounds.minLat + Math.random() * (bounds.maxLat - bounds.minLat),
-            lng: bounds.minLng + Math.random() * (bounds.maxLng - bounds.minLng)
-        };
-    }
-
-    isInsidePolygon(point, polygon) {
-        let inside = false;
-    
-        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    
-            const [lat1, lng1] = polygon[i];
-            const [lat2, lng2] = polygon[j];
-    
-            const intersect =
-                (lng1 > point.lng) !== (lng2 > point.lng) &&
-                point.lat <
-                    ((lat2 - lat1) * (point.lng - lng1)) /
-                    ((lng2 - lng1) + 1e-9) +
-                    lat1;
-    
-            if (intersect) inside = !inside;
-        }
-    
-        return inside;
-    }
+  return inside;
+ }
 }
