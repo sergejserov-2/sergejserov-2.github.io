@@ -10,6 +10,7 @@ export class Game extends Emitter {
 
  startGame() {
   this.state.start();
+  this.state.status = "active";
   this.fire("gameStarted");
  }
 
@@ -18,13 +19,13 @@ export class Game extends Emitter {
   this.isLocked = false;
 
   this.fire("roundStarted", {
-   round: this.state.currentRoundIndex,
+   round: this.state.currentRound.index,
    actual: location
   });
  }
 
  setGuess(playerId, point) {
-  if (!this.state.getCurrentRound() || this.isLocked) return;
+  if (!this.state.currentRound || this.isLocked) return;
 
   this.state.setGuess(playerId, point);
 
@@ -37,7 +38,7 @@ export class Game extends Emitter {
  finishGuess(playerId = "p1") {
   if (this.isLocked) return;
 
-  const round = this.state.getCurrentRound();
+  const round = this.state.currentRound;
   if (!round) return;
 
   const guess = this.state.getGuess(playerId);
@@ -61,8 +62,7 @@ export class Game extends Emitter {
  }
 
  endGame() {
-  this.state.end();
-
+  this.state.endGame();
   this.fire("gameEnded", {
    rounds: this.state.rounds
   });
