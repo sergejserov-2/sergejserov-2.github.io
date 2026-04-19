@@ -66,7 +66,7 @@ async function bootstrap() {
   mapUI.init();
   streetViewUI.init();
   await gameFlow.startGame();
-  bridge.syncInitialState();
+  bridge.sync();
 
   console.log("[Init] SUCCESS");
  } catch (err) { console.error("[Init] FAILED:", err); }
