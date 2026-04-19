@@ -45,36 +45,49 @@ export class MapUI {
  // =========================
 
  initResize() {
-  const handle = document.querySelector(".resize-handle");
-  if (!handle) return;
+ const handle = document.querySelector(".resize-handle");
+ if (!handle) return;
 
-  let startX, startY, startW, startH;
+ let startX, startY, startW, startH;
 
-  handle.addEventListener("mousedown", (e) => {
-   startX = e.clientX;
-   startY = e.clientY;
+ handle.addEventListener("mousedown", (e) => {
+  startX = e.clientX;
+  startY = e.clientY;
 
-   const rect = this.mapElement.getBoundingClientRect();
-   startW = rect.width;
-   startH = rect.height;
+  const wrapper = this.mapElement.parentElement; 
+  const rect = wrapper.getBoundingClientRect();
 
-   const onMove = (e) => {
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
+  startW = rect.width;
+  startH = rect.height;
 
-    this.mapElement.style.width = startW + dx + "px";
-    this.mapElement.style.height = startH + dy + "px";
-   };
+  const onMove = (e) => {
+   const dx = e.clientX - startX;
+   const dy = e.clientY - startY;
 
-   const onUp = () => {
-    window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("mouseup", onUp);
-   };
+   // =========================
+   // ANCHOR: bottom-left / bottom-right safe scaling
+   // =========================
 
-   window.addEventListener("mousemove", onMove);
-   window.addEventListener("mouseup", onUp);
-  });
- }
+   const newWidth = Math.max(200, startW + dx);
+   const newHeight = Math.max(200, startH + dy);
+
+   wrapper.style.width = newWidth + "px";
+   wrapper.style.height = newHeight + "px";
+
+   // map must always fill wrapper
+   this.mapElement.style.width = "100%";
+   this.mapElement.style.height = "100%";
+  };
+
+  const onUp = () => {
+   window.removeEventListener("mousemove", onMove);
+   window.removeEventListener("mouseup", onUp);
+  };
+
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
+ });
+}
 
  // =========================
  // MARKERS
