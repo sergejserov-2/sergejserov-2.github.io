@@ -1,5 +1,4 @@
-import { Area } from "../Area.js"
-export default new Area({
+export const middleEast = {
   name: "middleEast",
   polygon: [
     // 1–10 Восточное Средиземноморье (Турция / Левант)
@@ -19,4 +18,4 @@ export default new Area({
     // 71–82 замыкание контура
     [42,36], [41,34], [40,32], [39,30], [38,28], [37,26], [36,26], [35,26]
   ]
-});
+};
