@@ -19,7 +19,6 @@ export class GameFlow {
  async startGame() {
   this.game.startGame();
   this.emit("gameStarted");
-
   await this.nextRound();
  }
 
@@ -44,25 +43,12 @@ export class GameFlow {
  }
 
  finishGuess(playerId = "p1") {
-  const round = this.game.state.getCurrentRound();
-  if (!round) return;
-
-  const guess = this.game.state.getPlayerGuess(playerId);
-  if (!guess || guess.isFinished) return;
-
-  const result = this.scoring.calculateResult({
-   guess: guess.guess,
-   actual: round.actualLocation,
-   area: this.area
-  });
-
-  guess.distance = result.distance;
-  guess.score = result.score;
-  guess.isFinished = true;
+  const result = this.game.finishGuess(playerId);
+  if (!result) return;
 
   this.emit("guessFinished", {
    result,
-   round
+   round: this.game.state.getCurrentRound()
   });
 
   if (this.game.areAllPlayersFinished()) {
@@ -77,8 +63,11 @@ export class GameFlow {
 
   if (this.game.state.getState().status === "ended") {
    this.emit("gameEnded");
-  } else {
-   this.nextRound();
   }
+ }
+
+ async startNextRoundWithDelay(ms = 1200) {
+  await new Promise(r => setTimeout(r, ms));
+  await this.nextRound();
  }
 }
