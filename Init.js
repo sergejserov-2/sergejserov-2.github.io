@@ -47,7 +47,7 @@ async function bootstrap() {
     try {
         console.log("[Init] bootstrap start");
 
-        // 1. Google Maps
+        // 1. Google Maps API
         await waitForGoogle();
 
         // 2. UI tweaks
@@ -57,18 +57,18 @@ async function bootstrap() {
         const config = loadConfig();
         console.log("[Init] config:", config);
 
-        // 4. Area
+        // 4. Area resolve
         const area = AreaRegistry[config.area];
 
         if (!area) {
             throw new Error(`Unknown area: ${config.area}`);
         }
 
-        // 5. Root
+        // 5. Root element
         const element = document.querySelector(".game");
 
         // =====================================================
-        // CORE
+        // CORE SERVICES
         // =====================================================
 
         const geometry = new Geometry();
@@ -101,7 +101,13 @@ async function bootstrap() {
         const mapUI = new MapUI({ element });
         const staticUI = new StaticUI({ element });
 
+        // =====================================================
+        // 💥 MAP INITIALIZATION (ONE TIME ONLY)
+        // =====================================================
+
+        mapUI.initGuessMap({ lat: 0, lng: 0 });
         mapUI.initOverviewMap();
+        mapUI.initStreetView({ lat: 0, lng: 0 });
 
         // =====================================================
         // BRIDGE
