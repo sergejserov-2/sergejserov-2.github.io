@@ -164,6 +164,7 @@ export class Game extends Emitter {
             actual: this.current,
             round: this.currentRound,
             result
+            guess: this.currentGuess
         });
 
         this.endRound({ result });
