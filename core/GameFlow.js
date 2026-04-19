@@ -2,54 +2,36 @@ export class GameFlow {
     constructor({ game, area }) {
         this.game = game;
         this.area = area;
-
-        this.running = false;
-        this.locked = false;
+        this.roundDelay = 1500;
     }
 
-    start() {
-        if (this.running) return;
-
-        this.running = true;
+    // FLOW: start → startGame → round loop → guessFinished → commit → next/end
+    async start() {
         this.game.startGame();
-        this.nextRound();
+        await this.nextRound();
     }
 
     async nextRound() {
-        if (!this.running) return;
-
-        this.locked = false;
-        await this.game.startRound(this.area);
+        await this.game.startRound(this.area.getNext?.() || this.area);
+        this.bind();
     }
 
-    submitGuess(playerId, point) {
-        if (!this.running || this.locked) return;
-        this.game.setGuess(playerId, point);
+    bind() {
+        const h = async () => {
+            this.game.off?.("guessFinished", h);
+            this.game.commitRound();
+            if (this.isLast()) return this.game.endGame();
+            await this.delay(this.roundDelay);
+            await this.nextRound();
+        };
+        this.game.on("guessFinished", h);
     }
 
-    finishGuess(playerId = "p1") {
-        if (!this.running || this.locked) return;
-
-        this.locked = true;
-
-        this.game.finishGuess(playerId);
-        this.game.commitRound();
-
-        if (this.isLastRound()) {
-            this.end();
-            return;
-        }
-
-        setTimeout(() => this.nextRound(), 1200);
+    isLast() {
+        return this.game.state.currentRoundIndex >= (this.area.roundsCount || 10);
     }
 
-    end() {
-        this.running = false;
-        this.game.endGame();
-    }
-
-    isLastRound() {
-        const s = this.game.state;
-        return s.currentRoundIndex >= s.rounds.length;
+    delay(ms) {
+        return new Promise(r => setTimeout(r, ms));
     }
 }
