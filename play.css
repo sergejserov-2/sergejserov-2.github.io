@@ -79,11 +79,8 @@ z-index:10;
 .resize-handle {
 top:0;
 right:0;
-
-width:14px;
-height:14px;
-
-background:rgba(255,255,255,.3);
+width:15px;
+height:15px;
 cursor:nesw-resize;
 }
 
