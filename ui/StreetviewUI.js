@@ -5,16 +5,16 @@ export class StreetViewUI {
   this.panorama = null;
  }
 
- init(position) {
+ init(position = { lat: 0, lng: 0 }) {
   this.panorama = this.adapter.createStreetView(
    this.element,
    position
   );
  }
 
- setLocation([lat, lng]) {
+ setLocation(pos) {
   if (!this.panorama) return;
-  this.panorama.setPosition({ lat, lng });
+  this.panorama.setPosition(pos);
  }
 
  lock() {
