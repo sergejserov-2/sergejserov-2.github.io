@@ -7,7 +7,6 @@ export class GameFlow {
   this.listeners = {};
  }
 
- // ===== events =====
  on(event, fn) {
   (this.listeners[event] ||= []).push(fn);
  }
@@ -16,10 +15,10 @@ export class GameFlow {
   (this.listeners[event] || []).forEach(fn => fn(payload));
  }
 
- // ===== lifecycle =====
  async startGame() {
   this.game.startGame();
   this.emit("gameStarted");
+
   await this.nextRound();
  }
 
@@ -28,14 +27,13 @@ export class GameFlow {
 
   this.game.startRound(location);
 
-  const round = this.game.state.getCurrentRound();
-
   this.emit("roundStarted", {
-   round,
+   round: this.game.state.getCurrentRound(),
    actual: location
   });
  }
 
+ // 👇 ВАЖНО: теперь это единая точка входа для guess
  onGuess(playerId, point) {
   this.game.setGuess(playerId, point);
 
@@ -47,14 +45,11 @@ export class GameFlow {
 
  finishGuess(playerId = "p1") {
   const result = this.game.finishGuess(playerId);
-
   if (!result) return;
-
-  const round = this.game.state.getCurrentRound();
 
   this.emit("guessFinished", {
    result,
-   round
+   round: this.game.state.getCurrentRound()
   });
 
   if (this.game.areAllPlayersFinished()) {
@@ -67,20 +62,10 @@ export class GameFlow {
 
   this.emit("roundCommitted");
 
-  if (this.isGameFinished()) {
-   this.endGame();
+  if (this.game.state.getState().status === "ended") {
+   this.emit("gameEnded");
   } else {
    this.nextRound();
   }
- }
-
- endGame() {
-  this.game.endGame();
-  this.emit("gameEnded");
- }
-
- isGameFinished() {
-  const state = this.game.state.getState();
-  return state.status === "ended";
  }
 }
