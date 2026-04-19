@@ -6,6 +6,7 @@ export class Bridge {
 
         this.bindGameEvents();
         this.bindMapEvents();
+        this.bindUIEvents(); //
     }
 
     // =====================================================
@@ -27,12 +28,14 @@ export class Bridge {
             this.staticUI.showRoundReady(round);
         });
 
-        this.game.on("roundStarted", ({ round, roundCount, location }) => {
+        this.game.on("roundStarted", ({ location }) => {
 
             this.staticUI.hideLoading();
             this.staticUI.startRound();
+
             this.mapUI.initRound({ location });
             this.mapUI.enableGuessMode();
+
             this.mapUI.clearGuessMarker();
             this.mapUI.clearOverview();
 
@@ -46,13 +49,14 @@ export class Bridge {
         this.game.on("guessFinished", ({ result }) => {
             this.mapUI.disableGuessMode();
             this.staticUI.showRoundResult(result);
-            this.mapUI.placeGuessMarker(this.game.getCurrentGuess());
+            this.mapUI.placeGuessMarker(this.game.players.p1.lastGuess);
         });
 
         this.game.on("roundEnded", (data) => {
             this.staticUI.showRoundResult(data);
+
             this.mapUI.renderOverview({
-                guess: this.game.getCurrentGuess(),
+                guess: this.game.players.p1.lastGuess,
                 actual: this.game.current
             });
         });
@@ -63,13 +67,25 @@ export class Bridge {
     }
 
     // =====================================================
-    // MAP → GAME
+    // MAP → GAME (ТОЛЬКО ВЫБОР ТОЧКИ)
     // =====================================================
 
     bindMapEvents() {
-
         this.mapUI.onGuess((point) => {
             this.game.setGuess("p1", point);
+        });
+    }
+
+    // =====================================================
+    // UI → GAME (КНОПКА ПОДТВЕРЖДЕНИЯ)
+    // =====================================================
+
+    bindUIEvents() {
+        const btn = document.getElementById("makeGuess");
+
+        if (!btn) return;
+
+        btn.addEventListener("click", () => {
             this.game.finishGuess("p1");
         });
     }
