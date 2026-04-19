@@ -202,23 +202,7 @@ export class Game extends Emitter {
             this.current = null;
     
             this.prepareNextRound();
-        }, 1200);
-    }
-
-        const isLast = this.currentRound >= this.maxRounds;
-
-        setTimeout(() => {
-            if (isLast) {
-                this.endGame();
-                return;
-            }
-
-            this.currentRound++;
-            this.current = null;
-
-            this.prepareNextRound();
-
-        }, 3000);
+        }, 5000);
     }
 
     // =====================================================
