@@ -2,7 +2,6 @@
 --z-world:0;
 --z-map:100;
 --z-hud:500;
---z-ui:1000;
 --z-overlay:5000;
 }
 
@@ -19,24 +18,15 @@ width:100vw;
 height:100vh;
 }
 
-/* =========================
-   WORLD
-========================= */
-.game-scene {
-position:absolute;
-inset:0;
-z-index:var(--z-world);
-}
-
+/* WORLD */
+.game-scene,
 .streetview {
 position:absolute;
 inset:0;
 z-index:var(--z-world);
 }
 
-/* =========================
-   HUD
-========================= */
+/* HUD */
 .hud {
 position:absolute;
 top:10px;
@@ -46,46 +36,31 @@ color:#fff;
 pointer-events:none;
 }
 
-/* =========================
-   MAP
-========================= */
-.map {
+/* MAP */
+.map-wrapper {
 position:absolute;
 left:20px;
 bottom:20px;
 width:300px;
 height:200px;
-
-background:#111;
-border-radius:10px;
-overflow:hidden;
-
 z-index:var(--z-map);
 }
 
-/* =========================
-   MAP UI (КЛЮЧ)
-========================= */
-.map-ui {
-position:absolute;
-inset:0;
-z-index:10;
-
-/* карта кликается сквозь UI */
-pointer-events:none;
+.map {
+width:100%;
+height:100%;
+background:#111;
+border-radius:10px;
+overflow:hidden;
 }
 
-/* =========================
-   INTERACTIVE
-========================= */
+/* CONTROLS */
 .resize-handle,
 .guess-button {
 position:absolute;
-pointer-events:auto;
-z-index:20;
+z-index:200;
 }
 
-/* ресайзер */
 .resize-handle {
 top:0;
 right:0;
@@ -95,7 +70,6 @@ background:rgba(255,255,255,.3);
 cursor:nesw-resize;
 }
 
-/* кнопка */
 .guess-button {
 right:10px;
 bottom:10px;
@@ -105,11 +79,14 @@ background:#4ea1ff;
 color:#fff;
 cursor:pointer;
 user-select:none;
+transition:0.2s ease;
 }
 
-/* =========================
-   SCREENS
-========================= */
+.guess-button:hover {
+background:#3b8ee6;
+}
+
+/* SCREENS */
 .screens {
 position:absolute;
 inset:0;
@@ -128,117 +105,9 @@ color:#fff;
 pointer-events:auto;
 }
 
-/* =========================
-   RESULT OVERLAY
-========================= */
+/* RESULT */
 .guess-overview {
 position:absolute;
 inset:0;
 background:rgba(0,0,0,.75);
-transform:translateY(100%);
-transition:.3s ease;
-display:flex;
-justify-content:center;
-align-items:center;
-pointer-events:none;
-z-index:var(--z-overlay);
-}
-
-.guess-overview.active {
-transform:translateY(0);
-pointer-events:auto;
-}
-
-.guess-overview::before {
-content:"";
-position:absolute;
-inset:0;
-background:rgba(0,0,0,.35);
-z-index:1;
-}
-
-/* =========================
-   PANEL
-========================= */
-.score-view {
-position:relative;
-z-index:10;
-width:650px;
-max-width:92vw;
-background:#161a22;
-padding:18px;
-border-radius:14px;
-display:flex;
-flex-direction:column;
-gap:12px;
-color:#fff;
-}
-
-/* =========================
-   OVERVIEW MAP
-========================= */
-.overview-map {
-width:100%;
-height:500px;
-border-radius:10px;
-overflow:hidden;
-z-index:2;
-}
-
-/* =========================
-   PROGRESS
-========================= */
-.score-progress-bar {
-width:100%;
-height:12px;
-background:#2a2f3a;
-border-radius:6px;
-overflow:hidden;
-}
-
-.score-progress {
-width:0;
-height:100%;
-background:#4ea1ff;
-transition:.4s ease;
-}
-
-/* =========================
-   TEXT
-========================= */
-.score-text {
-text-align:center;
-}
-
-.score-text p {
-margin:6px 0;
-color:#fff;
-}
-
-/* =========================
-   BUTTONS
-========================= */
-.game-end-buttons {
-display:flex;
-gap:10px;
-justify-content:center;
-}
-
-.button {
-padding:10px 14px;
-border-radius:8px;
-background:#4ea1ff;
-color:#fff;
-cursor:pointer;
-user-select:none;
-}
-
-/* =========================
-   SAFETY
-========================= */
-.score-view,
-.score-view p,
-.score-view span,
-.score-view div {
-color:#fff;
-}
+transform:translateY(100
