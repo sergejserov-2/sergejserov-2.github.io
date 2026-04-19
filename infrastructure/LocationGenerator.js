@@ -3,7 +3,7 @@ export class LocationGenerator {
         this.mapAdapter = mapAdapter;
         this.geometry = geometry;
 
-        this.maxAttempts = 50;
+        this.maxAttempts = 500;
         this.maxTriesPerPoint = 100;
     }
 
