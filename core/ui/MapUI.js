@@ -3,7 +3,7 @@ export class MapUI {
         this.root = element;
 
         // DOM
-        this.mapElement = this.root.querySelector(".map-element");
+        this.guessMapElement = this.root.querySelector(".guess-map");
         this.streetViewElement = this.root.querySelector(".streetview");
         this.embedMapElement = this.root.querySelector(".embed-map");
 
