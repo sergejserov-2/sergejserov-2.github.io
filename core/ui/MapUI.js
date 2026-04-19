@@ -156,11 +156,9 @@ export class MapUI {
             // корректируем dy после clamp
             const realDy = startH - clampedH;
     
-            el.style.width = ${newW}px;
-            el.style.height = ${clampedH}px;
-    
-            // двигаем вверх только если реально уменьшили высоту
-            el.style.top = ${startTop + realDy}px;
+            el.style.width = `${newW}px`;
+            el.style.height = `${clampedH}px`;
+            el.style.top = `${startTop + realDy}px`;
     
             this.triggerMapResize();
         });
