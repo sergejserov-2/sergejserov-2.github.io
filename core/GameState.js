@@ -1,75 +1,52 @@
 export class GameState {
     constructor() {
-        this.status = "idle"; // idle | active | ended
-        this.rounds = [];
-        this.currentRound = null;
+        this.status = "idle";
         this.currentRoundIndex = 0;
+        this.rounds = [];
     }
 
-    // =========================
-    // round = {
-    //   index: number,
-    //   actualLocation: { lat, lng },
-    //   guesses: [
-    //     { playerId, guess, distance, score }
-    //   ],
-    //   result: { distance, score } | null
-    // }
-    // =========================
-
-    reset() {
-        this.status = "idle";
+    start() {
+        this.status = "active";
         this.rounds = [];
-        this.currentRound = null;
         this.currentRoundIndex = 0;
     }
 
     startRound(actualLocation) {
-        this.currentRound = {
+        this.rounds.push({
             index: this.currentRoundIndex,
             actualLocation,
-            guesses: [],
-            result: null
-        };
-        this.rounds.push(this.currentRound);
-    }
-
-    setGuess(playerId, point) {
-        if (!this.currentRound) return;
-
-        const g = this.currentRound.guesses.find(x => x.playerId === playerId);
-
-        if (g) g.guess = point;
-        else this.currentRound.guesses.push({
-            playerId,
-            guess: point,
-            distance: null,
-            score: null
+            guesses: []
         });
     }
 
-    getGuess(playerId) {
-        return this.currentRound?.guesses.find(g => g.playerId === playerId) || null;
+    getCurrentRound() {
+        return this.rounds[this.currentRoundIndex];
     }
 
-    applyGuessResult(playerId, result) {
-        const g = this.getGuess(playerId);
-        if (!g) return;
+    addGuess(playerId, guess, result) {
+        const round = this.getCurrentRound();
 
-        g.distance = result.distance;
-        g.score = result.score;
-    }
-
-    finishRound(result) {
-        if (this.currentRound) this.currentRound.result = result;
+        round.guesses.push({
+            playerId,
+            guess,
+            distance: result.distance,
+            score: result.score
+        });
     }
 
     commitRound() {
         this.currentRoundIndex++;
-        this.currentRound = null;
     }
 
-    endGame() {
+    end() {
         this.status = "ended";
+    }
+
+    getState() {
+        return {
+            status: this.status,
+            currentRoundIndex: this.currentRoundIndex,
+            rounds: this.rounds
+        };
     }
 }
