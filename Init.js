@@ -13,7 +13,7 @@ import { MapAdapter } from "./adapters/MapAdapter.js";
 import { LocationGenerator } from "./adapters/LocationGenerator.js";
 
 import { MapUI } from "./ui/MapUI.js";
-import { StreetViewUI } from "./ui/StreetViewUI.js";
+import { StreetViewUI } from "./ui/StreetviewUI.js";
 import { StaticUI } from "./ui/StaticUI.js";
 import { tweaks } from "./ui/Tweaks.js";
 
