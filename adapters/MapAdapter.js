@@ -3,15 +3,15 @@ export class MapAdapter {
   this.svService = new google.maps.StreetViewService();
  }
 
- createMap(element, { center = [0, 0], zoom = 2 } = {}) {
+ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   return new google.maps.Map(element, {
-   center: { lat: center[0], lng: center[1] },
+   center,
    zoom,
    disableDefaultUI: true
   });
  }
 
- createMarker(map, [lat, lng]) {
+ createMarker(map, { lat, lng }) {
   return new google.maps.Marker({
    position: { lat, lng },
    map
@@ -24,7 +24,7 @@ export class MapAdapter {
 
  createPolyline(map, path) {
   return new google.maps.Polyline({
-   path,
+   path, // [{lat,lng}]
    geodesic: true,
    strokeOpacity: 1,
    strokeWeight: 2,
@@ -43,7 +43,7 @@ export class MapAdapter {
   map.fitBounds(bounds);
  }
 
- createStreetView(element, [lat, lng]) {
+ createStreetView(element, { lat = 0, lng = 0 }) {
   return new google.maps.StreetViewPanorama(element, {
    position: { lat, lng },
    pov: { heading: 0, pitch: 0 },
@@ -55,7 +55,7 @@ export class MapAdapter {
   });
  }
 
- getStreetViewMeta([lat, lng]) {
+ getStreetViewMeta({ lat, lng }) {
   return new Promise(resolve => {
    this.svService.getPanorama(
     {
@@ -70,7 +70,12 @@ export class MapAdapter {
 
      resolve({
       valid,
-      location: data?.location?.latLng || null
+      location: valid
+       ? {
+        lat: data.location.latLng.lat(),
+        lng: data.location.latLng.lng()
+       }
+       : null
      });
     }
    );
