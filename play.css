@@ -1,202 +1,74 @@
+/* =========================
+   LAYERS
+========================= */
 :root {
 --z-world:0;
---z-ui:10;
---z-hud:50;
---z-interactive:100;
---z-overlay:1000;
+--z-map:100;
+--z-hud:500;
+--z-overlay:5000;
 }
 
-body {
-margin:0;
-background:#000;
-font-family:Arial,sans-serif;
-overflow:hidden;
-}
-
-.game {
-position:relative;
-width:100vw;
-height:100vh;
-}
-
-/* world */
-.game-scene {
-position:absolute;
-inset:0;
-z-index:var(--z-world);
-}
-
-.streetview {
-position:absolute;
-inset:0;
-z-index:var(--z-world);
-}
-
-/* hud */
-.hud {
-position:absolute;
-top:10px;
-left:10px;
-z-index:var(--z-hud);
-color:#fff;
-pointer-events:none;
-}
-
-/* map */
+/* =========================
+   MAP
+========================= */
 .map {
-position:absolute;
-left:20px;
-bottom:20px;
-width:300px;
-height:200px;
-z-index:var(--z-ui);
-background:#111;
-border-radius:10px;
-overflow:hidden;
-box-shadow:0 10px 30px rgba(0,0,0,.5);
-pointer-events:auto;
+ position:absolute;
+ left:20px;
+ bottom:20px;
+
+ width:300px;
+ height:200px;
+
+ background:#111;
+ border-radius:10px;
+ overflow:hidden;
+
+ z-index:var(--z-map);
 }
 
-/* interactive */
-.resize-handle {
-position:absolute;
-top:0;
-right:0;
-width:14px;
-height:14px;
-background:rgba(255,255,255,.3);
-cursor:nesw-resize;
-z-index:var(--z-interactive);
+/* =========================
+   UI OVERLAY (КЛЮЧ)
+========================= */
+.map-ui {
+ position:absolute;
+ inset:0;
+
+ z-index:10;
+
+ /* пропускаем клики к карте */
+ pointer-events:none;
 }
 
+/* =========================
+   INTERACTIVE ELEMENTS
+========================= */
+.resize-handle,
 .guess-button {
-position:absolute;
-right:10px;
-bottom:10px;
-padding:10px;
-border-radius:8px;
-background:#4ea1ff;
-color:#fff;
-cursor:pointer;
-z-index:var(--z-interactive);
+ position:absolute;
+ pointer-events:auto; /* возвращаем клики */
+ z-index:20;
 }
 
-/* screens */
-.screens {
-position:absolute;
-inset:0;
-z-index:var(--z-overlay);
-pointer-events:none;
+/* ресайзер */
+.resize-handle {
+ top:0;
+ right:0;
+ width:14px;
+ height:14px;
+ cursor:nesw-resize;
 }
 
-.loading-screen {
-position:absolute;
-inset:0;
-display:none;
-justify-content:center;
-align-items:center;
-background:rgba(0,0,0,.8);
-color:#fff;
-pointer-events:auto;
-}
+/* кнопка */
+.guess-button {
+ right:10px;
+ bottom:10px;
 
-/* overlay */
-.guess-overview {
-position:absolute;
-inset:0;
-background:rgba(0,0,0,.75);
-transform:translateY(100%);
-transition:.3s ease;
-display:flex;
-justify-content:center;
-align-items:center;
-pointer-events:none;
-z-index:var(--z-overlay);
-}
+ padding:10px;
+ border-radius:8px;
 
-.guess-overview.active {
-transform:translateY(0);
-pointer-events:auto;
-}
+ background:#4ea1ff;
+ color:#fff;
 
-.guess-overview::before {
-content:"";
-position:absolute;
-inset:0;
-background:rgba(0,0,0,.35);
-z-index:1;
-}
-
-/* panel */
-.score-view {
-position:relative;
-z-index:10;
-width:650px;
-max-width:92vw;
-background:#161a22;
-padding:18px;
-border-radius:14px;
-display:flex;
-flex-direction:column;
-gap:12px;
-color:#fff;
-}
-
-/* overview map */
-.overview-map {
-width:100%;
-height:500px;
-border-radius:10px;
-overflow:hidden;
-z-index:2;
-}
-
-/* progress */
-.score-progress-bar {
-width:100%;
-height:12px;
-background:#2a2f3a;
-border-radius:6px;
-overflow:hidden;
-}
-
-.score-progress {
-width:0;
-height:100%;
-background:#4ea1ff;
-transition:.4s ease;
-}
-
-/* text */
-.score-text {
-text-align:center;
-}
-
-.score-text p {
-margin:6px 0;
-color:#fff;
-}
-
-/* buttons */
-.game-end-buttons {
-display:flex;
-gap:10px;
-justify-content:center;
-}
-
-.button {
-padding:10px 14px;
-border-radius:8px;
-background:#4ea1ff;
-color:#fff;
-cursor:pointer;
-user-select:none;
-}
-
-/* safety */
-.score-view,
-.score-view p,
-.score-view span,
-.score-view div {
-color:#fff;
+ cursor:pointer;
+ user-select:none;
 }
