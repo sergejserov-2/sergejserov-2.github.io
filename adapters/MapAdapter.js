@@ -3,7 +3,11 @@ export class MapAdapter {
         this.svService = new google.maps.StreetViewService();
     }
 
-    createMap(element, { center = [0,0], zoom = 2 } = {}) {
+    // =========================
+    // MAP
+    // =========================
+
+    createMap(element, { center = [0, 0], zoom = 2 } = {}) {
         return new google.maps.Map(element, {
             center: { lat: center[0], lng: center[1] },
             zoom,
@@ -19,7 +23,7 @@ export class MapAdapter {
     }
 
     removeMarker(marker) {
-        marker.setMap(null);
+        marker?.setMap(null);
     }
 
     createPolyline(map, path) {
@@ -34,10 +38,25 @@ export class MapAdapter {
 
     fitToMarkers(map, markers) {
         const bounds = new google.maps.LatLngBounds();
+
         markers.forEach(m => {
-            const p = m.getPosition();
-            if (p) bounds.extend(p);
+            const pos = m.getPosition();
+            if (pos) bounds.extend(pos);
         });
+
         map.fitBounds(bounds);
+    }
+
+    // =========================
+    // STREET VIEW (FIXED)
+    // =========================
+
+    createStreetView(element) {
+        return new google.maps.StreetViewPanorama(element, {
+            addressControl: false,
+            showRoadLabels: false,
+            fullscreenControl: false,
+            zoomControl: true
+        });
     }
 }
