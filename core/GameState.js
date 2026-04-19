@@ -14,13 +14,10 @@ export class GameState {
  startRound(actualLocation) {
   this.rounds.push({
    index: this.currentRoundIndex,
-
-   // ✔ runtime format
    actualLocation: {
     lat: actualLocation.lat,
     lng: actualLocation.lng
    },
-
    guesses: []
   });
  }
@@ -29,18 +26,21 @@ export class GameState {
   return this.rounds[this.currentRoundIndex];
  }
 
+ getPlayerGuess(playerId) {
+  const round = this.getCurrentRound();
+  return round?.guesses.find(g => g.playerId === playerId);
+ }
+
  addGuess(playerId, guess, result) {
   const round = this.getCurrentRound();
+  if (!round) return;
 
   round.guesses.push({
    playerId,
-
-   // ✔ runtime format
    guess: {
     lat: guess.lat,
     lng: guess.lng
    },
-
    distance: result.distance,
    score: result.score
   });
