@@ -1,86 +1,151 @@
-export class Bridge {
-    constructor({ game, mapUI, staticUI }) {
-        this.game = game;
-        this.mapUI = mapUI;
-        this.staticUI = staticUI;
+export class MapUI {
+    constructor({ element }) {
+        this.root = element;
 
-        this.bindGameEvents();
-        this.bindMapEvents();
+        // DOM
+        this.mapElement = this.root.querySelector(".map-element");
+        this.streetViewElement = this.root.querySelector(".streetview");
+        this.embedMapElement = this.root.querySelector(".embed-map");
+
+        if (!this.mapElement  !this.streetViewElement  !this.embedMapElement) {
+            throw new Error("MapUI: missing DOM nodes");
+        }
+
+        // Google instances
+        this.map = null;
+        this.streetView = null;
+
+        // state
+        this.isGuessMode = true;
+        this.guessCallback = null;
     }
 
     // =====================================================
-    // GAME → UI
+    // ROUND INIT (CALLED EVERY ROUND)
     // =====================================================
 
-    bindGameEvents() {
+    initRound({ location }) {
+        this.destroyRound();
 
-        // GAME START
-        this.game.on("gameStarted", () => {
-            this.staticUI.showGame();
+        this.initStreetView(location);
+        this.initMap();
+    }
+
+    // =====================================================
+    // MAP
+    // =====================================================
+
+    initMap() {
+        this.map = new google.maps.Map(this.mapElement, {
+            zoom: 2,
+            center: { lat: 0, lng: 0 },
+            disableDefaultUI: true,
+            clickableIcons: false
         });
 
-        // ROUND LOADING
-        this.game.on("roundLoading", () => {
-            this.staticUI.showLoading();
+        this.map.addListener("click", (e) => {
+            if (!this.isGuessMode) return;
+
+            this.emitGuess(e.latLng);
         });
 
-        // ROUND READY
-        this.game.on("roundReady", ({ round }) => {
-            this.staticUI.showRoundReady(round);
+        // ensure DOM placement
+        this.embedMapElement.appendChild(this.mapElement);
+    }
+
+    // =====================================================
+    // STREET VIEW
+    // =====================================================
+
+    initStreetView(location) {
+        this.streetView = new google.maps.StreetViewPanorama(
+            this.streetViewElement,
+            {
+                position: location,
+                pov: { heading: 0, pitch: 0 },
+                zoom: 1,
+                disableDefaultUI: true
+            }
+        );
+    }
+
+    // =====================================================
+    // GUESS
+    // =====================================================
+
+    onGuess(cb) {
+        this.guessCallback = cb;
+    }
+
+    emitGuess(latLng) {
+        if (!this.guessCallback) return;
+
+        this.guessCallback({
+            lat: latLng.lat(),
+            lng: latLng.lng()
         });
+    }
 
-        // ROUND STARTED
-        this.game.on("roundStarted", ({ round, roundCount, location }) => {
-            this.staticUI.hideLoading();
-            this.staticUI.startRound();
+    placeGuessMarker(location) {
+        if (!this.map) return;
 
-            this.mapUI.clearGuessMarker();
-            this.mapUI.clearOverview();
+        if (this.marker) this.marker.setMap(null);
 
-            this.mapUI.enableGuessMode();
-
-            this.staticUI.updateHUD(
-                this.game.getHUDState()
-            );
-        });
-
-        // HUD TICK
-        this.game.on("hudUpdated", (hud) => {
-            this.staticUI.updateHUD(hud);
-        });
-
-        // GUESS RESULT
-        this.game.on("guessFinished", ({ result }) => {
-            this.mapUI.disableGuessMode();
-
-            this.staticUI.showRoundResult(result);
-
-            this.mapUI.renderOverview({
-                guess: this.game.players.p1.lastGuess,
-                actual: this.game.current
-            });
-        });
-
-        // ROUND END
-        this.game.on("roundEnded", (data) => {
-            this.staticUI.showRoundResult(data);
-        });
-
-        // GAME END
-        this.game.on("gameEnded", (data) => {
-            this.staticUI.showGameResult(data);
+        this.marker = new google.maps.Marker({
+            position: location,
+            map: this.map
         });
     }
 
     // =====================================================
-    // MAP → GAME
+    // OVERVIEW (RESULT SCREEN)
     // =====================================================
 
-    bindMapEvents() {
+    renderOverview({ guess, actual }) {
+        const bounds = new google.maps.LatLngBounds();
 
-        this.mapUI.onGuess((point) => {
-            this.game.players.p1.lastGuess = point;
-            this.game.finishGuess("p1");
+        bounds.extend(guess);
+        bounds.extend(actual);
+
+        this.map.fitBounds(bounds);
+
+        new google.maps.Polyline({
+            path: [guess, actual],
+            strokeColor: "#ffcc00",
+            strokeOpacity: 1,
+            strokeWeight: 2,
+            map: this.map
         });
+    }
+
+    // =====================================================
+    // MODE
+    // =====================================================
+
+    enableGuessMode() {
+        this.isGuessMode = true;
+        this.map?.setOptions({ draggable: true });
+    }
+
+    disableGuessMode() {
+        this.isGuessMode = false;
+        this.map?.setOptions({ draggable: false });
+    }
+
+    // =====================================================
+    // CLEANUP
+    // =====================================================
+
+    destroyRound() {
+        if (this.marker) {
+            this.marker.setMap(null);
+            this.marker = null;
+        }
+
+        this.map = null;
+        this.streetView = null;
+
+        this.embedMapElement.innerHTML = "";
+        this.streetViewElement.innerHTML = "";
     }
 }
