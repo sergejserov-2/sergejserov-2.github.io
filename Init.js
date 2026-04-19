@@ -1,5 +1,6 @@
 import { Game } from "./core/Game.js";
 import { GameState } from "./core/GameState.js";
+import { GameFlow } from "./core/GameFlow.js";
 import { Bridge } from "./core/Bridge.js";
 import { ViewModelBuilder } from "./core/ViewModelBuilder.js";
 
@@ -36,7 +37,6 @@ async function bootstrap() {
   console.log("[Init] START");
 
   await waitForGoogle();
-
   tweaks();
 
   const config = loadConfig();
@@ -65,8 +65,13 @@ async function bootstrap() {
   ========================= */
   const game = new Game({
    gameState: new GameState(),
-   generator,
    scoring
+  });
+
+  const gameFlow = new GameFlow({
+   game,
+   generator,
+   area
   });
 
   /* =========================
@@ -93,6 +98,7 @@ async function bootstrap() {
   ========================= */
   new Bridge({
    game,
+   gameFlow,
    mapUI,
    streetViewUI,
    staticUI,
@@ -102,7 +108,7 @@ async function bootstrap() {
   /* =========================
      START
   ========================= */
-  game.startGame();
+  await gameFlow.startGame();
 
   console.log("[Init] SUCCESS");
 
