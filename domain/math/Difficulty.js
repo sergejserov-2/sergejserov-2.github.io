@@ -1,11 +1,18 @@
 export class Difficulty {
+ constructor({ area }) {
+  this.area = area;
+ }
 
- static fromArea(area) {
-  if (!area) return 1;
+ get(area) {
 
-  const min = area.minDistance ?? 1;
+  // базовая идея:
+  // чем меньше зона — тем сложнее
 
-  // чем меньше minDistance → тем сложнее
-  return Math.max(0.2, Math.log10(min + 1));
+  const size = area.polygon.length;
+
+  // инверсия размера
+  const raw = 100 / size;
+
+  return raw;
  }
 }
