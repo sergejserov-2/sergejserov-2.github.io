@@ -1,21 +1,19 @@
 import { Game } from "./core/Game.js";
-
 import { MapUI } from "./core/ui/MapUI.js";
 import { StaticUI } from "./core/ui/StaticUI.js";
 import { tweaks } from "./core/ui/Tweaks.js";
-
 import { Bridge } from "./core/Bridge.js";
 import { Scoring } from "./core/Scoring.js";
-
 import { Geometry } from "./infrastructure/Geometry.js";
 import { LocationGenerator } from "./infrastructure/LocationGenerator.js";
 import { MapAdapter } from "./infrastructure/MapAdapter.js";
-
 import { AreaRegistry } from "./area/AreaRegistry.js";
 
 console.log("[Init] loaded");
 
+// =====================================================
 // GOOGLE WAIT
+// =====================================================
 
 async function waitForGoogle() {
     console.log("[Init] waiting for Google Maps...");
@@ -27,7 +25,9 @@ async function waitForGoogle() {
     console.log("[Init] Google Maps ready");
 }
 
+// =====================================================
 // CONFIG
+// =====================================================
 
 function loadConfig() {
     const raw = localStorage.getItem("gameConfig");
@@ -39,33 +39,37 @@ function loadConfig() {
     return JSON.parse(raw);
 }
 
+// =====================================================
 // BOOTSTRAP
+// =====================================================
 
 async function bootstrap() {
     try {
         console.log("[Init] bootstrap start");
 
-        // 1. Google
+        // 1. Google Maps
         await waitForGoogle();
 
-        // 2. UI tweaks (оставляем как есть)
+        // 2. UI tweaks
         tweaks();
 
         // 3. Config
         const config = loadConfig();
         console.log("[Init] config:", config);
 
-        // 4. Resolve AREA (ключ → объект)
+        // 4. Area
         const area = AreaRegistry[config.area];
 
         if (!area) {
             throw new Error(`Unknown area: ${config.area}`);
         }
 
-        // 5. Root element
+        // 5. Root
         const element = document.querySelector(".game");
 
+        // =====================================================
         // CORE
+        // =====================================================
 
         const geometry = new Geometry();
         const mapAdapter = new MapAdapter(window.google);
@@ -77,7 +81,9 @@ async function bootstrap() {
 
         const scoring = new Scoring(geometry);
 
+        // =====================================================
         // GAME
+        // =====================================================
 
         const game = new Game({
             area,
@@ -88,10 +94,14 @@ async function bootstrap() {
             mapAdapter
         });
 
+        // =====================================================
         // UI
+        // =====================================================
 
         const mapUI = new MapUI({ element });
         const staticUI = new StaticUI({ element });
+
+        mapUI.initOverviewMap();
 
         // =====================================================
         // BRIDGE
@@ -104,7 +114,7 @@ async function bootstrap() {
         });
 
         // =====================================================
-        // START
+        // START GAME
         // =====================================================
 
         game.startGame();
