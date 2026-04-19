@@ -106,15 +106,18 @@ async function bootstrap() {
   /* =========================
      BRIDGE
   ========================= */
-  new Bridge({
-   game,
-   gameFlow,
-   mapUI,
-   streetViewUI,
-   staticUI,
-   viewModelBuilder: new ViewModelBuilder()
-  });
+const bridge = new Bridge({
+ game,
+ gameFlow,
+ mapUI,
+ streetViewUI,
+ staticUI,
+ viewModelBuilder: new ViewModelBuilder()
+});
 
+await gameFlow.startGame();
+
+bridge.sync();
   /* =========================
      START GAME
   ========================= */
