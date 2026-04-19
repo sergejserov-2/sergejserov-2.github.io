@@ -157,13 +157,13 @@ export class StaticUI {
 
     showResult() {
         if (this.resultScreen) {
-            this.resultScreen.style.transform = "translateY(0%)";
+            this.resultScreen.classList.add("active");
         }
     }
 
     hideResult() {
         if (this.resultScreen) {
-            this.resultScreen.style.transform = "translateY(100%)";
+            this.resultScreen.classList.remove("active");
         }
     }
 
