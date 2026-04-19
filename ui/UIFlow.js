@@ -1,6 +1,5 @@
 export class UIFlow {
  constructor({
-  game,
   gameFlow,
   mapUI,
   streetViewUI,
@@ -8,7 +7,6 @@ export class UIFlow {
   uiState,
   uiBuilder
  }) {
-  this.game = game;
   this.gameFlow = gameFlow;
   this.mapUI = mapUI;
   this.streetViewUI = streetViewUI;
@@ -27,19 +25,16 @@ export class UIFlow {
 
  bind() {
 
-  /* GAME START */
-  this.game.on("gameStarted", () => {
+  this.gameFlow.on("gameStarted", () => {
    this.setScreen("round");
   });
 
-  /* ROUND START */
-  this.game.on("roundStarted", ({ round, actual }) => {
-
+  this.gameFlow.on("roundStarted", ({ round, actual }) => {
    this.setScreen("round");
 
    const hud = this.uiBuilder.buildHUD(
-    this.game.state,
-    this.game.state.getCurrentRound()
+    this.gameFlow.game.state,
+    round
    );
 
    this.staticUI.updateHUD(hud);
@@ -48,19 +43,16 @@ export class UIFlow {
    this.mapUI.reset();
   });
 
-  /* GUESS UPDATE */
-  this.game.on("guessUpdated", ({ guess }) => {
+  this.gameFlow.on("guessUpdated", ({ guess }) => {
    this.mapUI.placeGuessMarker(guess);
   });
 
-  /* GUESS FINISHED */
-  this.game.on("guessFinished", ({ result }) => {
-
+  this.gameFlow.on("guessFinished", ({ result }) => {
    this.setScreen("result");
 
    const vm = this.uiBuilder.buildRoundVM(
-    this.game.state,
-    this.game.state.getCurrentRound()
+    this.gameFlow.game.state,
+    this.gameFlow.game.state.getCurrentRound()
    );
 
    this.staticUI.showRoundResult(vm);
@@ -71,17 +63,14 @@ export class UIFlow {
    });
   });
 
-  /* ROUND END */
-  this.game.on("roundCommitted", () => {
-   this.gameFlow.onRoundCommitted();
+  this.gameFlow.on("roundCommitted", () => {
+   // UI ничего не делает напрямую
   });
 
-  /* GAME END */
-  this.game.on("gameEnded", () => {
-
+  this.gameFlow.on("gameEnded", () => {
    this.setScreen("result");
 
-   const vm = this.uiBuilder.buildGameVM(this.game.state);
+   const vm = this.uiBuilder.buildGameVM(this.gameFlow.game.state);
 
    this.staticUI.showGameResult(vm);
   });
