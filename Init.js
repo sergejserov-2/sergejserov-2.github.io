@@ -88,7 +88,7 @@ async function bootstrap() {
 
         if (!area) {
             console.error("[Init] AVAILABLE AREAS:", AreaRegistry);
-            throw new Error(Unknown area: ${config.area});
+            throw new Error(`Unknown area: ${config.area}`);
         }
 
         console.log("[Init] area resolved");
