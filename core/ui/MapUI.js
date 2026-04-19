@@ -7,10 +7,6 @@ export class MapUI {
         this.streetViewElement = this.root.querySelector(".streetview");
         this.embedMapElement = this.root.querySelector(".embed-map");
 
-        if (!this.mapElement || !this.streetViewElement || !this.embedMapElement) {
-            throw new Error("MapUI: missing DOM nodes");
-        }
-
         // GOOGLE STATE
         this.googleMap = null;
         this.panorama = null;
