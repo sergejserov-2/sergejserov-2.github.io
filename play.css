@@ -106,8 +106,8 @@ body {
 ========================= */
 .guess-map {
     position: absolute;
-    left: 20px;
-    bottom: 20px;
+    left: 10px;
+    bottom: 10px;
 
     width: 300px;
     height: 200px;
