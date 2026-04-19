@@ -1,4 +1,4 @@
-,import { Emitter } from "./Emitter.js";
+import { Emitter } from "./Emitter.js";
 
 export class Game extends Emitter {
     constructor({ gameState, generator, scoring }) {
