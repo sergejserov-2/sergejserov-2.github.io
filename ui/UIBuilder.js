@@ -1,4 +1,4 @@
-export class ViewModelBuilder {
+export class UIBuilder {
 
  buildHUD(state, round) {
   return {
