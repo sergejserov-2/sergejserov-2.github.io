@@ -15,7 +15,6 @@ export class Game extends Emitter {
         this.scoring = scoring;
 
         // STATE
-
         this.gameState = "idle"; // idle | active | ended
         this.roundState = "loading"; // loading | ready | active | ended
 
@@ -40,8 +39,9 @@ export class Game extends Emitter {
         this.moves = 0;
     }
 
-
+    // =====================================================
     // START GAME
+    // =====================================================
 
     startGame() {
         if (this.gameState !== "idle") return;
@@ -50,10 +50,12 @@ export class Game extends Emitter {
         this.currentRound = 1;
 
         this.fire("gameStarted");
+        this.fire("hudUpdated", this.getHUDState()); // ✔ FIX: initial sync
 
         this.prepareNextRound();
     }
 
+    // =====================================================
     // ROUND PIPELINE
     // =====================================================
 
@@ -110,9 +112,12 @@ export class Game extends Emitter {
             location: this.current
         });
 
+        this.fire("hudUpdated", this.getHUDState()); // ✔ FIX: sync HUD per round
+
         this.startTimer();
 
-        this.prepareNextRound();
+        // ❌ FIX: убрали prepareNextRound отсюда
+        // (иначе ломается lifecycle)
     }
 
     // =====================================================
@@ -136,90 +141,4 @@ export class Game extends Emitter {
         this.fire("guessFinished", {
             playerId,
             actual: this.current,
-            round: this.currentRound,
-            result
-        });
-    }
-
-    // =====================================================
-    // ROUND END
-    // =====================================================
-    endRound(payload = {}) {
-        this.stopTimer();
-
-        Object.values(this.players).forEach(p => {
-            p.state = "idle";
-        });
-
-        this.roundState = "ended";
-
-        this.history.push(payload);
-
-        this.fire("roundEnded", {
-            ...payload,
-            totalScore: this.score,
-            round: this.currentRound
-        });
-
-        const isLast = this.currentRound >= this.maxRounds;
-
-        setTimeout(() => {
-            if (isLast) {
-                this.endGame();
-                return;
-            }
-
-            this.currentRound++;
-
-            this.current = null;
-            this.prepareNextRound();
-
-        }, 1500);
-    }
-
-    // =====================================================
-    // TIMER
-    // =====================================================
-
-    startTimer() {
-        this.timer = setInterval(() => {
-            this.time++;
-            this.fire("hudUpdated", this.getHUDState());
-        }, 1000);
-    }
-
-    stopTimer() {
-        clearInterval(this.timer);
-        this.timer = null;
-    }
-
-    // =====================================================
-    // HUD
-    // =====================================================
-
-    getHUDState() {
-        return {
-            round: this.currentRound,
-            roundCount: this.maxRounds,
-            score: this.score,
-            time: this.time,
-            moves: this.moves
-        };
-    }
-
-    // =====================================================
-    // END GAME
-    // =====================================================
-
-    endGame() {
-        if (this.gameState === "ended") return;
-
-        this.gameState = "ended";
-
-        this.fire("gameEnded", {
-            totalScore: this.score,
-            roundCount: this.maxRounds,
-            history: this.history
-        });
-    }
-}
+            round
