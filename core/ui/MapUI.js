@@ -140,8 +140,8 @@ export class MapUI {
             const w = startW + (e.clientX - startX);
             const h = startH + (e.clientY - startY);
 
-            el.style.width = ${Math.max(180, w)}px;
-            el.style.height = ${Math.max(120, h)}px;
+            el.style.width = `${Math.max(180, w)}px`;
+            el.style.height = `${Math.max(120, h)}px`;
 
             this.triggerMapResize();
         });
