@@ -9,13 +9,14 @@ import { AreaRegistry } from "./domain/AreaRegistry.js";
 import { MapAdapter } from "./adapters/MapAdapter.js";
 import { LocationGenerator } from "./adapters/LocationGenerator.js";
 
-import { MapUI } from "./ui/components/MapUI.js";
-import { StreetViewUI } from "./ui/components/StreetViewUI.js";
-import { StaticUI } from "./ui/components/StaticUI.js";
+import { MapUI } from "./ui/MapUI.js";
+import { StreetViewUI } from "./ui/StreetViewUI.js";
+import { StaticUI } from "./ui/StaticUI.js";
 
 import { UIBuilder } from "./ui/UIBuilder.js";
 import { UIState } from "./ui/UIState.js";
 import { UIFlow } from "./ui/UIFlow.js";
+
 import { tweaks } from "./ui/Tweaks.js";
 
 // =========================
@@ -50,14 +51,14 @@ async function bootstrap() {
   await waitForGoogle();
   tweaks();
 
-  // 2. config
+  // 2. config + area
   const config = loadConfig();
   const area = AreaRegistry.get(config.area);
 
-  // 3. DOM
+  // 3. DOM root
   const root = document.querySelector(".game");
 
-  // 4. domain
+  // 4. domain layer
   const geometry = new Geometry();
   const scoring = new Scoring(geometry);
 
@@ -88,8 +89,8 @@ async function bootstrap() {
   });
 
   const streetViewUI = new StreetViewUI({
-   element: root.querySelector(".streetview"),
-   adapter: mapAdapter
+   adapter: mapAdapter,
+   element: root.querySelector(".streetview")
   });
 
   const staticUI = new StaticUI({
@@ -98,6 +99,7 @@ async function bootstrap() {
 
   // 8. UI layer
   const uiState = new UIState();
+  const uiBuilder = new UIBuilder();
 
   const uiFlow = new UIFlow({
    gameFlow,
@@ -105,10 +107,25 @@ async function bootstrap() {
    streetViewUI,
    staticUI,
    uiState,
-   uiBuilder: new UIBuilder()
+   uiBuilder
   });
 
-  // 9. start game
+  // =========================
+  // WIRING (ВАЖНО)
+  // =========================
+
+  mapUI.init();
+  streetViewUI.init();
+
+  // input wiring (UI → GAME)
+  mapUI.bindGuess((point) => {
+   gameFlow.onGuess("p1", point);
+  });
+
+  // =========================
+  // START GAME
+  // =========================
+
   await gameFlow.startGame();
 
   console.log("[Init] SUCCESS");
