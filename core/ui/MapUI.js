@@ -4,57 +4,77 @@ export class MapUI {
 
         // DOM
         this.mapElement = this.root.querySelector(".map-element");
+        this.streetViewElement = this.root.querySelector(".streetview");
         this.embedMapElement = this.root.querySelector(".embed-map");
-        this.overviewMapElement = this.root.querySelector(".overview-map");
 
-        if (!this.mapElement || !this.embedMapElement) {
-            throw new Error("MapUI: required DOM elements not found");
+        if (!this.mapElement  !this.streetViewElement  !this.embedMapElement) {
+            throw new Error("MapUI: missing DOM nodes");
         }
 
-        // GOOGLE MAP
-        this.googleMap = null;
-        this.marker = null;
-        this.overviewLines = [];
+        // Google instances
+        this.map = null;
+        this.streetView = null;
 
-        this.isEmbedMode = true;
-        this.polygon = null;
-
-        // EVENT HANDLER (FIXED)
+        // state
+        this.isGuessMode = true;
         this.guessCallback = null;
     }
 
     // =====================================================
-    // INIT
+    // ROUND INIT (CALLED EVERY ROUND)
     // =====================================================
 
-    initMap({ polygon } = {}) {
-        if (!window.google?.maps) {
-            throw new Error("Google Maps not ready");
-        }
+    initRound({ location }) {
+        this.destroyRound();
 
-        this.polygon = polygon;
+        this.initStreetView(location);
+        this.initMap();
+    }
 
-        // create map ONCE
-        this.googleMap = new google.maps.Map(this.mapElement, {
+    // =====================================================
+    // MAP
+    // =====================================================
+
+    initMap() {
+        this.map = new google.maps.Map(this.mapElement, {
             zoom: 2,
             center: { lat: 0, lng: 0 },
             disableDefaultUI: true,
             clickableIcons: false
         });
 
-        // attach click
-        this.googleMap.addListener("click", (e) => {
-            if (!this.isEmbedMode) return;
+        this.map.addListener("click", (e) => {
+            if (!this.isGuessMode) return;
+
             this.emitGuess(e.latLng);
         });
+
+        // ensure DOM placement
+        this.embedMapElement.appendChild(this.mapElement);
     }
 
     // =====================================================
-    // GUESS EVENT (FIXED)
+    // STREET VIEW
     // =====================================================
 
-    onGuess(callback) {
-        this.guessCallback = callback;
+    initStreetView(location) {
+        this.streetView = new google.maps.StreetViewPanorama(
+            this.streetViewElement,
+            {
+                position: location,
+                pov: { heading: 0, pitch: 0 },
+                zoom: 1,
+                disableDefaultUI: true
+            }
+        );
+    }
+
+    // =====================================================
+    // GUESS
+    // =====================================================
+
+    onGuess(cb) {
+        this.guessCallback = cb;
     }
 
     emitGuess(latLng) {
@@ -66,57 +86,36 @@ export class MapUI {
         });
     }
 
-    // =====================================================
-    // MARKERS
-    // =====================================================
-
     placeGuessMarker(location) {
+        if (!this.map) return;
+
         if (this.marker) this.marker.setMap(null);
 
         this.marker = new google.maps.Marker({
             position: location,
-            map: this.googleMap
+            map: this.map
         });
     }
 
-    clearGuessMarker() {
-        if (this.marker) {
-            this.marker.setMap(null);
-            this.marker = null;
-        }
-    }
-
     // =====================================================
-    // OVERVIEW
+    // OVERVIEW (RESULT SCREEN)
     // =====================================================
 
     renderOverview({ guess, actual }) {
-        this.clearOverview();
-        this.clearGuessMarker();
-
         const bounds = new google.maps.LatLngBounds();
+
         bounds.extend(guess);
         bounds.extend(actual);
 
-        this.googleMap.fitBounds(bounds);
+        this.map.fitBounds(bounds);
 
-        const line = new google.maps.Polyline({
+        new google.maps.Polyline({
             path: [guess, actual],
-            geodesic: true,
             strokeColor: "#ffcc00",
             strokeOpacity: 1,
             strokeWeight: 2,
-            map: this.googleMap
+            map: this.map
         });
-
-        this.overviewLines.push(line);
-    }
-
-    clearOverview() {
-        for (const line of this.overviewLines) {
-            line.setMap(null);
-        }
-        this.overviewLines = [];
     }
 
     // =====================================================
@@ -124,28 +123,29 @@ export class MapUI {
     // =====================================================
 
     enableGuessMode() {
-        this.isEmbedMode = true;
-        this.googleMap?.setOptions({ draggable: true });
+        this.isGuessMode = true;
+        this.map?.setOptions({ draggable: true });
     }
 
     disableGuessMode() {
-        this.isEmbedMode = false;
-        this.googleMap?.setOptions({ draggable: false });
+        this.isGuessMode = false;
+        this.map?.setOptions({ draggable: false });
     }
 
     // =====================================================
-    // FIT
+    // CLEANUP
     // =====================================================
 
-    fitToPositions(positions) {
-        if (!positions?.length) return;
-
-        const bounds = new google.maps.LatLngBounds();
-
-        for (const p of positions) {
-            bounds.extend(p);
+    destroyRound() {
+        if (this.marker) {
+            this.marker.setMap(null);
+            this.marker = null;
         }
 
-        this.googleMap.fitBounds(bounds);
+        this.map = null;
+        this.streetView = null;
+
+        this.embedMapElement.innerHTML = "";
+        this.streetViewElement.innerHTML = "";
     }
 }
