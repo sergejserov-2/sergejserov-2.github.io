@@ -13,12 +13,6 @@ export class Scoring {
         return Math.max(0, Math.round(max - distance));
     }
 
-    formatDistance(meters) {
-        if (meters < 1000) return `${Math.floor(meters)} м`;
-        if (meters < 20000) return `${(meters / 1000).toFixed(1)} км`;
-        return `${Math.floor(meters / 1000)} км`;
-    }
-
 
     calculateResult({ guess, actual }) {
         if (!guess || !actual) {
