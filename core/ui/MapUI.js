@@ -1,4 +1,4 @@
-[19.04.2026 4:43] Сергей Серов: export class MapUI {
+export class MapUI {
     constructor({ element }) {
         this.root = element;
 
@@ -7,7 +7,7 @@
         this.streetViewElement = this.root.querySelector(".streetview");
         this.embedMapElement = this.root.querySelector(".embed-map");
 
-        if (!this.guessMapElement  !this.streetViewElement  !this.embedMapElement) {
+        if (!this.guessMapElement || !this.streetViewElement || !this.embedMapElement) {
             throw new Error("MapUI: missing DOM nodes");
         }
 
@@ -137,7 +137,7 @@
 
         window.addEventListener("mousemove", (e) => {
             if (!resizing) return;
-[19.04.2026 4:43] Сергей Серов: const w = startW + (e.clientX - startX);
+            const w = startW + (e.clientX - startX);
             const h = startH + (e.clientY - startY);
 
             el.style.width = ${Math.max(180, w)}px;
@@ -206,7 +206,7 @@
     // =====================================================
 
     renderOverview({ guess, actual }) {
-        if (!this.googleMap  !guess  !actual) return;
+        if (!this.googleMap || !guess || !actual) return;
 
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(guess);
