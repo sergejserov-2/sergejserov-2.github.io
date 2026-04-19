@@ -1,36 +1,36 @@
-export class MapUI {
-    constructor({ element }) {
-        this.root = element;
-
+[19.04.2026 7:43] Сергей Серов: export class MapUI {
+    constructor() {
+        // =========================
         // DOM
-        this.guessMapElement = this.root.querySelector(".guess-map");
-        this.streetViewElement = this.root.querySelector(".streetview");
-        this.embedMapElement = this.root.querySelector(".embed-map");
+        // =========================
+        this.embedMapElement = document.querySelector(".embed-map");
+        this.overviewMapElement = document.querySelector(".overview-map");
+        this.guessMapElement = document.querySelector(".guess-map");
 
-        if (!this.guessMapElement || !this.streetViewElement || !this.embedMapElement) {
-            throw new Error("MapUI: missing DOM nodes");
-        }
-
-        // GOOGLE STATE
+        // =========================
+        // MAP INSTANCES
+        // =========================
         this.googleMap = null;
-        this.panorama = null;
+        this.overviewMap = null;
 
-        // MARKERS
+        // =========================
+        // STATE
+        // =========================
+        this.isGuessMode = false;
         this.guessMarker = null;
         this.overviewLines = [];
 
-        // STATE
-        this.isGuessMode = false;
-
-        // EVENTS
         this.onGuessCallback = null;
 
-        // resize binding guard
+        // resize flag
         this._resizeBound = false;
+
+        // events
+        this.initDOMEvents();
     }
 
     // =====================================================
-    // ROUND LIFECYCLE
+    // INIT ROUND (GUESS MAP)
     // =====================================================
 
     initRound({ location }) {
@@ -38,9 +38,6 @@ export class MapUI {
 
         requestAnimationFrame(() => {
 
-            // =========================
-            // GUESS MAP
-            // =========================
             this.googleMap = new google.maps.Map(this.embedMapElement, {
                 center: location,
                 zoom: 2,
@@ -48,138 +45,33 @@ export class MapUI {
                 clickableIcons: false
             });
 
-            // =========================
-            // STREETVIEW
-            // =========================
-            this.panorama = new google.maps.StreetViewPanorama(
-                this.streetViewElement,
-                {
-                    position: location,
-                    addressControl: false,
-                    linksControl: true,
-                    panControl: true,
-                    zoomControl: false,
-                    fullscreenControl: false,
-                    motionTracking: false,
-                    clickToGo: true,
-                    scrollwheel: true
-                }
-            );
-
-            this.googleMap.setStreetView(this.panorama);
-
-            // =========================
-            // CLICK HANDLER
-            // =========================
             this.googleMap.addListener("click", (e) => {
                 if (!this.isGuessMode) return;
 
-                this.emitGuess({
+                const point = {
                     lat: e.latLng.lat(),
                     lng: e.latLng.lng()
-                });
+                };
+
+                this.emitGuess(point);
             });
 
-            // =========================
-            // RESIZE SYSTEM (WINDOW-LIKE)
-            // =========================
             this.initResize();
-
         });
     }
 
     // =====================================================
-    // DESTROY
+    // OVERVIEW MAP INIT
     // =====================================================
 
-    destroyRound() {
-        if (this.googleMap) {
-            google.maps.event.clearInstanceListeners(this.googleMap);
-            this.googleMap = null;
-        }
+    initOverviewMap() {
+        if (!this.overviewMapElement) return;
 
-        if (this.panorama) {
-            google.maps.event.clearInstanceListeners(this.panorama);
-            this.panorama = null;
-        }
-
-        this.clearGuessMarker();
-        this.clearOverview();
-    }
-
-    // =====================================================
-    // RESIZE (WINDOW BEHAVIOR)
-    // =====================================================
-
-    initResize() {
-        if (this._resizeBound) return;
-        
-        const el = this.guessMapElement;
-        const handle = el.querySelector(".resize-handle");
-        
-        if (!handle) return;
-        
-        let resizing = false;
-        let startX, startY, startW, startH, startTop;
-        
-        handle.addEventListener("mousedown", (e) => {
-            resizing = true;
-        
-            startX = e.clientX;
-            startY = e.clientY;
-        
-            const rect = el.getBoundingClientRect();
-        
-            startW = rect.width;
-            startH = rect.height;
-            startTop = rect.top;
-        
-            document.body.style.userSelect = "none";
+        this.overviewMap = new google.maps.Map(this.overviewMapElement, {
+            zoom: 2,
+            center: { lat: 0, lng: 0 },
+            disableDefaultUI: true
         });
-    
-        window.addEventListener("mousemove", (e) => {
-            if (!resizing) return;
-    
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-    
-            const minW = 180;
-            const minH = 120;
-    
-            // WIDTH (вправо)
-            const newW = Math.max(minW, startW + dx);
-    
-            // HEIGHT (вверх)
-            const rawH = startH - dy;
-            const clampedH = Math.max(minH, rawH);
-    
-            // корректируем dy после clamp
-            const realDy = startH - clampedH;
-    
-            el.style.width = `${newW}px`;
-            el.style.height = `${clampedH}px`;
-            el.style.top = `${startTop + realDy}px`;
-    
-            this.triggerMapResize();
-        });
-    
-        window.addEventListener("mouseup", () => {
-            resizing = false;
-            document.body.style.userSelect = "";
-        });
-    
-        this._resizeBound = true;
-    }
-
-    triggerMapResize() {
-        if (!this.googleMap) return;
-
-        google.maps.event.trigger(this.googleMap, "resize");
-
-        const center = this.googleMap.getCenter();
-        if (center) {
-            this.googleMap.setCenter(center);
-        }
     }
 
     // =====================================================
@@ -197,11 +89,11 @@ export class MapUI {
     }
 
     // =====================================================
-    // MARKER
+    // MARKER (GUESS MAP)
     // =====================================================
 
     placeGuessMarker(location) {
-        if (!this.googleMap) return;
+        if (!this.googleMap || !location) return;
 
         this.clearGuessMarker();
 
@@ -219,35 +111,115 @@ export class MapUI {
     }
 
     // =====================================================
-    // OVERVIEW
+    // OVERVIEW (RESULT MAP)
     // =====================================================
 
     renderOverview({ guess, actual }) {
-        if (!this.googleMap || !guess || !actual) return;
+        if (!this.overviewMap || !guess || !actual) return;
 
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(guess);
         bounds.extend(actual);
 
-        this.googleMap.fitBounds(bounds);
+        this.overviewMap.fitBounds(bounds);
 
+        // markers
+        new google.maps.Marker({
+            position: guess,
+            map: this.overviewMap
+        });
+
+        new google.maps.Marker({
+            position: actual,
+            map: this.overviewMap
+        });
+
+        // line
         const line = new google.maps.Polyline({
             path: [guess, actual],
             geodesic: true,
             strokeColor: "#ffcc00",
             strokeOpacity: 1,
             strokeWeight: 2,
-            map: this.googleMap
+            map: this.overviewMap
         });
 
         this.overviewLines.push(line);
     }
-
+    
     clearOverview() {
-        for (const line of this.overviewLines) {
-            line.setMap(null);
+        if (this.overviewLines.length) {
+            this.overviewLines.forEach(l => l.setMap(null));
+            this.overviewLines = [];
         }
-        this.overviewLines = [];
+    }
+
+    // =====================================================
+    // RESIZE SYSTEM
+    // =====================================================
+
+    initResize() {
+        if (this._resizeBound) return;
+
+        const el = this.guessMapElement;
+        const handle = el.querySelector(".resize-handle");
+
+        if (!handle) return;
+
+        let resizing = false;
+        let startX, startY, startW, startH, startTop;
+
+        handle.addEventListener("mousedown", (e) => {
+            resizing = true;
+
+            startX = e.clientX;
+            startY = e.clientY;
+
+            const rect = el.getBoundingClientRect();
+
+            startW = rect.width;
+            startH = rect.height;
+            startTop = rect.top;
+
+            document.body.style.userSelect = "none";
+        });
+
+        window.addEventListener("mousemove", (e) => {
+            if (!resizing) return;
+
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+
+            const minW = 180;
+            const minH = 120;
+
+            const newW = Math.max(minW, startW + dx);
+            const newH = Math.max(minH, startH - dy);
+
+            const realDy = startH - newH;
+
+            el.style.width = '${newW}px';
+            el.style.height = '${newH}px';
+            el.style.top = '${startTop + realDy}px';
+
+            this.triggerMapResize();
+        });
+
+        window.addEventListener("mouseup", () => {
+            resizing = false;
+            document.body.style.userSelect = "";
+        });
+
+        this._resizeBound = true;
+    }
+
+    triggerMapResize() {
+        if (!this.googleMap) return;
+
+        google.maps.event.trigger(this.googleMap, "resize");
+
+        const center = this.googleMap.getCenter();
+        if (center) this.googleMap.setCenter(center);
     }
 
     // =====================================================
@@ -259,8 +231,17 @@ export class MapUI {
     }
 
     emitGuess(point) {
-        if (this.onGuessCallback) {
-            this.onGuessCallback(point);
+        this.onGuessCallback?.(point);
+    }
+
+    initDOMEvents() {
+        const btn = document.getElementById("makeGuess");
+
+        if (btn) {
+            btn.addEventListener("click", () => {
+                if (!this.lastGuess) return;
+                this.emitGuess(this.lastGuess);
+            });
         }
     }
 }
