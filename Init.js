@@ -48,10 +48,6 @@ async function bootstrap() {
    scoring
   });
   const gameFlow = new GameFlow({ game, generator, area });
-  const bridge = new Bridge({
-    game, gameFlow, mapUI, streetViewUI, staticUI,
-    viewModelBuilder: new ViewModelBuilder()
-  });
   const mapUI = new MapUI({
    adapter: mapAdapter,
    mapElement: root.querySelector(".map"),
@@ -62,7 +58,11 @@ async function bootstrap() {
    adapter: mapAdapter
   });
   const staticUI = new StaticUI({ element: root });
-
+  const bridge = new Bridge({
+    game, gameFlow, mapUI, streetViewUI, staticUI,
+    viewModelBuilder: new ViewModelBuilder()
+  });
+  
   mapUI.init();
   streetViewUI.init();
   await gameFlow.startGame();
