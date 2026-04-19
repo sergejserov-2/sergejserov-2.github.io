@@ -1,5 +1,3 @@
-import { Area } from "../Area.js"
-export default new Area({
-  name: "moscow",
+export const moscow = {
   polygon: [[56.23, 37.56], [55.85, 38.57], [55.31, 38.36], [55.28, 37.56], [55.53, 37.00], [55.87, 36.90]]
-});
+};
