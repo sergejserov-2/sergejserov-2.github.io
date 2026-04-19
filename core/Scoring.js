@@ -57,4 +57,20 @@ export class Scoring {
             };
         }
 
-        // Google
+        // Google geometry distance
+        const distanceMeters =
+            google.maps.geometry.spherical.computeDistanceBetween(
+                new google.maps.LatLng(guess.lat, guess.lng),
+                new google.maps.LatLng(actual.lat, actual.lng)
+            );
+
+        const distanceKm = distanceMeters / 1000;
+
+        const score = this.calculateScore(distanceMeters);
+
+        return {
+            distance: Math.round(distanceKm),
+            score
+        };
+    }
+}
