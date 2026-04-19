@@ -113,44 +113,49 @@ export class MapUI {
 
     initResize() {
         if (this._resizeBound) return;
-
+    
         const el = this.guessMapElement;
         const handle = el.querySelector(".resize-handle");
-
+    
         if (!handle) return;
-
+    
         let resizing = false;
-        let startX, startY, startW, startH;
-
+        let startX, startY, startW, startH, startTop;
+    
         handle.addEventListener("mousedown", (e) => {
             resizing = true;
-
+    
             startX = e.clientX;
             startY = e.clientY;
-
+    
             const rect = el.getBoundingClientRect();
+    
             startW = rect.width;
             startH = rect.height;
-
+            startTop = rect.top;
+    
             document.body.style.userSelect = "none";
         });
-
+    
         window.addEventListener("mousemove", (e) => {
             if (!resizing) return;
-            const w = startW + (e.clientX - startX);
-            const h = startH + (e.clientY - startY);
-
-            el.style.width = `${Math.max(180, w)}px`;
-            el.style.height = `${Math.max(120, h)}px`;
-
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            const newW = startW + dx;
+            const newH = startH - dy;
+    
+            el.style.width = `${Math.max(180, newW)}px`;
+            el.style.height = `${Math.max(120, newH)}px`;
+            el.style.top = `${startTop + dy}px`;
+    
             this.triggerMapResize();
         });
-
+    
         window.addEventListener("mouseup", () => {
             resizing = false;
             document.body.style.userSelect = "";
         });
-
+    
         this._resizeBound = true;
     }
 
