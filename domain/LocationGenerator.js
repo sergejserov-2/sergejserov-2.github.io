@@ -18,4 +18,5 @@ export class LocationGenerator {
     return location;
    }
   }
+ }
 }
