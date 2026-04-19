@@ -1,19 +1,21 @@
 export class LocationGenerator {
-    constructor({ geometry }) {
+    constructor({ mapAdapter, geometry }) {
+        this.mapAdapter = mapAdapter;
         this.geometry = geometry;
     }
 
-    generate(area) {
+    async generate(area) {
         const polygon = area.polygon;
-        return this.findValidPoint(polygon);
+
+        while (true) {
+            const point = this.geometry.getRandomPointInPolygon(polygon);
+
+            const { status } =
+                await this.mapAdapter.getStreetViewMeta(point);
+
+            const isValid = status === "OK";
+
+            if (isValid) return point;
+        }
     }
-
-    findValidPoint(polygon) {
-        const bbox = this.geometry.getBoundingBox(polygon);
-        let point;
-        let tries = 0;
-
-        do {
-            point = [
-                bbox.minLat + Math.random() * (bbox.maxLat - bbox.minLat),
-                bbox
+}
