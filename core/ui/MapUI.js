@@ -102,7 +102,7 @@ export class MapUI {
     }
 
     renderOverview({ guess, actual }) {
-        if (!this.overviewMap  !guess  !actual) return;
+        if (!this.overviewMap || !guess || !actual) return;
 
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(guess);
