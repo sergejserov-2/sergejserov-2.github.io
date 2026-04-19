@@ -1,16 +1,16 @@
 import { Game } from "./core/Game.js";
-import { MapUI } from "./core/ui/MapUI.js";
+import { Bridge } from "./core/Bridge.js";
 import { StaticUI } from "./core/ui/StaticUI.js";
+import { MapUI } from "./core/ui/MapUI.js";
+import { StreetViewUI } from "./core/ui/StreetViewUI.js";
 import { tweaks } from "./core/ui/Tweaks.js";
 
-import { Bridge } from "./core/Bridge.js";
 import { Scoring } from "./core/Scoring.js";
-
 import { Geometry } from "./infrastructure/Geometry.js";
 import { LocationGenerator } from "./infrastructure/LocationGenerator.js";
 import { MapAdapter } from "./infrastructure/MapAdapter.js";
-
 import { AreaRegistry } from "./area/AreaRegistry.js";
+import { ViewModelBuilder } from "./core/ViewModelBuilder.js";
 
 async function waitForGoogle() {
     while (!window.google?.maps) {
@@ -20,7 +20,7 @@ async function waitForGoogle() {
 
 function loadConfig() {
     const raw = localStorage.getItem("gameConfig");
-    if (!raw) throw new Error("No gameConfig found in localStorage");
+    if (!raw) throw new Error("No gameConfig found");
     return JSON.parse(raw);
 }
 
@@ -33,10 +33,10 @@ async function bootstrap() {
         const config = loadConfig();
         const area = AreaRegistry[config.area];
 
-        const element = document.querySelector(".game");
+        const root = document.querySelector(".game");
 
         const geometry = new Geometry();
-        const mapAdapter = new MapAdapter(window.google);
+        const mapAdapter = new MapAdapter();
 
         const generator = new LocationGenerator({
             mapAdapter,
@@ -47,24 +47,37 @@ async function bootstrap() {
 
         const game = new Game({
             area,
-            element,
             rules: config.rules,
             generator,
-            scoring,
-            mapAdapter
+            scoring
         });
 
-        const mapUI = new MapUI({ element });
-        const staticUI = new StaticUI({ element });
+        const mapUI = new MapUI({
+            adapter: mapAdapter,
+            mapElement: root.querySelector(".map"),
+            overviewElement: root.querySelector(".overview")
+        });
 
-        mapUI.initGuessMap();
-        mapUI.initOverviewMap();
-        mapUI.initStreetView();
+        const streetViewUI = new StreetViewUI({
+            adapter: mapAdapter,
+            element: root.querySelector(".streetview")
+        });
+
+        const staticUI = new StaticUI({ element: root });
+
+        const vm = new ViewModelBuilder(game);
+
+        mapUI.init();
+        streetViewUI.init();
 
         new Bridge({
             game,
-            mapUI,
-            staticUI
+            ui: {
+                map: mapUI,
+                streetview: streetViewUI,
+                static: staticUI
+            },
+            vm
         });
 
         game.startGame();
