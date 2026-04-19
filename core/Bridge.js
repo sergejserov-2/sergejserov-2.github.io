@@ -10,7 +10,7 @@ export class Bridge {
     }
 
     // =====================================================
-    // GAME → UI (PURE RENDER MAPPING)
+    // GAME → UI
     // =====================================================
 
     bindGameEvents() {
@@ -26,27 +26,31 @@ export class Bridge {
         // =========================
         // ROUND START
         // =========================
-        this.game.on("roundStarted", ({ location }) => {
+        this.game.on("roundStarted", ({ location, round, roundCount }) => {
             this.staticUI.hideLoading();
             this.staticUI.startRound();
 
-            // 💥 ONLY VISUAL RESET
             this.mapUI.beginRound({ location });
-
-            this.staticUI.updateHUD(this.game.getHUDState());
+            this.staticUI.updateHUD({
+                round,
+                roundCount,
+                score: this.game.score,
+                time: this.game.time,
+                moves: this.game.moves
+            });
         });
 
         // =========================
-        // GUESS UPDATED (LIVE STATE)
+        // LIVE GUESS UPDATE
         // =========================
         this.game.on("guessUpdated", ({ point }) => {
             this.mapUI.updateGuessPreview(point);
         });
 
         // =========================
-        // GUESS FINISHED (FINAL LOCK)
+        // GUESS FINISHED (LOCK RESULT)
         // =========================
-        this.game.on("guessFinished", ({ result }) => {
+        this.game.on("guessFinished", ({ result, guess, actual }) => {
             this.mapUI.lockGuess();
 
             this.staticUI.showRoundResult({
@@ -56,12 +60,18 @@ export class Bridge {
         });
 
         // =========================
-        // ROUND ENDED (OVERVIEW)
+        // ROUND ENDED (FULL SNAPSHOT)
         // =========================
         this.game.on("roundEnded", (data) => {
+
             this.mapUI.renderOverview({
-                guess: this.game.getCurrentGuess(),
-                actual: this.game.current
+                guess: data.guess,
+                actual: data.actual
+            });
+
+            this.staticUI.showRoundResult({
+                result: data.result,
+                totalScore: data.totalScore
             });
         });
 
@@ -90,18 +100,13 @@ export class Bridge {
     bindUIEvents() {
         const btn = document.getElementById("makeGuess");
 
-        if (btn) {
-            btn.addEventListener("click", () => {
-                const guess = this.mapUI.lastGuess;
+        if (!btn) return;
 
-                if (!guess) return;
-
-                // 💥 ONLY VISUAL
-                this.mapUI.placeGuessMarker(guess);
-
-                // 💥 GAME DECIDES EVERYTHING ELSE
-                this.game.finishGuess("p1");
-            });
-        }
+        btn.addEventListener("click", () => {
+            const guess = this.mapUI.lastGuess;
+            if (!guess) return;
+            this.mapUI.placeGuessMarker(guess);
+            this.game.finishGuess("p1");
+        });
     }
 }
