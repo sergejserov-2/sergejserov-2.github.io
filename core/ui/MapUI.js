@@ -1,58 +1,75 @@
 export class MapUI {
     constructor({ element }) {
-        this.element = element;
+        this.root = element;
 
-        // DOM ROOTS (from new HTML)
-        this.mapElement = element.querySelector(".map-element");
-        this.embedMapElement = element.querySelector(".embed-map");
-        this.overviewMapElement = element.querySelector(".overview-map");
+        // DOM
+        this.mapElement = this.root.querySelector(".map-element");
+        this.embedMapElement = this.root.querySelector(".embed-map");
+        this.overviewMapElement = this.root.querySelector(".overview-map");
 
-        // GOOGLE MAP STATE
+        if (!this.mapElement || !this.embedMapElement) {
+            throw new Error("MapUI: required DOM elements not found");
+        }
+
+        // GOOGLE MAP
         this.googleMap = null;
         this.marker = null;
         this.overviewLines = [];
 
         this.isEmbedMode = true;
-
         this.polygon = null;
+
+        // EVENT HANDLER (FIXED)
+        this.guessCallback = null;
     }
 
-    // INIT MAP
+    // =====================================================
+    // INIT
+    // =====================================================
 
     initMap({ polygon } = {}) {
+        if (!window.google?.maps) {
+            throw new Error("Google Maps not ready");
+        }
+
+        this.polygon = polygon;
+
+        // create map ONCE
         this.googleMap = new google.maps.Map(this.mapElement, {
-            zoom: 0,
+            zoom: 2,
             center: { lat: 0, lng: 0 },
             disableDefaultUI: true,
             clickableIcons: false
         });
 
-        this.polygon = polygon;
-
-        this.attachEmbedMap();
-
+        // attach click
         this.googleMap.addListener("click", (e) => {
             if (!this.isEmbedMode) return;
-
             this.emitGuess(e.latLng);
         });
     }
 
-    // MAP ATTACHING (VIEW SWITCH)
+    // =====================================================
+    // GUESS EVENT (FIXED)
+    // =====================================================
 
-    attachEmbedMap() {
-        const el = this.googleMap.getDiv();
-        el.remove();
-        this.embedMapElement.appendChild(el);
+    onGuess(callback) {
+        this.guessCallback = callback;
     }
 
-    attachOverviewMap() {
-        const el = this.googleMap.getDiv();
-        el.remove();
-        this.overviewMapElement.appendChild(el);
+    emitGuess(latLng) {
+        if (!this.guessCallback) return;
+
+        this.guessCallback({
+            lat: latLng.lat(),
+            lng: latLng.lng()
+        });
     }
 
-    // GUESS MARKER
+    // =====================================================
+    // MARKERS
+    // =====================================================
+
     placeGuessMarker(location) {
         if (this.marker) this.marker.setMap(null);
 
@@ -69,15 +86,15 @@ export class MapUI {
         }
     }
 
-    // OVERVIEW RENDERING
+    // =====================================================
+    // OVERVIEW
+    // =====================================================
 
     renderOverview({ guess, actual }) {
-        this.attachOverviewMap();
-
+        this.clearOverview();
         this.clearGuessMarker();
 
         const bounds = new google.maps.LatLngBounds();
-
         bounds.extend(guess);
         bounds.extend(actual);
 
@@ -92,20 +109,19 @@ export class MapUI {
             map: this.googleMap
         });
 
-        this.overviewLines.push({
-            line
-        });
+        this.overviewLines.push(line);
     }
 
     clearOverview() {
-        for (const l of this.overviewLines) {
-            l.line.setMap(null);
+        for (const line of this.overviewLines) {
+            line.setMap(null);
         }
-
         this.overviewLines = [];
     }
 
-    // MODE CONTROL
+    // =====================================================
+    // MODE
+    // =====================================================
 
     enableGuessMode() {
         this.isEmbedMode = true;
@@ -117,11 +133,9 @@ export class MapUI {
         this.googleMap?.setOptions({ draggable: false });
     }
 
-    lockInput() {
-        this.disableGuessMode();
-    }
-
-    // FIT MAP
+    // =====================================================
+    // FIT
+    // =====================================================
 
     fitToPositions(positions) {
         if (!positions?.length) return;
@@ -133,19 +147,5 @@ export class MapUI {
         }
 
         this.googleMap.fitBounds(bounds);
-    }
-
-    // EVENT EMISSION (Bridge hook)
-  emitGuess(latLng) {
-        if (this.onGuess) {
-            this.onGuess({
-                lat: latLng.lat(),
-                lng: latLng.lng()
-            });
-        }
-    }
-
-    onGuess(callback) {
-        this.onGuess = callback;
     }
 }
