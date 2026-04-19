@@ -31,7 +31,7 @@ export class Bridge {
    );
 
    this.streetViewUI.setLocation(actual);
-   this.mapUI.resetGuess();
+   this.mapUI.reset();
   });
 
   /* GUESS UPDATE */
