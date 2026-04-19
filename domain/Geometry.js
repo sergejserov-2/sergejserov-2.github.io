@@ -1,8 +1,6 @@
 export class Geometry {
 
  getRandomPointInPolygon(polygon) {
-  // polygon = [{lat,lng}]
-
   const lats = polygon.map(p => p.lat);
   const lngs = polygon.map(p => p.lng);
 
@@ -11,7 +9,11 @@ export class Geometry {
   const minLng = Math.min(...lngs);
   const maxLng = Math.max(...lngs);
 
-  while (true) {
+  let attempts = 0;
+
+  while (attempts < 500) {
+   attempts++;
+
    const point = {
     lat: minLat + Math.random() * (maxLat - minLat),
     lng: minLng + Math.random() * (maxLng - minLng)
@@ -21,18 +23,24 @@ export class Geometry {
     return point;
    }
   }
+
+  throw new Error("Failed to generate point in polygon");
  }
 
  isPointInPolygon(point, polygon) {
   let inside = false;
 
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-   const xi = polygon[i].lat, yi = polygon[i].lng;
-   const xj = polygon[j].lat, yj = polygon[j].lng;
+
+   const a = polygon[i];
+   const b = polygon[j];
 
    const intersect =
-    (yi > point.lng) !== (yj > point.lng) &&
-    point.lat < (xj - xi) * (point.lng - yi) / (yj - yi + 0.0000001) + xi;
+    (a.lng > point.lng) !== (b.lng > point.lng) &&
+    point.lat <
+     ((b.lat - a.lat) * (point.lng - a.lng)) /
+      ((b.lng - a.lng) || 1e-10) +
+      a.lat;
 
    if (intersect) inside = !inside;
   }
