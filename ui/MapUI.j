@@ -24,7 +24,6 @@ export class MapUI {
 
             const point = [e.latLng.lat(), e.latLng.lng()];
             this.placeGuessMarker(point);
-
             this.onGuessCallback?.(point);
         });
     }
@@ -33,7 +32,6 @@ export class MapUI {
         if (!this.map) return;
 
         this.clearGuessMarker();
-
         this.guessMarker = this.adapter.createMarker(this.map, [lat, lng]);
     }
 
@@ -58,23 +56,17 @@ export class MapUI {
         const guess = round.guesses?.[0]?.guess;
         const actual = round.actualLocation;
 
-        if (!this.overviewMap || !guess || !actual) return;
+        if (!guess || !actual) return;
 
         this.clearOverview();
 
         const guessMarker = this.adapter.createMarker(this.overviewMap, guess);
         const actualMarker = this.adapter.createMarker(this.overviewMap, actual);
 
-        const line = new google.maps.Polyline({
-            path: [
-                { lat: guess[0], lng: guess[1] },
-                { lat: actual[0], lng: actual[1] }
-            ],
-            geodesic: true,
-            strokeOpacity: 1,
-            strokeWeight: 2,
-            map: this.overviewMap
-        });
+        const line = this.adapter.createPolyline(this.overviewMap, [
+            { lat: guess[0], lng: guess[1] },
+            { lat: actual[0], lng: actual[1] }
+        ]);
 
         this.adapter.fitToMarkers(this.overviewMap, [guessMarker, actualMarker]);
 
