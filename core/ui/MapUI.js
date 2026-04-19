@@ -1,17 +1,13 @@
+
 export class MapUI {
     constructor({ element } = {}) {
-
         // =====================================================
-        // DOM (SAFE)
+        // DOM
         // =====================================================
         this.embedMapElement = document.querySelector(".embed-map");
         this.overviewMapElement = document.querySelector(".overview-map");
         this.streetViewElement = document.querySelector(".streetview");
         this.guessMapElement = document.querySelector(".guess-map");
-
-        if (!this.embedMapElement) {
-            console.error("[MapUI] embedMapElement missing");
-        }
 
         // =====================================================
         // MAP INSTANCES
@@ -29,22 +25,24 @@ export class MapUI {
         this.lastGuess = null;
         this.guessMarker = null;
 
+        // 💥 FIX: tracking overview objects
         this.overviewLines = [];
+        this.overviewMarkers = [];
 
         this.onGuessCallback = null;
 
         this._resizeBound = false;
 
-        // ❗ DO NOT INIT GOOGLE MAPS HERE
-        // Init is now lifecycle-driven from Init.js / Bridge flow
+        this.initGuessMap();
+        this.initOverviewMap();
     }
 
     // =====================================================
-    // INIT (CALLED ONCE FROM INIT.JS)
+    // INIT MAPS
     // =====================================================
 
     initGuessMap() {
-        if (this.googleMap || !this.embedMapElement) return;
+        if (this.googleMap) return;
 
         this.googleMap = new google.maps.Map(this.embedMapElement, {
             center: { lat: 0, lng: 0 },
@@ -70,7 +68,7 @@ export class MapUI {
     }
 
     initOverviewMap() {
-        if (this.overviewMap || !this.overviewMapElement) return;
+        if (this.overviewMap) return;
 
         this.overviewMap = new google.maps.Map(this.overviewMapElement, {
             center: { lat: 0, lng: 0 },
@@ -79,17 +77,13 @@ export class MapUI {
         });
     }
 
-    // =====================================================
-    // STREETVIEW LIFECYCLE (FIXED)
-    // =====================================================
-
-    initStreetView() {
-        if (this.panorama || !this.streetViewElement) return;
+    initStreetView(location) {
+        if (this.panorama) return;
 
         this.panorama = new google.maps.StreetViewPanorama(
             this.streetViewElement,
             {
-                position: { lat: 0, lng: 0 },
+                position: location || { lat: 0, lng: 0 },
                 addressControl: false,
                 linksControl: true,
                 panControl: true,
@@ -101,23 +95,15 @@ export class MapUI {
             }
         );
 
-        // bind map
         this.googleMap?.setStreetView(this.panorama);
-    }
 
-    setStreetViewLocation(location) {
-        if (!this.panorama || !location) return;
-
-        this.panorama.setPosition(location);
-
-        // IMPORTANT: ensure render
         setTimeout(() => {
             google.maps.event.trigger(this.panorama, "resize");
-        }, 100);
+        }, 0);
     }
 
     // =====================================================
-    // ROUND FLOW API (USED BY BRIDGE)
+    // FLOW API
     // =====================================================
 
     beginRound({ location }) {
@@ -127,22 +113,22 @@ export class MapUI {
         this.clearGuessMarker();
         this.clearOverview();
 
-        // MAP
         if (this.googleMap) {
             this.googleMap.setCenter(location);
             this.googleMap.setZoom(2);
         }
 
-        // STREETVIEW (SAFE LIFECYCLE)
-        if (!this.panorama) {
-            this.initStreetView();
-        }
+        if (this.panorama) {
+            this.panorama.setPosition(location);
 
-        this.setStreetViewLocation(location);
+            setTimeout(() => {
+                google.maps.event.trigger(this.panorama, "resize");
+            }, 50);
+        }
     }
 
     // =====================================================
-    // GUESS SYSTEM
+    // GUESS
     // =====================================================
 
     updateGuessPreview(point) {
@@ -167,17 +153,26 @@ export class MapUI {
         });
     }
 
+    clearGuessMarker() {
+        if (this.guessMarker) {
+            this.guessMarker.setMap(null);
+            this.guessMarker = null;
+        }
+    }
+
     lockGuess() {
         this.isGuessLocked = true;
         this.isGuessMode = false;
     }
 
     // =====================================================
-    // OVERVIEW
+    // OVERVIEW (FIXED)
     // =====================================================
 
     renderOverview({ guess, actual }) {
         if (!this.overviewMap || !guess || !actual) return;
+
+        this.clearOverview();
 
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(guess);
@@ -185,12 +180,12 @@ export class MapUI {
 
         this.overviewMap.fitBounds(bounds);
 
-        new google.maps.Marker({
+        const guessMarker = new google.maps.Marker({
             position: guess,
             map: this.overviewMap
         });
 
-        new google.maps.Marker({
+        const actualMarker = new google.maps.Marker({
             position: actual,
             map: this.overviewMap
         });
@@ -204,30 +199,27 @@ export class MapUI {
             map: this.overviewMap
         });
 
+        this.overviewMarkers.push(guessMarker, actualMarker);
         this.overviewLines.push(line);
     }
 
     clearOverview() {
         this.overviewLines.forEach(l => l.setMap(null));
-        this.overviewLines = [];
-    }
+        this.overviewMarkers.forEach(m => m.setMap(null));
 
-    clearGuessMarker() {
-        if (this.guessMarker) {
-            this.guessMarker.setMap(null);
-            this.guessMarker = null;
-        }
+        this.overviewLines = [];
+        this.overviewMarkers = [];
     }
 
     // =====================================================
-    // RESIZE (UNCHANGED BUT SAFE)
+    // RESIZE
     // =====================================================
 
     initResize() {
-        if (this._resizeBound || !this.guessMapElement) return;
+        if (this._resizeBound) return;
 
         const el = this.guessMapElement;
-        const handle = el.querySelector(".resize-handle");
+        const handle = el?.querySelector(".resize-handle");
 
         if (!handle) return;
 
