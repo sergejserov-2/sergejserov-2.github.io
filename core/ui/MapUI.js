@@ -113,40 +113,54 @@ export class MapUI {
 
     initResize() {
         if (this._resizeBound) return;
-    
+        
         const el = this.guessMapElement;
         const handle = el.querySelector(".resize-handle");
-    
+        
         if (!handle) return;
-    
+        
         let resizing = false;
         let startX, startY, startW, startH, startTop;
-    
+        
         handle.addEventListener("mousedown", (e) => {
             resizing = true;
-    
+        
             startX = e.clientX;
             startY = e.clientY;
-    
+        
             const rect = el.getBoundingClientRect();
-    
+        
             startW = rect.width;
             startH = rect.height;
             startTop = rect.top;
-    
+        
             document.body.style.userSelect = "none";
         });
     
         window.addEventListener("mousemove", (e) => {
             if (!resizing) return;
+    
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
-            const newW = startW + dx;
-            const newH = startH - dy;
     
-            el.style.width = `${Math.max(180, newW)}px`;
-            el.style.height = `${Math.max(120, newH)}px`;
-            el.style.top = `${startTop + dy}px`;
+            const minW = 180;
+            const minH = 120;
+    
+            // WIDTH (вправо)
+            const newW = Math.max(minW, startW + dx);
+    
+            // HEIGHT (вверх)
+            const rawH = startH - dy;
+            const clampedH = Math.max(minH, rawH);
+    
+            // корректируем dy после clamp
+            const realDy = startH - clampedH;
+    
+            el.style.width = ${newW}px;
+            el.style.height = ${clampedH}px;
+    
+            // двигаем вверх только если реально уменьшили высоту
+            el.style.top = ${startTop + realDy}px;
     
             this.triggerMapResize();
         });
