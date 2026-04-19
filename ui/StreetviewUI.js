@@ -9,15 +9,15 @@ export class StreetViewUI {
         this.panorama = this.adapter.createPanorama(this.element);
     }
 
-    setLocation([lat, lng]) {
-        if (!this.panorama) return;
-
+    async trySetLocation([lat, lng]) {
+        const ok = await this.adapter.hasStreetView(lat, lng);
+        if (!ok) return false;
         this.adapter.setPanoramaPosition(this.panorama, lat, lng);
+        return true;
     }
 
     reset() {
         if (!this.panorama) return;
-
         this.adapter.resetPanorama?.(this.panorama);
     }
 }
