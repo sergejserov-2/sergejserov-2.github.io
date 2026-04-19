@@ -1,5 +1,3 @@
-//Fix
-
 export class Scoring {
     constructor(geometry) {
         this.geometry = geometry;
