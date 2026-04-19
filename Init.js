@@ -119,6 +119,7 @@ async function bootstrap() {
      START GAME
   ========================= */
   await gameFlow.startGame();
+  bridge.syncInitialState();
 
   console.log("[Init] SUCCESS");
 
