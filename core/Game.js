@@ -163,7 +163,7 @@ export class Game extends Emitter {
             playerId,
             actual: this.current,
             round: this.currentRound,
-            result
+            result,
             guess: this.currentGuess
         });
 
