@@ -60,6 +60,25 @@ export class MapUI {
         });
     }
 
+    destroyRound() {
+        // GUESS MAP
+        if (this.googleMap) {
+            google.maps.event.clearInstanceListeners(this.googleMap);
+            this.googleMap = null;
+        }
+    
+        this.clearGuessMarker();
+    
+        // OVERVIEW MAP
+        if (this.overviewMap) {
+            google.maps.event.clearInstanceListeners(this.overviewMap);
+            this.overviewMap = null;
+        }
+    
+        this.clearOverview();
+    }
+
+    
     // =====================================================
     // OVERVIEW MAP INIT
     // =====================================================
