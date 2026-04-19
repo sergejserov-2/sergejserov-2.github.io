@@ -50,7 +50,7 @@ async function bootstrap() {
   tweaks();
 
   const config = loadConfig();
-  const area = AreaRegistry[config.area];
+  const area = AreaRegistry.get(config.area);
 
   const root = document.querySelector(".game");
 
