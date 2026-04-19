@@ -10,34 +10,53 @@ export class Bridge {
     }
 
     // =====================================================
-    // GAME → UI
+    // GAME FLOW (MAIN SCENARIO)
     // =====================================================
 
     bindGameEvents() {
 
+        // =========================
+        // GAME START
+        // =========================
         this.game.on("gameStarted", () => {
             this.staticUI.showGame();
             this.staticUI.updateHUD(this.game.getHUDState());
         });
 
-        this.game.on("roundLoading", () => {
-            this.staticUI.showLoading();
-        });
-
+        // =========================
+        // ROUND START
+        // =========================
         this.game.on("roundStarted", ({ location }) => {
+            console.log("[BRIDGE] roundStarted");
+
             this.staticUI.hideLoading();
             this.staticUI.startRound();
-            this.mapUI.startRound({ location });
-            this.mapUI.enableGuessMode();
+
+            // 💥 FULL VISUAL RESET FOR NEW ROUND
+            this.mapUI.beginRound({
+                location
+            });
+
             this.staticUI.updateHUD(this.game.getHUDState());
         });
 
-        this.game.on("hudUpdated", (hud) => {
-            this.staticUI.updateHUD(hud);
+        // =========================
+        // GUESS MADE (GAME STATE UPDATED)
+        // =========================
+        this.game.on("guessUpdated", ({ point }) => {
+            console.log("[BRIDGE] guessUpdated", point);
+
+            // optional visual feedback
+            this.mapUI.updateGuessPreview(point);
         });
 
+        // =========================
+        // GUESS FINISHED
+        // =========================
         this.game.on("guessFinished", ({ result }) => {
-            this.mapUI.disableGuessMode();
+            console.log("[BRIDGE] guessFinished");
+
+            this.mapUI.lockGuess();
 
             this.staticUI.showRoundResult({
                 result,
@@ -45,8 +64,11 @@ export class Bridge {
             });
         });
 
+        // =========================
+        // ROUND END
+        // =========================
         this.game.on("roundEnded", (data) => {
-            this.staticUI.showRoundResult(data);
+            console.log("[BRIDGE] roundEnded");
 
             this.mapUI.renderOverview({
                 guess: this.game.getCurrentGuess(),
@@ -54,23 +76,28 @@ export class Bridge {
             });
         });
 
+        // =========================
+        // GAME END
+        // =========================
         this.game.on("gameEnded", (data) => {
             this.staticUI.showGameResult(data);
         });
     }
 
     // =====================================================
-    // MAP → GAME
+    // MAP → GAME (INPUT ONLY)
     // =====================================================
 
     bindMapEvents() {
         this.mapUI.onGuess((point) => {
+            console.log("[BRIDGE] map guess", point);
+
             this.game.setGuess("p1", point);
         });
     }
 
     // =====================================================
-    // UI → GAME (BUTTONS)
+    // UI → GAME (BUTTONS ONLY)
     // =====================================================
 
     bindUIEvents() {
@@ -82,7 +109,10 @@ export class Bridge {
 
                 if (!guess) return;
 
+                console.log("[BRIDGE] submit guess");
+
                 this.mapUI.placeGuessMarker(guess);
+
                 this.game.finishGuess("p1");
             });
         }
