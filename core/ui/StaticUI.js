@@ -94,28 +94,23 @@ export class StaticUI {
 
     showRoundResult(data) {
         this.showResult();
-
-        const progress = (data.result.score / 5000) * 100; // ✔ FIX
-
+    
+        const progress = (data.score / 5000) * 100;
+    
         if (this.progressBar) {
-            this.progressBar.style.width = `${progress}%`; // ✔ FIX STRING
+            this.progressBar.style.width = `${progress}`%;
         }
-
+    
         if (this.textEls?.length >= 2) {
             this.textEls[0].innerText =
-                `Вы в ${data.result?.distance || ""} от места`;
-
+                `Вы в ${data.distance} от места`;
+    
             this.textEls[1].innerText =
-                `Счёт: ${data.result.score} | Итог: ${data.totalScore}`;
+                `Счёт: ${data.score} | Итог: ${data.totalScore}`;
         }
-
-        if (this.nextBtn) {
-            this.nextBtn.style.display = "inline-block";
-        }
-
-        if (this.endButtons) {
-            this.endButtons.style.display = "none";
-        }
+    
+        this.nextBtn.style.display = "inline-block";
+        this.endButtons.style.display = "none";
     }
 
     // =====================================================
