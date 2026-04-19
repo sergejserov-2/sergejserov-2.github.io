@@ -204,7 +204,7 @@ body {
     border-radius: 6px;
     overflow: hidden;
 }
-[19.04.2026 9:21] Сергей Серов: .score-progress {
+.score-progress {
     width: 0%;
     height: 100%;
     background: #4ea1ff;
