@@ -30,7 +30,7 @@ export class Game extends Emitter {
         };
 
         this.currentGuess = null;
-        this.isLocked = false; // 💥 NEW GUARD
+        this.isLocked = false;
 
         this.history = [];
         this.score = 0;
@@ -125,7 +125,7 @@ export class Game extends Emitter {
     // =====================================================
 
     setGuess(playerId = "p1", point) {
-        if (this.isLocked) return; // 💥 GUARD
+        if (this.isLocked) return;
 
         if (playerId !== "p1") return;
 
@@ -149,9 +149,9 @@ export class Game extends Emitter {
         const player = this.players[playerId];
 
         if (!player || player.state !== "playing") return;
-        if (this.isLocked) return; // 💥 GUARD
+        if (this.isLocked) return;
 
-        this.isLocked = true; // 💥 FREEZE STATE
+        this.isLocked = true;
         player.state = "finished";
 
         const result = this.scoring.calculateResult({
@@ -209,7 +209,7 @@ export class Game extends Emitter {
 
             this.prepareNextRound();
 
-        }, 1200);
+        }, 3000);
     }
 
     // =====================================================
