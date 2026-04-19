@@ -25,7 +25,7 @@ export class Bridge {
   });
 
   /* ROUND START */
-  this.game.on("roundStarted", ({ round, actual }) => {
+  this.game.on("roundStarted", ({ actual }) => {
    this.staticUI.updateHUD(
     this.vm.buildHUD(this.game.state, this.game.state.getCurrentRound())
    );
@@ -35,7 +35,7 @@ export class Bridge {
   });
 
   /* GUESS UPDATE */
-  this.game.on("guessUpdated", ({ playerId, guess }) => {
+  this.game.on("guessUpdated", ({ guess }) => {
    this.mapUI.placeGuessMarker(guess);
   });
 
@@ -55,9 +55,9 @@ export class Bridge {
    });
   });
 
-  /* ROUND COMMITTED */
+  /* ROUND COMMITTED → ONLY FLOW */
   this.game.on("roundCommitted", () => {
-   this.gameFlow.onRoundCommitted();
+   this.gameFlow.commitRound();
   });
 
   /* GAME END */
