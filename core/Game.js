@@ -53,4 +53,17 @@ export class Game {
   const round = this.state.getCurrentRound();
   if (!round) return false;
 
-  return this.players.every(playerId
+  return this.players.every(playerId => {
+   const g = this.state.getPlayerGuess(playerId);
+   return g?.isFinished === true;
+  });
+ }
+
+ commitRound() {
+  this.state.commitRound();
+ }
+
+ endGame() {
+  this.state.end();
+ }
+}
