@@ -70,8 +70,4 @@ export class StaticUI {
    this.endButtons.style.display = "flex";
   }
  }
-
- showLoading() {
-  this.setScreen("loading");
- }
 }
