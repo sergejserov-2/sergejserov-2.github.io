@@ -90,8 +90,8 @@ async function bootstrap() {
 
         // UI
 
-        const mapUI = new MapUI(game);
-        const staticUI = new StaticUI(game);
+        const mapUI = new MapUI({ element });
+        const staticUI = new StaticUI({ element });
 
         // =====================================================
         // BRIDGE
