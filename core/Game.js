@@ -17,8 +17,11 @@ export class Game {
  setGuess(playerId, point) {
   const round = this.state.getCurrentRound();
   if (!round || this.isLocked) return;
-  if (round.guesses.length > 0) {
-   round.guesses[0].guess = point;
+
+  const existing = this.state.getPlayerGuess(playerId);
+
+  if (existing) {
+   existing.guess = point;
   } else {
    this.state.addGuess(playerId, point, { distance: 0, score: 0 });
   }
@@ -28,7 +31,7 @@ export class Game {
   const round = this.state.getCurrentRound();
   if (!round || this.isLocked) return;
 
-  const guess = round.guesses?.[0];
+  const guess = this.state.getPlayerGuess(playerId);
   if (!guess) return;
 
   const result = this.scoring.calculateResult({
