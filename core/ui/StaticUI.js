@@ -96,7 +96,7 @@ export class StaticUI {
         this.showResult();
         const progress = (data.score / 5000) * 100;
         if (this.progressBar) {
-            this.progressBar.style.width = `${progress}`%;
+            this.progressBar.style.width = `${progress}%`;
         }
         if (this.textEls?.length >= 2) {
             this.textEls[0].innerText =
