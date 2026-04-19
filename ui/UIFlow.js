@@ -16,11 +16,18 @@ export class UIFlow {
   this.uiBuilder = uiBuilder;
 
   this.bind();
+  this.connectInput();
  }
 
  setScreen(screen) {
   this.uiState.setScreen(screen);
   this.staticUI.setScreen(screen);
+ }
+
+ connectInput() {
+  this.mapUI.bindGuess((point) => {
+   this.gameFlow.onGuess("p1", point);
+  });
  }
 
  bind() {
@@ -57,20 +64,17 @@ export class UIFlow {
 
    this.staticUI.showRoundResult(vm);
 
-   this.mapUI.renderOverview({
-    guess: result.guess,
-    actual: result.actual
-   });
-  });
-
-  this.gameFlow.on("roundCommitted", () => {
-   // UI ничего не делает напрямую
+   this.mapUI.renderOverview(
+    this.gameFlow.game.state.getCurrentRound()
+   );
   });
 
   this.gameFlow.on("gameEnded", () => {
    this.setScreen("result");
 
-   const vm = this.uiBuilder.buildGameVM(this.gameFlow.game.state);
+   const vm = this.uiBuilder.buildGameVM(
+    this.gameFlow.game.state
+   );
 
    this.staticUI.showGameResult(vm);
   });
