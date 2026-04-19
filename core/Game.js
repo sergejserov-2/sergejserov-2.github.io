@@ -15,25 +15,30 @@ export class Game extends Emitter {
         this.scoring = scoring;
 
         // STATE
-        this.gameState = "idle"; // idle | active | ended
-        this.roundState = "loading"; // loading | ready | active | ended
+        this.gameState = "idle";      // idle | active | ended
+        this.roundState = "loading";  // loading | ready | active | ended
 
         this.currentRound = 0;
         this.maxRounds = rules.roundCount;
 
-        this.current = null;
+        this.current = null; // actual location
         this.next = null;
+
         this.generating = false;
 
-        // PLAYERS
+        // PLAYERS (NO GUESS HERE ANYMORE)
         this.players = {
-            p1: { state: "idle", score: 0, lastGuess: null }
+            p1: { state: "idle", score: 0 }
         };
 
-        // GAME DATA
+        // CORE GAME STATE
+        this.currentGuess = null;
+
+        // DATA
         this.history = [];
         this.score = 0;
 
+        // TIMER
         this.timer = null;
         this.time = 0;
         this.moves = 0;
@@ -50,7 +55,7 @@ export class Game extends Emitter {
         this.currentRound = 1;
 
         this.fire("gameStarted");
-        this.fire("hudUpdated", this.getHUDState()); // ✔ FIX: initial sync
+        this.fire("hudUpdated", this.getHUDState());
 
         this.prepareNextRound();
     }
@@ -71,7 +76,6 @@ export class Game extends Emitter {
             .then(loc => {
                 this.next = loc;
                 this.generating = false;
-
                 this.roundState = "ready";
 
                 this.fire("roundReady", {
@@ -99,6 +103,8 @@ export class Game extends Emitter {
         this.current = this.next;
         this.next = null;
 
+        this.currentGuess = null; // 💥 RESET GUESS PER ROUND
+
         Object.values(this.players).forEach(p => {
             p.state = "playing";
         });
@@ -112,16 +118,32 @@ export class Game extends Emitter {
             location: this.current
         });
 
-        this.fire("hudUpdated", this.getHUDState()); // ✔ FIX: sync HUD per round
+        this.fire("hudUpdated", this.getHUDState());
 
         this.startTimer();
-
-        // ❌ FIX: убрали prepareNextRound отсюда
-        // (иначе ломается lifecycle)
     }
 
     // =====================================================
-    // PLAYER ACTION
+    // GUESS API (NEW CLEAN STATE)
+    // =====================================================
+
+    setGuess(playerId = "p1", point) {
+        if (playerId !== "p1") return;
+
+        this.currentGuess = point;
+
+        this.fire("guessUpdated", {
+            playerId,
+            point
+        });
+    }
+
+    getCurrentGuess() {
+        return this.currentGuess;
+    }
+
+    // =====================================================
+    // FINISH GUESS
     // =====================================================
 
     finishGuess(playerId = "p1") {
@@ -132,12 +154,11 @@ export class Game extends Emitter {
         player.state = "finished";
 
         const result = this.scoring.calculateResult({
-            guess: player.lastGuess,
+            guess: this.currentGuess,
             actual: this.current
         });
 
         this.score += result.score;
-
         this.fire("guessFinished", {
             playerId,
             actual: this.current,
@@ -154,6 +175,7 @@ export class Game extends Emitter {
 
     endRound(payload = {}) {
         this.stopTimer();
+
         Object.values(this.players).forEach(p => {
             p.state = "idle";
         });
