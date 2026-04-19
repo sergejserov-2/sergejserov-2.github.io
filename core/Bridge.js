@@ -19,15 +19,14 @@ export class Bridge {
   /* ROUND START */
   this.game.on("roundStarted", () => {
 
+   const round = this.game.state.currentRound;
+   const location = round.actualLocation;
+
+   this.streetViewUI.init(location);
+
    this.staticUI.updateHUD(
-    this.vm.buildHUD(this.game.state, this.game.state.currentRound)
+    this.vm.buildHUD(this.game.state, round)
    );
-
-   const location = this.game.state.currentRound.actualLocation;
-
-   this.streetViewUI.onReady(() => {
-    this.streetViewUI.setLocation(location);
-   });
 
    this.mapUI.resetGuess();
   });
