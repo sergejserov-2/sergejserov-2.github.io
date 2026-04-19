@@ -19,18 +19,18 @@ export class Bridge {
 
  bind() {
 
-  // ===== выбор точки =====
+  // выбор точки
   this.mapUI.onGuess((point) => {
    const round = this.game.state.getCurrentRound();
    if (!round) return;
 
    this.game.setGuess("p1", point);
 
-   const guess = round.guesses?.[0]?.guess;
-   if (guess) this.mapUI.placeGuessMarker(guess);
+   const guess = this.game.state.getPlayerGuess("p1");
+   if (guess) this.mapUI.placeGuessMarker(guess.guess);
   });
 
-  // ===== кнопка "Сделать выбор" =====
+  // кнопка "угадать"
   const guessBtn = document.getElementById("makeGuess");
 
   guessBtn?.addEventListener("click", () => {
@@ -40,35 +40,18 @@ export class Bridge {
    const result = this.game.finishGuess("p1");
    if (!result) return;
 
+   // ждём остальных игроков
+   if (!this.game.areAllPlayersFinished()) return;
+
    const vm = this.vm.buildRoundVM(this.game.state, round);
 
    this.staticUI.showRoundResult(vm);
 
    this.mapUI.renderOverview({
-    guess: round.guesses?.[0]?.guess,
+    guess: this.game.state.getPlayerGuess("p1")?.guess,
     actual: round.actualLocation
    });
   });
 
-  // ===== переход к следующему раунду =====
-  this.staticUI.element
-   ?.querySelector(".guess-overview")
-   ?.addEventListener("click", () => {
-    this.staticUI.hideResult();
-    this.game.commitRound();
-    this.gameFlow.onRoundCommitted();
-   });
- }
-
- sync() {
-  const round = this.game.state.getCurrentRound();
-  if (!round) return;
-
-  this.staticUI.updateHUD(
-   this.vm.buildHUD(this.game.state, round)
-  );
-
-  this.streetViewUI.setLocation(round.actualLocation);
-  this.mapUI.reset();
- }
-}
+  // следующий раунд
+  this.staticUI
