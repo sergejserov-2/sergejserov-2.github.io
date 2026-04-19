@@ -13,7 +13,7 @@
 <div class="game">
 
     <!-- =========================
-        SCREENS
+        SCREENS (STATIC UI)
     ========================== -->
     <div class="screens">
 
@@ -25,18 +25,23 @@
         <!-- RESULT -->
         <div class="guess-overview">
             <div class="score-view">
+
                 <div class="overview-map"></div>
+
                 <div class="score-progress-bar">
                     <div class="score-progress"></div>
                 </div>
+
                 <div class="score-text">
                     <p></p>
                     <p></p>
                 </div>
+
                 <div class="game-end-buttons">
                     <div class="button play-again-button">Играть снова</div>
                     <div class="button home-button">В меню</div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -46,21 +51,21 @@
     ========================== -->
     <div class="game-scene">
 
-        <!-- STREETVIEW -->
+        <!-- STREETVIEW (StreetViewUI) -->
         <div class="streetview"></div>
 
-        <!-- HUD -->
-        <div class="info-view">
+        <!-- HUD (StaticUI) -->
+        <div class="hud">
             <div class="round">Раунд: <b>0/0</b></div>
             <div class="total-score">Счёт: <b>0</b></div>
             <div class="time-left">Время: <b>0</b></div>
             <div class="moves-left">Шагов: <b>0</b></div>
         </div>
 
-        <!-- GUESS -->
-        <div class="guess-map">
-            <div class="embed-map"></div>
+        <!-- MAP (MapUI) -->
+        <div class="map">
             <div class="resize-handle"></div>
+
             <div class="guess-button" id="makeGuess">
                 Сделать выбор
             </div>
@@ -71,7 +76,7 @@
 </div>
 
 <!-- BOOTSTRAP -->
-<script type="module" src="../Init.js"></script>
+<script type="module" src="./Init.js"></script>
 
 <!-- GOOGLE MAPS -->
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAJfRzZ-GGIV3iCrCVkTsYKDNh09kenzNM&libraries=geometry"></script>
