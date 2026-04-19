@@ -25,9 +25,20 @@ export class UIFlow {
  }
 
  connectInput() {
+
+  // 📍 выбор точки на карте
   this.mapUI.bindGuess((point) => {
    this.gameFlow.onGuess("p1", point);
   });
+
+  // 🎯 кнопка "Сделать выбор"
+  const btn = document.getElementById("makeGuess");
+
+  if (btn) {
+   btn.addEventListener("click", () => {
+    this.gameFlow.finishGuess("p1");
+   });
+  }
  }
 
  bind() {
