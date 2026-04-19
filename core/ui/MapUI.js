@@ -5,6 +5,7 @@ export class MapUI {
         // =========================
         this.embedMapElement = document.querySelector(".embed-map");
         this.overviewMapElement = document.querySelector(".overview-map");
+        this.streetViewElement = document.querySelector(".streetview");
         this.guessMapElement = document.querySelector(".guess-map");
 
         // =========================
@@ -12,6 +13,7 @@ export class MapUI {
         // =========================
         this.googleMap = null;
         this.overviewMap = null;
+        this.panorama = null;
 
         // =========================
         // STATE
@@ -19,18 +21,16 @@ export class MapUI {
         this.isGuessMode = false;
         this.guessMarker = null;
         this.overviewLines = [];
+        this.lastGuess = null;
 
         this.onGuessCallback = null;
-
-        // resize flag
         this._resizeBound = false;
 
-        // events
         this.initDOMEvents();
     }
 
     // =====================================================
-    // INIT ROUND (GUESS MAP)
+    // ROUND INIT
     // =====================================================
 
     initRound({ location }) {
@@ -38,6 +38,9 @@ export class MapUI {
 
         requestAnimationFrame(() => {
 
+            // =========================
+            // GUESS MAP
+            // =========================
             this.googleMap = new google.maps.Map(this.embedMapElement, {
                 center: location,
                 zoom: 2,
@@ -45,6 +48,29 @@ export class MapUI {
                 clickableIcons: false
             });
 
+            // =========================
+            // STREET VIEW
+            // =========================
+            this.panorama = new google.maps.StreetViewPanorama(
+                this.streetViewElement,
+                {
+                    position: location,
+                    addressControl: false,
+                    linksControl: true,
+                    panControl: true,
+                    zoomControl: false,
+                    fullscreenControl: false,
+                    motionTracking: false,
+                    clickToGo: true,
+                    scrollwheel: true
+                }
+            );
+
+            this.googleMap.setStreetView(this.panorama);
+
+            // =========================
+            // CLICK → SET GUESS
+            // =========================
             this.googleMap.addListener("click", (e) => {
                 if (!this.isGuessMode) return;
 
@@ -53,6 +79,7 @@ export class MapUI {
                     lng: e.latLng.lng()
                 };
 
+                this.lastGuess = point;
                 this.emitGuess(point);
             });
 
@@ -60,27 +87,8 @@ export class MapUI {
         });
     }
 
-    destroyRound() {
-        // GUESS MAP
-        if (this.googleMap) {
-            google.maps.event.clearInstanceListeners(this.googleMap);
-            this.googleMap = null;
-        }
-    
-        this.clearGuessMarker();
-    
-        // OVERVIEW MAP
-        if (this.overviewMap) {
-            google.maps.event.clearInstanceListeners(this.overviewMap);
-            this.overviewMap = null;
-        }
-    
-        this.clearOverview();
-    }
-
-    
     // =====================================================
-    // OVERVIEW MAP INIT
+    // OVERVIEW MAP
     // =====================================================
 
     initOverviewMap() {
@@ -93,48 +101,8 @@ export class MapUI {
         });
     }
 
-    // =====================================================
-    // GUESS MODE
-    // =====================================================
-
-    enableGuessMode() {
-        this.isGuessMode = true;
-        this.googleMap?.setOptions({ draggable: true });
-    }
-
-    disableGuessMode() {
-        this.isGuessMode = false;
-        this.googleMap?.setOptions({ draggable: false });
-    }
-
-    // =====================================================
-    // MARKER (GUESS MAP)
-    // =====================================================
-
-    placeGuessMarker(location) {
-        if (!this.googleMap || !location) return;
-
-        this.clearGuessMarker();
-
-        this.guessMarker = new google.maps.Marker({
-            position: location,
-            map: this.googleMap
-        });
-    }
-
-    clearGuessMarker() {
-        if (this.guessMarker) {
-            this.guessMarker.setMap(null);
-            this.guessMarker = null;
-        }
-    }
-
-    // =====================================================
-    // OVERVIEW (RESULT MAP)
-    // =====================================================
-
     renderOverview({ guess, actual }) {
-        if (!this.overviewMap || !guess || !actual) return;
+        if (!this.overviewMap  !guess  !actual) return;
 
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(guess);
@@ -165,16 +133,77 @@ export class MapUI {
 
         this.overviewLines.push(line);
     }
-    
+
     clearOverview() {
-        if (this.overviewLines.length) {
-            this.overviewLines.forEach(l => l.setMap(null));
-            this.overviewLines = [];
+        this.overviewLines.forEach(l => l.setMap(null));
+        this.overviewLines = [];
+    }
+    // =====================================================
+    // GUESS MODE
+    // =====================================================
+
+    enableGuessMode() {
+        this.isGuessMode = true;
+        this.googleMap?.setOptions({ draggable: true });
+    }
+
+    disableGuessMode() {
+        this.isGuessMode = false;
+        this.googleMap?.setOptions({ draggable: false });
+    }
+
+    // =====================================================
+    // MARKERS
+    // =====================================================
+
+    placeGuessMarker(location) {
+        if (!this.googleMap || !location) return;
+
+        this.clearGuessMarker();
+
+        this.guessMarker = new google.maps.Marker({
+            position: location,
+            map: this.googleMap
+        });
+    }
+
+    clearGuessMarker() {
+        if (this.guessMarker) {
+            this.guessMarker.setMap(null);
+            this.guessMarker = null;
         }
     }
 
     // =====================================================
-    // RESIZE SYSTEM
+    // DESTROY
+    // =====================================================
+
+    destroyRound() {
+        // guess map
+        if (this.googleMap) {
+            google.maps.event.clearInstanceListeners(this.googleMap);
+            this.googleMap = null;
+        }
+
+        // streetview
+        if (this.panorama) {
+            google.maps.event.clearInstanceListeners(this.panorama);
+            this.panorama = null;
+        }
+
+        // overview
+        if (this.overviewMap) {
+            google.maps.event.clearInstanceListeners(this.overviewMap);
+            this.overviewMap = null;
+        }
+
+        this.clearGuessMarker();
+        this.clearOverview();
+        this.lastGuess = null;
+    }
+
+    // =====================================================
+    // RESIZE
     // =====================================================
 
     initResize() {
@@ -217,9 +246,9 @@ export class MapUI {
 
             const realDy = startH - newH;
 
-            el.style.width = '${newW}px';
-            el.style.height = '${newH}px';
-            el.style.top = '${startTop + realDy}px';
+            el.style.width = `${newW}px`;
+            el.style.height = `${newH}px`;
+            el.style.top = `${startTop + realDy}px`;
 
             this.triggerMapResize();
         });
@@ -256,11 +285,12 @@ export class MapUI {
     initDOMEvents() {
         const btn = document.getElementById("makeGuess");
 
-        if (btn) {
-            btn.addEventListener("click", () => {
-                if (!this.lastGuess) return;
-                this.emitGuess(this.lastGuess);
-            });
-        }
+        if (!btn) return;
+
+        btn.addEventListener("click", () => {
+            if (!this.lastGuess) return;
+
+            this.emitGuess(this.lastGuess);
+        });
     }
 }
