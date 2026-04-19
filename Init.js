@@ -81,4 +81,9 @@ async function bootstrap() {
         game.startGame();
 
         console.log("[Init] SUCCESS");
-    } catch (err
+    } catch (err) {
+        console.error("[Init] FAILED:", err);
+    }
+}
+
+bootstrap();
