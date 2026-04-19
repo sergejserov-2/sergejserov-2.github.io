@@ -27,7 +27,7 @@ export const AreaRegistry = {
  get(name) {
   const area = rawAreas[name];
   if (!area) {
-   throw new Error(Area "${name}" not found);
+   throw new Error(`Area "${name}" not found`);
   }
   return toRuntime(area);
  },
