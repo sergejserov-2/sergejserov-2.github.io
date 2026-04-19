@@ -16,6 +16,9 @@ import { StreetViewUI } from "./ui/StreetViewUI.js";
 import { StaticUI } from "./ui/StaticUI.js";
 import { tweaks } from "./ui/Tweaks.js";
 
+/* =========================
+   GOOGLE READY
+========================= */
 function waitForGoogle() {
  return new Promise(resolve => {
   const check = () => {
@@ -26,21 +29,28 @@ function waitForGoogle() {
  });
 }
 
+/* =========================
+   CONFIG
+========================= */
 function loadConfig() {
  const raw = localStorage.getItem("gameConfig");
  if (!raw) throw new Error("No gameConfig found");
  return JSON.parse(raw);
 }
 
+/* =========================
+   BOOTSTRAP
+========================= */
 async function bootstrap() {
  try {
   console.log("[Init] START");
 
   await waitForGoogle();
+
   tweaks();
 
   const config = loadConfig();
-  const area = AreaRegistry.get(config.area);
+  const area = AreaRegistry[config.area];
 
   const root = document.querySelector(".game");
 
@@ -61,7 +71,7 @@ async function bootstrap() {
   });
 
   /* =========================
-     CORE
+     CORE ENGINE
   ========================= */
   const game = new Game({
    gameState: new GameState(),
@@ -106,7 +116,7 @@ async function bootstrap() {
   });
 
   /* =========================
-     START
+     START GAME
   ========================= */
   await gameFlow.startGame();
 
