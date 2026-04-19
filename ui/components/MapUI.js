@@ -44,18 +44,21 @@ export class MapUI {
  // RESIZE
  // =========================
 
- initResize() {
+initResize() {
  const handle = document.querySelector(".resize-handle");
  if (!handle) return;
 
  let startX, startY, startW, startH;
 
  handle.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+
+  const wrapper = this.mapElement.parentElement;
+
+  const rect = wrapper.getBoundingClientRect();
+
   startX = e.clientX;
   startY = e.clientY;
-
-  const wrapper = this.mapElement.parentElement; 
-  const rect = wrapper.getBoundingClientRect();
 
   startW = rect.width;
   startH = rect.height;
@@ -64,19 +67,26 @@ export class MapUI {
    const dx = e.clientX - startX;
    const dy = e.clientY - startY;
 
-   // =========================
-   // ANCHOR: bottom-left / bottom-right safe scaling
-   // =========================
-
    const newWidth = Math.max(200, startW + dx);
-   const newHeight = Math.max(200, startH + dy);
+
+   // ключ: invert Y, чтобы "низ был якорем"
+   const newHeight = Math.max(200, startH - dy);
 
    wrapper.style.width = newWidth + "px";
    wrapper.style.height = newHeight + "px";
 
-   // map must always fill wrapper
+   // карта всегда заполняет контейнер
    this.mapElement.style.width = "100%";
    this.mapElement.style.height = "100%";
+
+   // важно: чтобы Google Maps не глючил при ресайзе
+   if (this.map && this.adapter?.triggerResize) {
+    this.adapter.triggerResize(this.map);
+   }
+
+   if (this.overviewMap && this.adapter?.triggerResize) {
+    this.adapter.triggerResize(this.overviewMap);
+   }
   };
 
   const onUp = () => {
