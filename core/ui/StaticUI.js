@@ -122,7 +122,7 @@ showGameResult(data) {
     const last = data.history?.at(-1);
     if (this.textEls?.length >= 2) {
         this.textEls[0].innerText =
-            `Последний результат: ${last?.result?.distance || "-"`};
+            `Последний результат: ${last?.result?.distance || "-"}`;
         this.textEls[1].innerText =
             `Итоговый счёт: ${data.totalScore}`;
     }
