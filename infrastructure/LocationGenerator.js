@@ -1,55 +1,19 @@
 export class LocationGenerator {
-    constructor({ mapAdapter, geometry }) {
-        this.mapAdapter = mapAdapter;
+    constructor({ geometry }) {
         this.geometry = geometry;
-
-        this.maxAttempts = 500;
-        this.maxTriesPerPoint = 100;
     }
 
-    // MAIN
-
-    async generate(area) {
+    generate(area) {
         const polygon = area.polygon;
-        const bounds = this.geometry.getBounds(polygon);
-
-        let attempts = 0;
-
-        while (attempts < this.maxAttempts) {
-            attempts++;
-
-            const point = this.findPointInArea(bounds, polygon);
-
-            const isValid = await this.mapAdapter.hasStreetView(
-                point.lat,
-                point.lng
-            );
-
-            if (isValid) {
-                return point;
-            }
-        }
-
-        throw new Error(
-            `No valid Street View point in area: ${area.name}`
-        );
+        return this.findValidPoint(polygon);
     }
 
-    // INTERNAL: POINT SEARCH
-
-    findPointInArea(bounds, polygon) {
+    findValidPoint(polygon) {
+        const bbox = this.geometry.getBoundingBox(polygon);
+        let point;
         let tries = 0;
 
-        while (tries < this.maxTriesPerPoint) {
-            tries++;
-
-            const point = this.geometry.randomPointInBounds(bounds);
-
-            if (this.geometry.isInsidePolygon(point, polygon)) {
-                return point;
-            }
-        }
-
-        throw new Error("Failed to generate point inside polygon");
-    }
-}
+        do {
+            point = [
+                bbox.minLat + Math.random() * (bbox.maxLat - bbox.minLat),
+                bbox
