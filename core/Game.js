@@ -1,36 +1,29 @@
 import { Emitter } from "./Emitter.js";
 
 export class Game extends Emitter {
-    constructor({ gameState, generator, scoring }) {
+    constructor({ gameState, scoring }) {
         super();
         this.state = gameState;
-        this.generator = generator;
         this.scoring = scoring;
         this.isLocked = false;
     }
 
-    // старт игры
     startGame() {
         this.state.reset();
         this.state.status = "active";
         this.fire("gameStarted");
     }
 
-    // старт раунда (вызывается GameFlow)
-    async startRound(area) {
-        const location = await this.generator.generate(area);
-
+    startRound(location) {
         this.state.startRound(location);
         this.isLocked = false;
 
         this.fire("roundStarted", {
             round: this.state.currentRound.index,
-            roundCount: this.state.rounds.length + 1,
             actual: location
         });
     }
 
-    // обновление текущего выбора игрока
     setGuess(playerId, point) {
         if (!this.state.currentRound || this.isLocked) return;
 
@@ -42,7 +35,6 @@ export class Game extends Emitter {
         });
     }
 
-    // финализация угадывания
     finishGuess(playerId = "p1") {
         if (this.isLocked) return;
 
@@ -52,13 +44,11 @@ export class Game extends Emitter {
         const guess = this.state.getGuess(playerId);
         if (!guess) return;
 
-        // чистый расчёт (без побочных эффектов)
         const result = this.scoring.calculateResult({
             guess: guess.guess,
             actual: round.actualLocation
         });
 
-        // единственное место мутации результата
         this.state.applyGuessResult(playerId, result);
 
         this.isLocked = true;
@@ -72,30 +62,4 @@ export class Game extends Emitter {
         });
     }
 
-    // фиксация раунда в историю
-    commitRound() {
-        this.state.commitRound();
-
-        this.fire("roundCommitted", {
-            totalScore: this.getTotalScore()
-        });
-    }
-
-    // завершение игры
-    endGame() {
-        this.state.endGame();
-
-        this.fire("gameEnded", {
-            totalScore: this.getTotalScore(),
-            rounds: this.state.rounds
-        });
-    }
-
-    // общий счёт
-    getTotalScore() {
-        return this.state.rounds.reduce(
-            (sum, r) => sum + (r.result?.score || 0),
-            0
-        );
-    }
-}
+    commit
