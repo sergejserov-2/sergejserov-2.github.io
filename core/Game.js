@@ -1,13 +1,12 @@
-import { Emitter } from "./Emitter.js";
 
-// GAME (PURE ORCHESTRATOR / DI VERSION)
+import { Emitter } from "./Emitter.js";
 
 export class Game extends Emitter {
     constructor({ area, element, rules, generator, scoring }) {
         super();
+
         console.log("[Game] init");
 
-        // DEPENDENCIES
         this.area = area;
         this.element = element;
         this.rules = rules;
@@ -15,30 +14,27 @@ export class Game extends Emitter {
         this.scoring = scoring;
 
         // STATE
-        this.gameState = "idle";      // idle | active | ended
-        this.roundState = "loading";  // loading | ready | active | ended
+        this.gameState = "idle";
+        this.roundState = "loading";
 
         this.currentRound = 0;
         this.maxRounds = rules.roundCount;
 
-        this.current = null; // actual location
+        this.current = null;
         this.next = null;
 
         this.generating = false;
 
-        // PLAYERS (NO GUESS HERE ANYMORE)
         this.players = {
-            p1: { state: "idle", score: 0 }
+            p1: { state: "idle" }
         };
 
-        // CORE GAME STATE
         this.currentGuess = null;
+        this.isLocked = false; // 💥 NEW GUARD
 
-        // DATA
         this.history = [];
         this.score = 0;
 
-        // TIMER
         this.timer = null;
         this.time = 0;
         this.moves = 0;
@@ -103,7 +99,8 @@ export class Game extends Emitter {
         this.current = this.next;
         this.next = null;
 
-        this.currentGuess = null; // 💥 RESET GUESS PER ROUND
+        this.currentGuess = null;
+        this.isLocked = false;
 
         Object.values(this.players).forEach(p => {
             p.state = "playing";
@@ -124,10 +121,12 @@ export class Game extends Emitter {
     }
 
     // =====================================================
-    // GUESS API (NEW CLEAN STATE)
+    // GUESS API
     // =====================================================
 
     setGuess(playerId = "p1", point) {
+        if (this.isLocked) return; // 💥 GUARD
+
         if (playerId !== "p1") return;
 
         this.currentGuess = point;
@@ -150,7 +149,9 @@ export class Game extends Emitter {
         const player = this.players[playerId];
 
         if (!player || player.state !== "playing") return;
+        if (this.isLocked) return; // 💥 GUARD
 
+        this.isLocked = true; // 💥 FREEZE STATE
         player.state = "finished";
 
         const result = this.scoring.calculateResult({
@@ -159,22 +160,22 @@ export class Game extends Emitter {
         });
 
         this.score += result.score;
+
         this.fire("guessFinished", {
             playerId,
-            actual: this.current,
-            round: this.currentRound,
             result,
-            guess: this.currentGuess
+            guess: this.currentGuess,
+            actual: this.current
         });
 
-        this.endRound({ result });
+        this.endRound(result);
     }
 
     // =====================================================
     // ROUND END
     // =====================================================
 
-    endRound(payload = {}) {
+    endRound(result) {
         this.stopTimer();
 
         Object.values(this.players).forEach(p => {
@@ -183,13 +184,17 @@ export class Game extends Emitter {
 
         this.roundState = "ended";
 
-        this.history.push(payload);
-
-        this.fire("roundEnded", {
-            result: payload.result,
+        const snapshot = {
+            result,
+            guess: this.currentGuess,
+            actual: this.current,
             totalScore: this.score,
             round: this.currentRound
-        });
+        };
+
+        this.history.push(snapshot);
+
+        this.fire("roundEnded", snapshot);
 
         const isLast = this.currentRound >= this.maxRounds;
 
