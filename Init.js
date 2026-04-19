@@ -19,7 +19,7 @@ import { MapUI } from "./ui/components/MapUI.js";
 import { StreetViewUI } from "./ui/components/StreetViewUI.js";
 import { StaticUI } from "./ui/components/StaticUI.js";
 
-import { tweaks } from "./ui/tweaks.js";
+import { tweaks } from "./ui/Tweaks.js";
 
 export async function init() {
  try {
