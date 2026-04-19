@@ -1,37 +1,56 @@
 export class GameFlow {
-    constructor({ game, area }) {
+    constructor({ game, generator, streetView, emitter, maxRetries = 10 }) {
         this.game = game;
-        this.area = area;
-        this.roundDelay = 1500;
+        this.generator = generator;
+        this.streetView = streetView;
+        this.emitter = emitter;
+        this.maxRetries = maxRetries;
     }
 
-    // FLOW: start → startGame → round loop → guessFinished → commit → next/end
-    async start() {
-        this.game.startGame();
-        await this.nextRound();
+    startGame() {
+        this.game.start();
+        this.emitter.emit("gameStarted", this.game.getState());
+        this.startRound();
     }
 
-    async nextRound() {
-        await this.game.startRound(this.area.getNext?.() || this.area);
-        this.bind();
+    async startRound() {
+        const area = this.game.getCurrentArea();
+        let point = null;
+        let tries = 0;
+
+        while (tries < this.maxRetries) {
+            const candidate = this.generator.generate(area);
+            const ok = await this.streetView.trySetLocation(candidate);
+            if (ok) {
+                point = candidate;
+                break;
+            }
+            tries++;
+        }
+
+        if (!point) throw new Error("Failed to find valid StreetView point");
+
+        this.game.startRound(point);
+        this.emitter.emit("roundStarted", this.game.getCurrentRound());
     }
 
-    bind() {
-        const h = async () => {
-            this.game.off?.("guessFinished", h);
-            this.game.commitRound();
-            if (this.isLast()) return this.game.endGame();
-            await this.delay(this.roundDelay);
-            await this.nextRound();
-        };
-        this.game.on("guessFinished", h);
+    onGuessFinished(data) {
+        this.game.finishGuess(data);
+        const round = this.game.getCurrentRound();
+        this.emitter.emit("guessFinished", round);
+        this.commitRound();
     }
 
-    isLast() {
-        return this.game.state.currentRoundIndex >= (this.area.roundsCount || 10);
+    commitRound() {
+        this.game.commitRound();
+        const round = this.game.getCurrentRound();
+        this.emitter.emit("roundCommitted", round);
+        if (this.game.isLastRound()) this.endGame();
+        else this.startRound();
     }
 
-    delay(ms) {
-        return new Promise(r => setTimeout(r, ms));
+    endGame() {
+        this.game.end();
+        this.emitter.emit("gameEnded", this.game.getState());
     }
 }
