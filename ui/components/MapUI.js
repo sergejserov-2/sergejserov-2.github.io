@@ -32,11 +32,53 @@ export class MapUI {
    this.placeGuessMarker(point);
    this.onGuess?.(point);
   });
+
+  this.initResize();
  }
 
  bindGuess(callback) {
   this.onGuess = callback;
  }
+
+ // =========================
+ // RESIZE
+ // =========================
+
+ initResize() {
+  const handle = document.querySelector(".resize-handle");
+  if (!handle) return;
+
+  let startX, startY, startW, startH;
+
+  handle.addEventListener("mousedown", (e) => {
+   startX = e.clientX;
+   startY = e.clientY;
+
+   const rect = this.mapElement.getBoundingClientRect();
+   startW = rect.width;
+   startH = rect.height;
+
+   const onMove = (e) => {
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    this.mapElement.style.width = startW + dx + "px";
+    this.mapElement.style.height = startH + dy + "px";
+   };
+
+   const onUp = () => {
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
+   };
+
+   window.addEventListener("mousemove", onMove);
+   window.addEventListener("mouseup", onUp);
+  });
+ }
+
+ // =========================
+ // MARKERS
+ // =========================
 
  placeGuessMarker(point) {
   if (!this.map || !point) return;
@@ -52,18 +94,18 @@ export class MapUI {
   this.guessMarker = null;
  }
 
+ reset() {
+  this.unlock();
+  this.clearGuessMarker();
+  this.clearOverview();
+ }
+
  lock() {
   this.isLocked = true;
  }
 
  unlock() {
   this.isLocked = false;
- }
-
- reset() {
-  this.unlock();
-  this.clearGuessMarker();
-  this.clearOverview();
  }
 
  renderOverview(round) {
