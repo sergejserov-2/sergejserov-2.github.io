@@ -194,7 +194,12 @@ export class Game extends Emitter {
 
         this.history.push(snapshot);
 
-        this.fire("roundEnded", snapshot);
+        this.fire("roundEnded", {
+            score: payload.result?.score ?? 0,
+            distance: payload.result?.distance ?? null,
+            totalScore: this.score,
+            round: this.currentRound
+        });
 
         const isLast = this.currentRound >= this.maxRounds;
 
