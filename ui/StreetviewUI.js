@@ -2,22 +2,31 @@ export class StreetViewUI {
     constructor({ adapter, element }) {
         this.adapter = adapter;
         this.element = element;
-        this.panorama = null;
+        this.pano = null;
     }
 
     init() {
-        this.panorama = this.adapter.createPanorama(this.element);
+        this.pano = new google.maps.StreetViewPanorama(this.element, {
+            addressControl: false,
+            showRoadLabels: false,
+            fullscreenControl: false,
+            zoomControl: true
+        });
     }
 
-    async trySetLocation([lat, lng]) {
-        const ok = await this.adapter.hasStreetView(lat, lng);
-        if (!ok) return false;
-        this.adapter.setPanoramaPosition(this.panorama, lat, lng);
-        return true;
+    setLocation([lat, lng]) {
+        this.pano?.setPosition({ lat, lng });
+    }
+
+    lock() {
+        this.pano.setOptions({ disableDefaultUI: true });
+    }
+
+    unlock() {
+        this.pano.setOptions({ disableDefaultUI: false });
     }
 
     reset() {
-        if (!this.panorama) return;
-        this.adapter.resetPanorama?.(this.panorama);
+        this.unlock();
     }
 }
