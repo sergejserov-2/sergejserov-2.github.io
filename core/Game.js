@@ -168,14 +168,14 @@ export class Game extends Emitter {
             actual: this.current
         });
 
-        this.endRound(result);
+        this.endRound({result});
     }
 
     // =====================================================
     // ROUND END
     // =====================================================
 
-    endRound(result) {
+    endRound(payload = {}) {
         this.stopTimer();
 
         Object.values(this.players).forEach(p => {
