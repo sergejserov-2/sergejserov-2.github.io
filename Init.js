@@ -6,8 +6,8 @@ import { tweaks } from "./core/ui/Tweaks.js";
 
 import { Bridge } from "./core/Bridge.js";
 import { Scoring } from "./core/Scoring.js";
-import { Geometry } from "./core/Geometry.js";
 
+import { Geometry } from "./infrastructure/Geometry.js";
 import { LocationGenerator } from "./infrastructure/LocationGenerator.js";
 import { MapAdapter } from "./infrastructure/MapAdapter.js";
 
