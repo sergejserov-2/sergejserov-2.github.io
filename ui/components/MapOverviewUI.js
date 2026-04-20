@@ -123,9 +123,9 @@ export class MapOverviewUI {
   }
 
   getSegmentsCount(distance) {
-    if (distance < 50) return 20;
-    if (distance < 200) return 40;
-    if (distance < 1000) return 80;
-    return 160;
+    if (distance < 50) return 10;
+    if (distance < 200) return 20;
+    if (distance < 1000) return 40;
+    return 80;
   }
 }
