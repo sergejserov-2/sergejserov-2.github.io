@@ -20,10 +20,6 @@ export class MapUI {
   this.lastGuessPoint = null;
  }
 
- // =========================
- // INIT
- // =========================
-
  init() {
   if (!this.mapElement || !this.overviewElement) return;
 
@@ -45,18 +41,14 @@ export class MapUI {
   this.initResize();
  }
 
- // =========================
- // BIND
- // =========================
-
- bindGuess(callback) {
-  this.onGuess = callback;
+ bindGuess(cb) {
+  this.onGuess = cb;
  }
 
- bindGuessButton(element) {
-  if (!element) return;
+ bindGuessButton(el) {
+  if (!el) return;
 
-  element.addEventListener("click", () => {
+  el.addEventListener("click", () => {
    if (this.isLocked) return;
    if (!this.onGuess) return;
    if (!this.lastGuessPoint) return;
@@ -64,10 +56,6 @@ export class MapUI {
    this.onGuess(this.lastGuessPoint);
   });
  }
-
- // =========================
- // MARKERS
- // =========================
 
  placeGuessMarker(point) {
   if (!this.map || !point) return;
@@ -78,7 +66,7 @@ export class MapUI {
    this.map,
    point,
    {
-    color: this.uiBuilder?.getPlayerColor?.("p1") ?? "#ff4d4d",
+    color: this.uiBuilder.getPlayerColor("p1"),
     size: 20
    }
   );
@@ -90,10 +78,6 @@ export class MapUI {
   this.adapter.removeMarker(this.guessMarker);
   this.guessMarker = null;
  }
-
- // =========================
- // STATE
- // =========================
 
  reset() {
   this.unlock();
@@ -110,10 +94,6 @@ export class MapUI {
   this.isLocked = false;
  }
 
- // =========================
- // OVERVIEW
- // =========================
-
  renderOverview(round) {
   if (!this.overviewMap) return;
 
@@ -126,9 +106,7 @@ export class MapUI {
   this.clearOverview();
 
   const playerId = guessObj?.playerId || "p1";
-
-  const color =
-   this.uiBuilder?.getPlayerColor?.(playerId) ?? "#ff4d4d";
+  const color = this.uiBuilder.getPlayerColor(playerId);
 
   const guessMarker = this.adapter.createMarker(
    this.overviewMap,
@@ -139,10 +117,7 @@ export class MapUI {
   const actualMarker = this.adapter.createMarker(
    this.overviewMap,
    actual,
-   {
-    color: this.uiBuilder?.getActualColor?.() ?? "#9aa0a6",
-    size: 30
-   }
+   { color: this.uiBuilder.getActualColor(), size: 30 }
   );
 
   const line = this.adapter.createPolyline(
@@ -170,16 +145,16 @@ export class MapUI {
 
   this.overviewLines = [];
   this.overviewMarkers = [];
+
+  if (this.overviewMap) {
+   google.maps.event.trigger(this.overviewMap, "resize");
+  }
  }
 
  refreshOverview() {
   if (!this.overviewMap) return;
   google.maps.event.trigger(this.overviewMap, "resize");
  }
-
- // =========================
- // RESIZE (FIXED)
- // =========================
 
  initResize() {
   const handle = this.mapElement
@@ -190,37 +165,37 @@ export class MapUI {
 
   let startX, startY, startW, startH;
 
+  const onMove = (e) => {
+   const dx = e.clientX - startX;
+   const dy = e.clientY - startY;
+
+   const wrapper = this.mapElement.parentElement;
+
+   wrapper.style.width = Math.max(200, startW + dx) + "px";
+   wrapper.style.height = Math.max(200, startH - dy) + "px";
+
+   this.adapter.triggerResize?.(this.map);
+  };
+
+  const onUp = () => {
+   window.removeEventListener("mousemove", onMove);
+   window.removeEventListener("mouseup", onUp);
+   document.body.style.userSelect = "";
+  };
+
   handle.addEventListener("mousedown", (e) => {
    e.preventDefault();
 
-   const wrapper = this.mapElement.parentElement;
-   const rect = wrapper.getBoundingClientRect();
+   const rect = this.mapElement.parentElement.getBoundingClientRect();
 
    startX = e.clientX;
    startY = e.clientY;
    startW = rect.width;
    startH = rect.height;
 
-   const onMove = (e) => {
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
+   d
 
-    const newW = Math.max(200, startW + dx);
-    const newH = Math.max(200, startH - dy);
-
-    wrapper.style.width = newW + "px";
-    wrapper.style.height = newH + "px";
-
-    this.adapter.triggerResize?.(this.map);
-   };
-
-   const onUp = () => {
-    window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("mouseup", onUp);
-    document.body.style.userSelect = "";
-   };
-
-   document.body.style.userSelect = "none";
+ocument.body.style.userSelect = "none";
 
    window.addEventListener("mousemove", onMove);
    window.addEventListener("mouseup", onUp);
