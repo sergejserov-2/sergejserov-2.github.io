@@ -13,7 +13,8 @@ export class MapAdapter {
   return new google.maps.Map(element, {
    center,
    zoom,
-   disableDefaultUI: true
+   disableDefaultUI: true,
+   mapID: "DEMO_MAP_ID"
   });
  }
 
