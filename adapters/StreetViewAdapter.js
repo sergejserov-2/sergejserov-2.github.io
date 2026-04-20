@@ -6,16 +6,17 @@ export class StreetViewAdapter {
  createStreetView(element, { lat = 0, lng = 0 } = {}) {
   if (!element) throw new Error("StreetView container missing");
 
-  return new google.maps.StreetViewPanorama(element, {
-   position: { lat, lng },
-   pov: { heading: 0, pitch: 0 },
-   addressControl: false,
-   showRoadLabels: false,
-   fullscreenControl: false,
-   zoomControl: true,
-   disableDefaultUI: true
-  });
- }
+return new google.maps.StreetViewPanorama(element, {
+ position: { lat, lng },
+ pov: { heading: 0, pitch: 0 },
+
+ addressControl: false,
+ showRoadLabels: false,
+ fullscreenControl: false,
+ zoomControl: true,
+ disableDefaultUI: false,
+ compassControl: true
+});
 
  async getStreetViewMeta({ lat, lng }) {
   return new Promise(resolve => {
