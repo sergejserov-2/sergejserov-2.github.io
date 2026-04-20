@@ -1,85 +1,144 @@
 export class GameFlow {
- constructor({ game, generator, area }) {
-  this.game = game;
-  this.generator = generator;
-  this.area = area;
+  constructor({ game, generator, area, services }) {
+    this.game = game;
+    this.generator = generator;
+    this.area = area;
 
-  this.listeners = {};
-  this.locked = false;
- }
+    this.timer = services.timer;
+    this.moves = services.moves;
+    this.rounds = services.rounds;
 
- on(event, cb) {
-  if (!this.listeners[event]) this.listeners[event] = [];
-  this.listeners[event].push(cb);
- }
-
- emit(event, data) {
-  const list = this.listeners[event];
-  if (!list) return;
-  list.forEach(cb => cb(data));
- }
-
- async startGame() {
-  this.game.startGame();
-
-  this.emit("gameStarted", this.game.getState());
-
-  await this.startRound();
- }
-
- async startRound() {
-  this.locked = true;
-  this.emit("inputLocked");
-
-  const location = await this.generator.generate(this.area);
-
-  this.game.startRound(location);
-
-  this.locked = false;
-
-  this.emit("inputUnlocked");
-  this.emit("roundStarted", this.game.getState());
-  this.emit("stateUpdated", this.game.getState());
- }
-
-finishGuess(point, playerId = "p1") {
-  if (this.locked) return;
-
-  this.locked = true;
-  this.emit("inputLocked");
-
-  this.game.setGuess(playerId, point);
-  const result = this.game.finishGuess(playerId);
-
-  this.emit("roundEnded", this.game.getState());
-  this.emit("stateUpdated", this.game.getState());
-
-  const duration = 10000;
-  const startTime = Date.now();
-
- this.emit("roundEndTimerStarted", {
-    duration,
-    startTime
-  });
-
-  setTimeout(() => this.nextRound(), duration);
-
-  return result;
-}
-
- async nextRound() {
-  this.game.commitRound();
-
-  if (this.game.isGameEnded()) {
-   this.endGame();
-   return;
+    this.listeners = {};
+    this.locked = false;
   }
 
-  await this.startRound();
- }
+  // =========================
+  // EVENTS
+  // =========================
+  on(event, cb) {
+    if (!this.listeners[event]) this.listeners[event] = [];
+    this.listeners[event].push(cb);
+  }
 
- endGame() {
-  this.game.endGame();
-  this.emit("gameEnded", this.game.getState());
- }
+  emit(event, data) {
+    const list = this.listeners[event];
+    if (!list) return;
+    list.forEach(cb => cb(data));
+  }
+
+  // =========================
+  // START GAME
+  // =========================
+  async startGame() {
+    this.game.startGame();
+
+    this.rounds.start(this.game.config.rules.rounds);
+
+    this.emit("gameStarted", this.game.getState());
+
+    await this.startRound();
+  }
+
+  // =========================
+  // START ROUND
+  // =========================
+  async startRound() {
+    this.locked = true;
+    this.emit("inputLocked");
+
+    const location = await this.generator.generate(this.area);
+
+    this.game.startRound(location);
+
+    // reset services
+    this.moves.reset(this.game.config.rules.moves);
+
+    this.timer.start(
+      this.game.config.rules.time,
+      () => this.finishRound("timeout"),
+      (t) => this.emit("timerTick", t)
+    );
+
+    this.locked = false;
+
+    this.emit("inputUnlocked");
+    this.emit("roundStarted", this.game.getState());
+    this.emit("stateUpdated", this.game.getState());
+  }
+
+  // =========================
+  // USER ACTION
+  // =========================
+  finishGuess(point, playerId = "p1") {
+    if (this.locked) return;
+
+    const canMove = this.moves.consume();
+
+    this.emit("movesUpdated", this.moves.getRemaining());
+
+    if (!canMove) {
+      this.finishRound("moves");
+      return;
+    }
+
+    this.locked = true;
+    this.emit("inputLocked");
+
+    this.game.setGuess(playerId, point);
+    this.game.finishGuess(playerId);
+
+    this.emit("roundEnded", this.game.getState());
+    this.emit("stateUpdated", this.game.getState());
+  }
+
+  // =========================
+  // FINISH ROUND
+  // =========================
+  finishRound(reason = "manual") {
+    this.timer.clear();
+
+    this.locked = true;
+    this.emit("inputLocked");
+
+    this.game.commitRound();
+
+    this.emit("roundEndedReason", reason);
+    this.emit("roundEnded", this.game.getState());
+
+    if (this.rounds.isFinished()) {
+      this.endGame();
+      return;
+    }
+
+    // ⚠️ ВАЖНО:
+    // мы НЕ вызываем nextRound автоматически
+    // UI решает когда продолжить
+
+    this.emit("awaitNextRound", this.game.getState());
+  }
+
+  // =========================
+  // NEXT ROUND (manual trigger)
+  // =========================
+  async nextRound() {
+    this.rounds.next();
+
+    if (this.game.isGameEnded()) {
+      this.endGame();
+      return;
+    }
+
+    await this.startRound();
+  }
+
+  // =========================
+  // END GAME
+  // =========================
+  endGame() {
+    this.timer.clear();
+
+    this.game.endGame();
+
+    this.emit("gameEnded", this.game.getState());
+  }
 }
