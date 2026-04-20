@@ -31,33 +31,14 @@ export class MapOverviewUI {
 
  render(round) {
   if (!this.map) return;
-
   const guessObj = round?.guesses?.[0];
   const guess = guessObj?.guess;
   const actual = round?.actualLocation;
-
   if (!guess || !actual) return;
-
   this.clear();
-
   const playerId = guessObj?.playerId || "p1";
-
-  const playerColor = this.uiBuilder.getPlayerColor(playerId);
-  const actualColor = this.uiBuilder.getActualColor();
-
-  const guessMarker = this.adapter.createMarker(this.map, guess, {
-   color: playerColor,
-   size: 20
-  });
-
-  const actualMarker = this.adapter.createMarker(this.map, actual, {
-   color: actualColor,
-   size: 30
-  });
-
   this.fitToPoints([guess, actual]);
-
-  this.markers.push(guessMarker, actualMarker);
+  this.addPlayerResult(guess, actual, playerId)
  }
 
  // =========================
