@@ -1,186 +1,119 @@
-export class MapOverviewUI {
- constructor({ adapter, element, uiBuilder }) {
-  this.adapter = adapter;
-  this.uiBuilder = uiBuilder;
+export class MapAdapter {
+ constructor() {}
 
-  this.element = element;
+ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
+  if (!element) throw new Error("Map container missing");
 
-  this.map = null;
-
-  this.markers = [];
-  this.lines = [];
+  return new google.maps.Map(element, {
+   center,
+   zoom,
+   disableDefaultUI: true
+  });
  }
 
- // =========================
- // INIT
- // =========================
+ createMarker(map, { lat, lng }, options = {}) {
+  const {
+   color = "#ff4d4d",
+   size = 20
+  } = options;
 
- init() {
-  if (!this.element) return;
+  const radius = size === 30 ? 7 : 6;
 
-  this.map = this.adapter.createMap(this.element, {
-   zoom: 2
+  const svg = `
+  <svg width="${size}" height="${size}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10" cy="10" r="${radius}" fill="${color}" opacity="0.9"/>
+    <circle cx="10" cy="10" r="${radius + 3}" stroke="${color}" stroke-width="2" fill="none" opacity="0.4"/>
+  </svg>`;
+
+  return new google.maps.Marker({
+   position: { lat, lng },
+   map,
+   icon: {
+    url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(size, size),
+    anchor: new google.maps.Point(size / 2, size / 2)
+   },
+   optimized: false
+  });
+ }
+
+ removeMarker(marker) {
+  marker?.setMap(null);
+ }
+
+ createPolyline(map, path, options = {}) {
+  const { color = "#ff4d4d" } = options;
+
+  return new google.maps.Polyline({
+   path,
+   geodesic: true,
+   strokeColor: color,
+   strokeOpacity: 1,
+   strokeWeight: 2,
+   map
   });
  }
 
  // =========================
- // RENDER ROUND
+ // 🌈 GRADIENT LINE
  // =========================
 
- render(round) {
-  if (!this.map) return;
+ createGradientPolyline(map, path, fromColor, toColor, steps = 12) {
+  const segments = [];
 
-  const guessObj = round?.guesses?.[0];
-  const guess = guessObj?.guess;
-  const actual = round?.actualLocation;
+  for (let i = 0; i < steps; i++) {
+   const t1 = i / steps;
+   const t2 = (i + 1) / steps;
 
-  if (!guess || !actual) return;
+   const p1 = this._interpolate(path[0], path[1], t1);
+   const p2 = this._interpolate(path[0], path[1], t2);
 
-  this.clear();
+   const color = this._mixColor(fromColor, toColor, t1);
 
-  const playerId = guessObj?.playerId || "p1";
+   const line = new google.maps.Polyline({
+    path: [p1, p2],
+    geodesic: true,
+    strokeColor: color,
+    strokeOpacity: 1,
+    strokeWeight: 3,
+    map
+   });
 
-  const playerColor =
-   this.uiBuilder?.getPlayerColor?.(playerId) ?? "#ff4d4d";
+   segments.push(line);
+  }
 
-  const actualColor =
-   this.uiBuilder?.getActualColor?.() ?? "#9aa0a6";
-
-  // =========================
-  // MARKERS
-  // =========================
-
-  const guessMarker = this.adapter.createMarker(
-   this.map,
-   guess,
-   {
-    color: playerColor,
-    size: 20
-   }
-  );
-
-  const actualMarker = this.adapter.createMarker(
-   this.map,
-   actual,
-   {
-    color: actualColor,
-    size: 30
-   }
-  );
-
-  // =========================
-  // LINE
-  // =========================
-
-  const line = this.adapter.createPolyline(
-   this.map,
-   [guess, actual],
-   {
-    color: playerColor
-   }
-  );
-
-  // =========================
-  // CAMERA (НОВАЯ ЛОГИКА ВНУТРИ UI)
-  // =========================
-
-  this.fitToPoints([guess, actual]);
-
-  this.markers.push(guessMarker, actualMarker);
-  this.lines.push(line);
-
-  setTimeout(() => {
-   google.maps.event.trigger(this.map, "resize");
-  }, 100);
+  return segments;
  }
 
  // =========================
- // CAMERA LOGIC (NO GOOGLE API COUPLING)
+ // HELPERS
  // =========================
 
- fitToPoints(points) {
-  if (!this.map || !points?.length) return;
-  if (points.length < 2) return;
-
-  const [a, b] = points;
-
-  const center = {
-   lat: (a.lat + b.lat) / 2,
-   lng: (a.lng + b.lng) / 2
+ _interpolate(a, b, t) {
+  return {
+   lat: a.lat + (b.lat - a.lat) * t,
+   lng: a.lng + (b.lng - a.lng) * t
   };
-
-  const distance = this._distance(a, b);
-
-  let zoom = 4;
-
-  if (distance < 10) zoom = 6;
-  else if (distance < 50) zoom = 5;
-  else if (distance < 200) zoom = 4;
-  else if (distance < 1000) zoom = 3;
-  else zoom = 2;
-
-  this.map.setCenter(center);
-  this.map.setZoom(zoom);
  }
 
- // =========================
- // DISTANCE (PURE)
- // =========================
+ _mixColor(c1, c2, t) {
+  const a = this._hexToRgb(c1);
+  const b = this._hexToRgb(c2);
 
- _distance(a, b) {
-  const R = 6371;
+  const r = Math.round(a.r + (b.r - a.r) * t);
+  const g = Math.round(a.g + (b.g - a.g) * t);
+  const bl = Math.round(a.b + (b.b - a.b) * t);
 
-  const dLat = (b.lat - a.lat) * Math.PI / 180;
-  const dLng = (b.lng - a.lng) * Math.PI / 180;
-
-  const x =
-   Math.sin(dLat / 2) ** 2 +
-   Math.cos(a.lat * Math.PI / 180) *
-   Math.cos(b.lat * Math.PI / 180) *
-   Math.sin(dLng / 2) ** 2;
-
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  return `rgb(${r},${g},${bl})`;
  }
 
- // =========================
- // CLEAR
- // =========================
+ _hexToRgb(hex) {
+  const h = hex.replace("#", "");
 
- clear() {
-  this.markers.forEach(m => this.adapter.removeMarker(m));
-  this.lines.forEach(l => l.setMap(null));
-
-  this.markers = [];
-  this.lines = [];
- }
-
- // =========================
- // MULTIPLAYER HOOK
- // =========================
-
- addPlayerResult({ guess, actual, playerId }) {
-  const color =
-   this.uiBuilder?.getPlayerColor?.(playerId) ?? "#ff4d4d";
-
-  const guessMarker = this.adapter.createMarker(
-   this.map,
-   guess,
-   { color, size: 20 }
-  );
-
-  const actualMarker = this.adapter.createMarker(
-   this.map,
-   actual,
-   { color: "#9aa0a6", size: 30 }
-  );
-
-  const line = this.adapter.createPolyline(
-   this.map,
-   [guess, actual],
-   { color }
-  );
-
-  this.markers.push(guessMarker, actualMarker);
-  this.lines.push(line);
+  return {
+   r: parseInt(h.slice(0, 2), 16),
+   g: parseInt(h.slice(2, 4), 16),
+   b: parseInt(h.slice(4, 6), 16)
+  };
  }
 }
