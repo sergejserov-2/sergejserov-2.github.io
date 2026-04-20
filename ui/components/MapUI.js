@@ -44,60 +44,51 @@ export class MapUI {
  // RESIZE
  // =========================
 
-initResize() {
- const handle = document.querySelector(".resize-handle");
- if (!handle) return;
+ initResize() {
+  const handle = this.mapElement
+   ?.parentElement
+   ?.querySelector(".resize-handle");
 
- let startX, startY, startW, startH;
+  if (!handle) return;
 
- handle.addEventListener("mousedown", (e) => {
-  e.preventDefault();
+  let startX, startY, startW, startH;
 
-  const wrapper = this.mapElement.parentElement;
+  handle.addEventListener("mousedown", (e) => {
+   e.preventDefault();
 
-  const rect = wrapper.getBoundingClientRect();
+   const wrapper = this.mapElement.parentElement;
+   const rect = wrapper.getBoundingClientRect();
 
-  startX = e.clientX;
-  startY = e.clientY;
+   startX = e.clientX;
+   startY = e.clientY;
+   startW = rect.width;
+   startH = rect.height;
 
-  startW = rect.width;
-  startH = rect.height;
+   const onMove = (e) => {
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
 
-  const onMove = (e) => {
-   const dx = e.clientX - startX;
-   const dy = e.clientY - startY;
+    const newWidth = Math.max(200, startW + dx);
+    const newHeight = Math.max(200, startH - dy);
 
-   const newWidth = Math.max(200, startW + dx);
+    wrapper.style.width = newWidth + "px";
+    wrapper.style.height = newHeight + "px";
 
-   // ключ: invert Y, чтобы "низ был якорем"
-   const newHeight = Math.max(200, startH - dy);
+    this.mapElement.style.width = "100%";
+    this.mapElement.style.height = "100%";
 
-   wrapper.style.width = newWidth + "px";
-   wrapper.style.height = newHeight + "px";
+    this.adapter.triggerResize?.(this.map);
+   };
 
-   // карта всегда заполняет контейнер
-   this.mapElement.style.width = "100%";
-   this.mapElement.style.height = "100%";
+   const onUp = () => {
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
+   };
 
-   // важно: чтобы Google Maps не глючил при ресайзе
-   if (this.map && this.adapter?.triggerResize) {
-    this.adapter.triggerResize(this.map);
-   }
-
-   if (this.overviewMap && this.adapter?.triggerResize) {
-    this.adapter.triggerResize(this.overviewMap);
-   }
-  };
-
-  const onUp = () => {
-   window.removeEventListener("mousemove", onMove);
-   window.removeEventListener("mouseup", onUp);
-  };
-
-  window.addEventListener("mousemove", onMove);
-  window.addEventListener("mouseup", onUp);
- });
-}
+   window.addEventListener("mousemove", onMove);
+   window.addEventListener("mouseup", onUp);
+  });
+ }
 
  // =========================
  // MARKERS
@@ -131,6 +122,10 @@ initResize() {
   this.isLocked = false;
  }
 
+ // =========================
+ // OVERVIEW
+ // =========================
+
  renderOverview(round) {
   if (!this.overviewMap) return;
 
@@ -149,10 +144,18 @@ initResize() {
    actual
   ]);
 
-  this.adapter.fitToMarkers(this.overviewMap, [guessMarker, actualMarker]);
+  this.adapter.fitToMarkers(this.overviewMap, [
+   guessMarker,
+   actualMarker
+  ]);
 
   this.overviewMarkers.push(guessMarker, actualMarker);
   this.overviewLines.push(line);
+ }
+
+ refreshOverview() {
+  if (!this.overviewMap) return;
+  google.maps.event.trigger(this.overviewMap, "resize");
  }
 
  clearOverview() {
