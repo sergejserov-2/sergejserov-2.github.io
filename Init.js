@@ -103,6 +103,7 @@ export async function init() {
   staticUI,
   uiBuilder,
   streetViewUI
+  mapUI
  });
 
  // =========================
