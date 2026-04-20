@@ -36,7 +36,6 @@ export class MapUI {
    };
 
    this.lastGuessPoint = point;
-
    this.placeGuessMarker(point);
   });
 
@@ -44,7 +43,7 @@ export class MapUI {
  }
 
  // =========================
- // BINDINGS
+ // BIND
  // =========================
 
  bindGuess(callback) {
@@ -64,7 +63,114 @@ export class MapUI {
  }
 
  // =========================
- // RESIZE
+ // MARKERS
+ // =========================
+
+ placeGuessMarker(point) {
+  if (!this.map || !point) return;
+
+  this.clearGuessMarker();
+
+  this.guessMarker = this.adapter.createMarker(
+   this.map,
+   point,
+   "guess",
+   { color: "#ff4d4d" }
+  );
+ }
+
+ clearGuessMarker() {
+  if (!this.guessMarker) return;
+
+  this.adapter.removeMarker(this.guessMarker);
+  this.guessMarker = null;
+ }
+
+ // =========================
+ // STATE
+ // =========================
+
+ reset() {
+  this.unlock();
+  this.clearGuessMarker();
+  this.clearOverview();
+  this.lastGuessPoint = null;
+ }
+
+ lock() {
+  this.isLocked = true;
+ }
+
+ unlock() {
+  this.isLocked = false;
+ }
+
+ // =========================
+ // OVERVIEW (FINAL FIXED)
+ // =========================
+
+ renderOverview(round) {
+  if (!this.overviewMap) return;
+
+  const guess = round?.guesses?.[0]?.guess;
+  const actual = round?.actualLocation;
+
+  if (!guess || !actual) return;
+
+  this.clearOverview();
+
+  const guessMarker = this.adapter.createMarker(
+   this.overviewMap,
+   guess,
+   "guess",
+   { color: "#ff4d4d" }
+  );
+
+  const actualMarker = this.adapter.createMarker(
+   this.overviewMap,
+   actual,
+   "actual"
+  );
+
+  const line = this.adapter.createPolyline(
+   this.overviewMap,
+   [guess, actual],
+   { color: "#ff4d4d" }
+  );
+
+  this.adapter.fitToMarkers(this.overviewMap, [
+   guessMarker,
+   actualMarker
+  ]);
+
+  this.overviewMarkers.push(guessMarker, actualMarker);
+  this.overviewLines.push(line);
+
+  // стабилизация карты
+  setTimeout(() => {
+   google.maps.event.trigger(this.overviewMap, "resize");
+  }, 100);
+ }
+
+ // =========================
+ // CLEANUP
+ // =========================
+
+ clearOverview() {
+  this.overviewLines.forEach(l => l.setMap(null));
+  this.overviewMarkers.forEach(m => this.adapter.removeMarker(m));
+
+  this.overviewLines = [];
+  this.overviewMarkers = [];
+ }
+
+ refreshOverview() {
+  if (!this.overviewMap) return;
+  google.maps.event.trigger(this.overviewMap, "resize");
+ }
+
+ // =========================
+ // RESIZE (UNCHANGED)
  // =========================
 
  initResize() {
@@ -91,18 +197,11 @@ export class MapUI {
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
 
-    const newWidth = Math.max(200, startW + dx);
-    const newHeight = Math.max(200, startH - dy);
-
-    wrapper.style.width = newWidth + "px";
-    wrapper.style.height = newHeight + "px";
-
-    this.mapElement.style.width = "100%";
-    this.mapElement.style.height = "100%";
+    wrapper.style.width = Math.max(200, startW + dx) + "px";
+    wrapper.style.height = Math.max(200, startH - dy) + "px";
 
     this.adapter.triggerResize?.(this.map);
    };
-
    const onUp = () => {
     window.removeEventListener("mousemove", onMove);
     window.removeEventListener("mouseup", onUp);
@@ -111,123 +210,5 @@ export class MapUI {
    window.addEventListener("mousemove", onMove);
    window.addEventListener("mouseup", onUp);
   });
- }
-
- // =========================
- // MARKERS (GAME MAP)
- // =========================
-
- placeGuessMarker(point) {
-  if (!this.map || !point) return;
-
-  this.clearGuessMarker();
-
-  this.guessMarker = this.adapter.createMarker(this.map, point);
- }
-
- clearGuessMarker() {
-  if (!this.guessMarker) return;
-
-  this.adapter.removeMarker(this.guessMarker);
-  this.guessMarker = null;
- }
-
- // =========================
- // STATE
- // =========================
-
- reset() {
-  this.unlock();
-
-  this.clearGuessMarker();
-  this.clearOverview();
-
-  this.lastGuessPoint = null;
- }
-
- lock() {
-  this.isLocked = true;
- }
-
- unlock() {
-  this.isLocked = false;
- }
-
- // =========================
- // OVERVIEW (SYNC)
- // =========================
-
- renderOverview(round) {
-  if (!this.overviewMap) return;
-
-  const guess = round?.guesses?.[0]?.guess;
-  const actual = round?.actualLocation;
-
-  if (!guess || !actual) return;
-
-  this.clearOverview();
-
-  const guessMarker = this.adapter.createMarker(this.overviewMap, guess);
-  const actualMarker = this.adapter.createMarker(this.overviewMap, actual);
-
-  const line = this.adapter.createPolyline(this.overviewMap, [
-   guess,
-   actual
-  ]);
-
-  this.adapter.fitToMarkers(this.overviewMap, [
-   guessMarker,
-   actualMarker
-  ]);
-
-  this.overviewMarkers.push(guessMarker, actualMarker);
-  this.overviewLines.push(line);
- }
-
- // =========================
- // OVERVIEW (ASYNC - 🔥 НОВОЕ)
- // =========================
-
- async renderOverviewAsync(round) {
-  if (!this.overviewMap) return;
-
-  const guess = round?.guesses?.[0]?.guess;
-  const actual = round?.actualLocation;
-
-  if (!guess || !actual) return;
-  this.clearOverview();
-
-  const guessMarker = this.adapter.createMarker(this.overviewMap, guess);
-  const actualMarker = this.adapter.createMarker(this.overviewMap, actual);
-
-  const line = this.adapter.createPolyline(this.overviewMap, [
-   guess,
-   actual
-  ]);
-
-  this.adapter.fitToMarkers(this.overviewMap, [
-   guessMarker,
-   actualMarker
-  ]);
-
-  this.overviewMarkers.push(guessMarker, actualMarker);
-  this.overviewLines.push(line);
-
-  // 🔥 Ждём стабилизацию карты
-  await new Promise(resolve => setTimeout(resolve, 300));
- }
-
- refreshOverview() {
-  if (!this.overviewMap) return;
-
-  google.maps.event.trigger(this.overviewMap, "resize");
- }
-
- clearOverview() {
-  this.overviewLines.forEach(l => l.setMap(null));
-  this.overviewMarkers.forEach(m => this.adapter.removeMarker(m));
-
-  this.overviewLines = [];
-  this.overviewMarkers = [];
  }
 }
