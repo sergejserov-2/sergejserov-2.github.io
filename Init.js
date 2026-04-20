@@ -62,7 +62,6 @@ export async function init() {
    game,
    generator,
    scoring,
-   area
   });
 
   // =========================
