@@ -1,9 +1,10 @@
 export class MapOverviewUI {
- constructor({ adapter, element, uiBuilder }) {
+ constructor({ adapter, overviewElement, uiBuilder }) {
   this.adapter = adapter;
   this.uiBuilder = uiBuilder;
 
-  this.element = element;
+  this.overviewElement = overviewElement;
+
   this.map = null;
 
   this.markers = [];
@@ -11,9 +12,9 @@ export class MapOverviewUI {
  }
 
  init() {
-  if (!this.element) return;
+  if (!this.overviewElement) return;
 
-  this.map = this.adapter.createMap(this.element, { zoom: 2 });
+  this.map = this.adapter.createMap(this.overviewElement, { zoom: 2 });
  }
 
  render(round) {
@@ -28,23 +29,35 @@ export class MapOverviewUI {
   this.clear();
 
   const playerId = guessObj?.playerId || "p1";
-  const color = this.uiBuilder.getPlayerColor(playerId);
 
-  const guessMarker = this.adapter.createMarker(this.map, guess, {
-   color,
-   size: 20
-  });
+  const playerColor =
+   this.uiBuilder?.getPlayerColor?.(playerId) ?? "#ff4d4d";
 
-  const actualMarker = this.adapter.createMarker(this.map, actual, {
-   color: this.uiBuilder.getActualColor(),
-   size: 30
-  });
+  const actualColor =
+   this.uiBuilder?.getActualColor?.() ?? "#9aa0a6";
 
-  const line = this.adapter.createPolyline(this.map, [guess, actual], {
-   color
-  });
+  const guessMarker = this.adapter.createMarker(
+   this.map,
+   guess,
+   { color: playerColor, size: 20 }
+  );
 
-  this.adapter.fitToMarkers(this.map, [guessMarker, actualMarker]);
+  const actualMarker = this.adapter.createMarker(
+   this.map,
+   actual,
+   { color: actualColor, size: 30 }
+  );
+
+  const line = this.adapter.createPolyline(
+   this.map,
+   [guess, actual],
+   { color: playerColor }
+  );
+
+  this.adapter.fitToMarkers(this.map, [
+   guessMarker,
+   actualMarker
+  ]);
 
   this.markers.push(guessMarker, actualMarker);
   this.lines.push(line);
