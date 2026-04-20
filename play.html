@@ -13,17 +13,19 @@
 <div class="game">
 
     <!-- =========================
-        SCREENS LAYER (ScreenManager)
+        SCREENS (OVERLAY LAYER)
     ========================== -->
     <div class="screens">
 
-        <!-- LOADING SCREEN -->
+        <!-- LOADING -->
         <div class="loading-screen">
             Загрузка...
         </div>
 
-        <!-- RESULT SCREEN -->
-        <div class="guess-overview">
+        <!-- =========================
+            ROUND RESULT
+        ========================== -->
+        <div class="guess-overview round-result">
 
             <div class="score-view">
 
@@ -33,10 +35,22 @@
                     <div class="score-progress"></div>
                 </div>
 
-                <div class="score-text">
-                    <p class="distance-text"></p>
-                    <p class="score-text-value"></p>
-                </div>
+                <div class="score-text"></div>
+
+            </div>
+
+        </div>
+
+        <!-- =========================
+            GAME RESULT
+        ========================== -->
+        <div class="guess-overview game-result">
+
+            <div class="score-view">
+
+                <div class="overview-map"></div>
+
+                <div class="score-text"></div>
 
                 <div class="game-end-buttons">
                     <div class="button play-again-button">Играть снова</div>
@@ -50,60 +64,34 @@
     </div>
 
     <!-- =========================
-        GAMEPLAY LAYER (StaticUI + Map + StreetView)
+        GAME SCENE
     ========================== -->
     <div class="game-scene">
 
-        <!-- STREET VIEW -->
+        <!-- STREETVIEW -->
         <div class="streetview"></div>
 
-        <!-- HUD (StaticUI ONLY) -->
+        <!-- HUD -->
         <div class="hud">
-
-            <div class="round">
-                Раунд: <b>0/0</b>
-            </div>
-
-            <div class="total-score">
-                Счёт: <b>0</b>
-            </div>
-
-            <div class="time-left">
-                Время: <b>0</b>
-            </div>
-
-            <div class="moves-left">
-                Шагов: <b>0</b>
-            </div>
-
-            <!-- PROGRESS BAR (belongs to HUD now) -->
-            <div class="score-progress-bar">
-                <div class="score-progress"></div>
-            </div>
-
+            <div class="round">Раунд: <b>0/0</b></div>
+            <div class="total-score">Счёт: <b>0</b></div>
+            <div class="time-left">Время: <b>0</b></div>
+            <div class="moves-left">Шагов: <b>0</b></div>
         </div>
 
-        <!-- MAP LAYER -->
+        <!-- MAP -->
         <div class="map-wrapper">
-
             <div class="map"></div>
-
             <div class="resize-handle"></div>
-
-            <div class="guess-button" id="makeGuess">
-                Сделать выбор
-            </div>
-
+            <div class="guess-button" id="makeGuess">Сделать выбор</div>
         </div>
 
     </div>
 
 </div>
 
-<!-- BOOTSTRAP -->
 <script type="module" src="./Init.js"></script>
 
-<!-- GOOGLE MAPS -->
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAJfRzZ-GGIV3iCrCVkTsYKDNh09kenzNM&libraries=geometry"></script>
 
 </body>
