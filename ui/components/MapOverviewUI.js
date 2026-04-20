@@ -122,11 +122,14 @@ export class MapOverviewUI {
    size: 30
   });
 
-  const line = this.adapter.createPolyline(this.map, [guess, actual], {
-   color
-  });
+   const segments = this.adapter.createGradientPolyline(
+   this.map,
+   [guess, actual],
+   playerColor,
+   actualColor
+  );
 
   this.markers.push(guessMarker, actualMarker);
-  this.lines.push(line);
+  this.lines.push(...segments);
  }
 }
