@@ -21,6 +21,9 @@ export class UIFlow {
 
  bind() {
 
+  // =========================
+  // ROUND START
+  // =========================
   this.gameFlow.on("roundStarted", (vm) => {
    this.staticUI.stopRoundTimer();
    this.screenManager.show("round");
@@ -33,10 +36,12 @@ export class UIFlow {
    );
 
    const loc = vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
-
    if (loc) this.streetViewUI?.setLocation(loc);
   });
 
+  // =========================
+  // ROUND END (RESULT)
+  // =========================
   this.gameFlow.on("roundEnded", (vm) => {
    const round = vm?.rounds?.[vm.currentRoundIndex];
    if (!round) return;
@@ -50,10 +55,30 @@ export class UIFlow {
    );
   });
 
-  this.gameFlow.on("roundEndTimerStarted", ({ duration, startTime }) => {
-  this.staticUI.startRoundTimer(duration, startTime);
-});
+  // =========================
+  // GAME TIMER (ГЕЙМПЛЕЙ)
+  // =========================
+  this.gameFlow.on("timerTick", (t) => {
+   this.staticUI.updateTimer?.(t);
+  });
 
+  // =========================
+  // MOVES
+  // =========================
+  this.gameFlow.on("movesUpdated", (m) => {
+   this.staticUI.updateMoves?.(m);
+  });
+
+  // =========================
+  // ROUND END TIMER (UI DELAY)
+  // =========================
+  this.gameFlow.on("roundEndTimerStarted", ({ duration, startTime }) => {
+   this.staticUI.startRoundTimer(duration, startTime);
+  });
+
+  // =========================
+  // INPUT LOCK
+  // =========================
   this.gameFlow.on("inputLocked", () => {
    this.staticUI.lockInput?.();
    this.mapWrapperUI.lock();
@@ -64,6 +89,16 @@ export class UIFlow {
    this.mapWrapperUI.unlock();
   });
 
+  // =========================
+  // NEXT ROUND HOOK
+  // =========================
+  this.gameFlow.on("awaitNextRound", () => {
+   this.screenManager.show("roundResult");
+  });
+
+  // =========================
+  // GAME END
+  // =========================
   this.gameFlow.on("gameEnded", (vm) => {
    this.screenManager.show("gameResult");
 
