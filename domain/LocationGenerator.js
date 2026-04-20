@@ -17,8 +17,7 @@ export class LocationGenerator {
    const point = Geometry.getRandomPointInPolygon(polygon);
 
    try {
-    const result =
-     await this.mapAdapter.getStreetViewMeta(point);
+    const result = await this.mapAdapter.getStreetViewMeta(point);
 
     if (result?.valid && result?.location) {
      return result.location;
@@ -29,8 +28,6 @@ export class LocationGenerator {
    }
   }
 
-  throw new Error(
-   "LocationGenerator: failed to find valid location"
-  );
+  throw new Error("LocationGenerator: failed to find valid location");
  }
 }
