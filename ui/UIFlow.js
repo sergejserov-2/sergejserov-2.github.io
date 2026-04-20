@@ -19,12 +19,17 @@ export class UIFlow {
    this.staticUI.updateHUD(this.uiBuilder.formatHUD(vm));
   });
 
-  this.gameFlow.on("inputLocked", () => {});
+  this.gameFlow.on("inputLocked", () => {
+   this.staticUI.lockInput?.();
+  });
 
-  this.gameFlow.on("inputUnlocked", () => {});
+  this.gameFlow.on("inputUnlocked", () => {
+   this.staticUI.unlockInput?.();
+  });
 
   this.gameFlow.on("roundEnded", (vm) => {
    this.screenManager.show("roundResult");
+
    this.staticUI.showRoundResult(
     this.uiBuilder.formatRoundResult(vm)
    );
@@ -32,6 +37,7 @@ export class UIFlow {
 
   this.gameFlow.on("gameEnded", (vm) => {
    this.screenManager.show("gameResult");
+
    this.staticUI.showGameResult(
     this.uiBuilder.formatGameResult(vm)
    );
