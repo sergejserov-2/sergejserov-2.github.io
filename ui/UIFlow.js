@@ -21,12 +21,8 @@ export class UIFlow {
     this.uiBuilder.formatGameVM(vm)
    );
 
-   const location =
-    vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
-
-   if (location) {
-    this.streetViewUI?.setLocation(location);
-   }
+   const loc = vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
+   if (loc) this.streetViewUI?.setLocation(loc);
   });
 
   this.gameFlow.on("roundEnded", (vm) => {
