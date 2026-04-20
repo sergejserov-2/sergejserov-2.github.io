@@ -18,72 +18,62 @@ export class MapAdapter {
  }
 
  // =========================
- // MARKERS
+ // MARKERS (ONLY ADVANCED MARKERS)
  // =========================
 
- createMarker(map, { lat, lng }, type = "guess", meta = {}) {
+ createMarker(map, { lat, lng }, type = "guess") {
   const position = { lat, lng };
 
-  const el = this._createMarkerElement(type, meta);
+  const content = this._createMarkerElement(type);
 
-  // AdvancedMarker
-  if (google.maps.marker?.AdvancedMarkerElement) {
-   const marker = new google.maps.marker.AdvancedMarkerElement({
-    map,
-    position,
-    content: el
-   });
-
-   this._animateMarker(el);
-   return marker;
-  }
-
-  // Legacy Marker fallback
-  const marker = new google.maps.Marker({
+  const marker = new google.maps.marker.AdvancedMarkerElement({
+   map,
    position,
-   map
+   content
   });
 
-  this._animateMarker(el);
+  this._animateMarker(content);
+
   return marker;
  }
 
  // =========================
- // VISUAL RULES (EXTENSIBLE)
+ // VISUAL MARKERS
  // =========================
 
- _createMarkerElement(type, meta = {}) {
+ _createMarkerElement(type) {
   const el = document.createElement("div");
 
-  // базовые стили
   el.style.borderRadius = "50%";
   el.style.transform = "scale(0)";
-  el.style.transition = "transform 0.25s ease";
+  el.style.transition = "transform 0.2s ease-out";
 
   // =========================
-  // ACTUAL (правильная точка)
+  // GUESS (player)
   // =========================
-  if (type === "actual") {
-   el.style.width = "18px";   // 1.5x
-   el.style.height = "18px";
-   el.style.background = "#9aa0a6"; // серый
-   el.style.boxShadow = "0 0 8px rgba(154,160,166,0.5)";
+  if (type === "guess") {
+   el.style.width = "12px";
+   el.style.height = "12px";
+   el.style.background = "#ff4d4d";
+   el.style.boxShadow = "0 0 10px rgba(255,77,77,0.6)";
   }
 
   // =========================
-  // GUESS (игрок)
+  // ACTUAL (correct answer)
   // =========================
-  if (type === "guess") {
-   const color = meta.color || "#ff4d4d";
-
-   el.style.width = "12px";
-   el.style.height = "12px";
-   el.style.background = color;
-   el.style.boxShadow = `0 0 10px ${color}66`;
+  if (type === "actual") {
+   el.style.width = "18px"; // 1.5x
+   el.style.height = "18px";
+   el.style.background = "#9aa0a6";
+   el.style.boxShadow = "0 0 10px rgba(154,160,166,0.6)";
   }
 
   return el;
  }
+
+ // =========================
+ // ANIMATION
+ // =========================
 
  _animateMarker(el) {
   requestAnimationFrame(() => {
@@ -98,16 +88,12 @@ export class MapAdapter {
  removeMarker(marker) {
   if (!marker) return;
 
-  if (marker.setMap) {
-   marker.setMap(null);
-   return;
-  }
-
+  // AdvancedMarkerElement cleanup
   marker.map = null;
  }
 
  // =========================
- // POLYLINE (MULTIPLAYER READY)
+ // POLYLINE
  // =========================
 
  createPolyline(map, path, { color = "#ff4d4d" } = {}) {
@@ -122,7 +108,7 @@ export class MapAdapter {
  }
 
  // =========================
- // FIT
+ // FIT BOUNDS
  // =========================
 
  fitToMarkers(map, markers) {
@@ -133,8 +119,9 @@ export class MapAdapter {
 
    let pos = null;
 
-   if (m.getPosition) pos = m.getPosition();
-   if (!pos && m.position) pos = m.position;
+   if (m.position) {
+    pos = m.position;
+   }
 
    if (!pos) return;
 
@@ -183,7 +170,8 @@ export class MapAdapter {
       status === "OK" &&
       data?.location &&
       data?.location?.latLng;
-      resolve({
+
+     resolve({
       valid,
       location: valid
        ? {
