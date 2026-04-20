@@ -7,6 +7,7 @@ export class MapOverviewUI {
   this.element = element;
 
   this.map = null;
+
   this.markers = [];
   this.lines = [];
  }
@@ -25,7 +26,7 @@ export class MapOverviewUI {
  }
 
  // =========================
- // RENDER
+ // RENDER ROUND
  // =========================
 
  render(round) {
@@ -54,6 +55,7 @@ export class MapOverviewUI {
    size: 30
   });
 
+  // обычная линия (fallback / базовый слой)
   const line = this.adapter.createPolyline(this.map, [guess, actual], {
    color: playerColor
   });
@@ -65,7 +67,7 @@ export class MapOverviewUI {
  }
 
  // =========================
- // CAMERA (NO GOOGLE DEPENDENCY)
+ // CAMERA (PURE UI LOGIC)
  // =========================
 
  fitToPoints(points) {
@@ -106,23 +108,24 @@ export class MapOverviewUI {
  }
 
  // =========================
- // MULTI
+ // MULTIPLAYER RESULT
  // =========================
 
  addPlayerResult({ guess, actual, playerId }) {
-  const color = this.uiBuilder.getPlayerColor(playerId);
+  const playerColor = this.uiBuilder.getPlayerColor(playerId);
+  const actualColor = this.uiBuilder.getActualColor();
 
   const guessMarker = this.adapter.createMarker(this.map, guess, {
-   color,
+   color: playerColor,
    size: 20
   });
 
   const actualMarker = this.adapter.createMarker(this.map, actual, {
-   color: this.uiBuilder.getActualColor(),
+   color: actualColor,
    size: 30
   });
 
-   const segments = this.adapter.createGradientPolyline(
+  const segments = this.adapter.createGradientPolyline(
    this.map,
    [guess, actual],
    playerColor,
