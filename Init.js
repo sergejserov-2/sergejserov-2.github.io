@@ -6,24 +6,28 @@ import { Scoring } from "./domain/Scoring.js";
 import { LocationGenerator } from "./domain/LocationGenerator.js";
 import { Geometry } from "./domain/math/Geometry.js";
 import { Difficulty } from "./domain/math/Difficulty.js";
-
 import { AreaRegistry } from "./domain/AreaRegistry.js";
 
 import { MapAdapter } from "./adapters/MapAdapter.js";
+
+import { MapUI } from "./ui/components/MapUI.js";
+import { StreetViewUI } from "./ui/components/StreetViewUI.js";
+
+import { StaticUI } from "./ui/components/StaticUI.js";
+import { ScreenManager } from "./ui/components/ScreenManager.js";
 
 import { UIFlow } from "./ui/UIFlow.js";
 import { UIBuilder } from "./ui/UIBuilder.js";
 import { UIState } from "./ui/UIState.js";
 
-import { MapUI } from "./ui/components/MapUI.js";
-import { StreetViewUI } from "./ui/components/StreetViewUI.js";
-import { StaticUI } from "./ui/components/StaticUI.js";
-
-import { tweaks } from "./ui/tweaks.js";
-
 export async function init() {
+
+ // =========================
+ // 🧩 ENTER LOG
+ // =========================
+ console.log("INIT ENTER");
+
  try {
-  console.log("🚀 INIT ENTER");
 
   // =========================
   // ADAPTERS
@@ -33,11 +37,11 @@ export async function init() {
   // =========================
   // DOMAIN
   // =========================
+  const geometry = new Geometry();
+
   const area = AreaRegistry.get("europe");
 
-  const geometry = Geometry;
-
-  const difficulty = new Difficulty();
+  const difficulty = new Difficulty({ area });
 
   const scoring = new Scoring({
    geometry,
@@ -45,7 +49,8 @@ export async function init() {
   });
 
   const generator = new LocationGenerator({
-   mapAdapter
+   mapAdapter,
+   geometry
   });
 
   // =========================
@@ -55,21 +60,20 @@ export async function init() {
 
   const game = new Game({
    gameState,
+   scoring,
    players: ["p1"]
   });
 
   const gameFlow = new GameFlow({
    game,
    generator,
-   scoring
+   area
   });
 
-  // сохраняем runtime area внутри flow (контекст игры)
-  gameFlow.area = area;
+  // =========================
+  // UI LAYER
+  // =========================
 
-  // =========================
-  // UI
-  // =========================
   const mapUI = new MapUI({
    adapter: mapAdapter,
    mapElement: document.querySelector(".map"),
@@ -82,37 +86,50 @@ export async function init() {
   });
 
   const staticUI = new StaticUI({
-   element: document.querySelector(".ui")
+   hudElement: document.querySelector(".hud"),
+   mapElement: document.querySelector(".map"),
+   streetViewElement: document.querySelector(".streetview")
   });
 
-  new UIFlow({
+  const screenManager = new ScreenManager({
+   screensElement: document.querySelector(".screens")
+  });
+
+  const uiState = new UIState();
+  const uiBuilder = new UIBuilder();
+
+  const uiFlow = new UIFlow({
    gameFlow,
    mapUI,
    streetViewUI,
    staticUI,
-   uiState: new UIState(),
-   uiBuilder: new UIBuilder()
+   screenManager,
+   uiState,
+   uiBuilder
   });
 
   // =========================
-  // INIT UI
+  // INIT UI COMPONENTS
   // =========================
   mapUI.init();
   streetViewUI.init();
-  tweaks();
 
   // =========================
-  // START
+  // START GAME
   // =========================
   await gameFlow.startGame();
 
-  console.log("🎮 INIT EXIT");
+  // =========================
+  // EXIT LOG
+  // =========================
+  console.log("INIT SUCCESS");
 
  } catch (err) {
+
+  // =========================
+  // ERROR LOG
+  // =========================
   console.error("💥 INIT ERROR:", err);
+
  }
 }
-
-init().catch(err => {
- console.error("💥 BOOTSTRAP CRASH:", err);
-});
