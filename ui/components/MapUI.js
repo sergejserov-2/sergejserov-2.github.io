@@ -193,9 +193,7 @@ export class MapUI {
    startW = rect.width;
    startH = rect.height;
 
-   d
-
-ocument.body.style.userSelect = "none";
+   document.body.style.userSelect = "none";
 
    window.addEventListener("mousemove", onMove);
    window.addEventListener("mouseup", onUp);
