@@ -1,13 +1,10 @@
 export class GameFlow {
- constructor({ game, generator, scoring }) {
+ constructor({ game, generator, area }) {
   this.game = game;
   this.generator = generator;
-  this.scoring = scoring;
+  this.area = area;
 
   this.listeners = {};
-
-  // runtime context (inject from init)
-  this.area = null;
  }
 
  on(event, fn) {
@@ -20,7 +17,8 @@ export class GameFlow {
 
  async startGame() {
   this.game.startGame();
-  this.emit("gameStarted");
+
+  this.emit("gameStarted", this.buildGameVM());
 
   await this.nextRound();
  }
@@ -30,10 +28,7 @@ export class GameFlow {
 
   this.game.startRound(location);
 
-  this.emit("roundStarted", {
-   round: this.game.state.getCurrentRound(),
-   actual: location
-  });
+  this.emit("roundStarted", this.buildRoundVM(location));
  }
 
  onGuess(playerId, point) {
@@ -41,49 +36,77 @@ export class GameFlow {
 
   this.emit("guessUpdated", {
    playerId,
-   guess: point
+   point
   });
  }
 
  finishGuess(playerId = "p1") {
-  const round = this.game.state.getCurrentRound();
-  if (!round) return;
+  const result = this.game.finishGuess(playerId);
+  if (!result) return;
 
-  const guess = this.game.state.getPlayerGuess(playerId);
-  if (!guess || guess.isFinished) return;
+  this.emit("guessFinished", this.buildResultVM(result));
 
-  const result = this.scoring.calculateResult({
-   guess: guess.guess,
-   actual: round.actualLocation,
-   area: this.area
-  });
-
-  guess.distance = result.distance;
-  guess.score = result.score;
-  guess.isFinished = true;
-
-  this.emit("guessFinished", {
-   result,
-   round
-  });
-
-  if (this.game.areAllPlayersFinished()) {
-   this.commitRound();
-  }
+  this._handleRoundEndWithDelay();
  }
 
- commitRound() {
-  this.game.commitRound();
+ _handleRoundEndWithDelay() {
+  this.emit("roundEndStarted");
 
-  this.emit("roundCommitted");
+  setTimeout(() => {
+   this.emit("roundEndFinished");
 
-  if (this.game.state.getState().status === "ended") {
-   this.emit("gameEnded");
-  }
+   this.game.commitRound();
+
+   if (this.game.isGameEnded()) {
+    this.emit("gameEnded", this.buildGameVM());
+   } else {
+    this.nextRound();
+   }
+  }, 3000);
  }
 
- async startNextRoundWithDelay(ms = 1200) {
-  await new Promise(r => setTimeout(r, ms));
-  await this.nextRound();
+ // =====================
+ // 🔥 VM CONTRACT LAYER
+ // =====================
+
+ buildRoundVM(actualLocation = null) {
+  const round = this.game.getCurrentRound();
+  const state = this.game.getState();
+
+  return {
+   type: "ROUND_VM",
+   index: round?.index ?? 0,
+   totalRounds: state.rounds.length + 1,
+   actualLocation,
+
+   // 🔥 PROGRESS (раундовый)
+   progress: (round?.index ?? 0) / Math.max(state.rounds.length + 1, 1)
+  };
+ }
+
+ buildResultVM(result) {
+  const round = this.game.getCurrentRound();
+
+  return {
+   type: "RESULT_VM",
+   distance: result.distance,
+   score: result.score,
+   roundIndex: round?.index ?? 0
+  };
+ }
+
+ buildGameVM() {
+  const state = this.game.getState();
+
+  return {
+   type: "GAME_VM",
+   status: state.status,
+   totalRounds: state.rounds.length,
+
+   // 🔥 PROGRESS (игровой)
+   progress: state.rounds.length > 0
+    ? state.currentRoundIndex / Math.max(state.rounds.length, 1)
+    : 0
+  };
  }
 }
