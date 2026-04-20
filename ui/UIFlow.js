@@ -25,86 +25,83 @@ export class UIFlow {
   // ROUND START
   // =========================
   this.gameFlow.on("roundStarted", (vm) => {
-   this.staticUI.stopRoundTimer();
-   this.screenManager.show("round");
+    this.staticUI.stopRoundTimer();
+    this.screenManager.show("round");
 
-   this.mapWrapperUI.reset();
-   this.mapOverviewUI.clear();
+    this.mapWrapperUI.reset();
+    this.mapOverviewUI.clear();
 
-   this.staticUI.updateHUD(
-    this.uiBuilder.formatGameVM(vm)
-   );
+    this.staticUI.updateHUD(
+      this.uiBuilder.formatGameVM(vm)
+    );
 
-   const loc = vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
-   if (loc) this.streetViewUI?.setLocation(loc);
+    const loc = vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
+    if (loc) this.streetViewUI?.setLocation(loc);
   });
 
   // =========================
-  // ROUND END (RESULT)
+  // ROUND END (RESULT DATA)
   // =========================
   this.gameFlow.on("roundEnded", (vm) => {
-   const round = vm?.rounds?.[vm.currentRoundIndex];
-   if (!round) return;
+    const round = vm?.rounds?.[vm.currentRoundIndex];
+    if (!round) return;
 
-   this.mapOverviewUI.render(round);
-
-   this.screenManager.show("roundResult");
-
-   this.staticUI.showRoundResult(
-    this.uiBuilder.formatRoundVM(vm)
-   );
+    this.mapOverviewUI.render(round);
   });
 
   // =========================
-  // GAME TIMER (ГЕЙМПЛЕЙ)
+  // UX PHASE (PAUSE CONTROL)
+  // =========================
+  this.gameFlow.on("roundResultShown", ({ state }) => {
+
+    this.screenManager.show("roundResult");
+
+    this.staticUI.showRoundResult(
+      this.uiBuilder.formatRoundVM(state)
+    );
+
+    // 🎬 UX PAUSE (единственное место задержки)
+    setTimeout(() => {
+      this.gameFlow.nextRound();
+    }, 10000);
+  });
+
+  // =========================
+  // GAME TIMER
   // =========================
   this.gameFlow.on("timerTick", (t) => {
-   this.staticUI.updateTimer?.(t);
+    this.staticUI.updateTimer?.(t);
   });
 
   // =========================
   // MOVES
   // =========================
   this.gameFlow.on("movesUpdated", (m) => {
-   this.staticUI.updateMoves?.(m);
-  });
-
-  // =========================
-  // ROUND END TIMER (UI DELAY)
-  // =========================
-  this.gameFlow.on("roundEndTimerStarted", ({ duration, startTime }) => {
-   this.staticUI.startRoundTimer(duration, startTime);
+    this.staticUI.updateMoves?.(m);
   });
 
   // =========================
   // INPUT LOCK
   // =========================
   this.gameFlow.on("inputLocked", () => {
-   this.staticUI.lockInput?.();
-   this.mapWrapperUI.lock();
+    this.staticUI.lockInput?.();
+    this.mapWrapperUI.lock();
   });
 
   this.gameFlow.on("inputUnlocked", () => {
-   this.staticUI.unlockInput?.();
-   this.mapWrapperUI.unlock();
-  });
-
-  // =========================
-  // NEXT ROUND HOOK
-  // =========================
-  this.gameFlow.on("awaitNextRound", () => {
-   this.screenManager.show("roundResult");
+    this.staticUI.unlockInput?.();
+    this.mapWrapperUI.unlock();
   });
 
   // =========================
   // GAME END
   // =========================
   this.gameFlow.on("gameEnded", (vm) => {
-   this.screenManager.show("gameResult");
+    this.screenManager.show("gameResult");
 
-   this.staticUI.showGameResult(
-    this.uiBuilder.formatGameResultVM(vm)
-   );
+    this.staticUI.showGameResult(
+      this.uiBuilder.formatGameResultVM(vm)
+    );
   });
  }
 }
