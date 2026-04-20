@@ -1,29 +1,21 @@
 export class ScreenManager {
- constructor({ screensElement }) {
-  this.screensElement = screensElement;
+ constructor({ root }) {
+  this.root = root;
 
-  this.loading = screensElement.querySelector(".loading-screen");
-  this.roundResult = screensElement.querySelector(".round-result");
-  this.gameResult = screensElement.querySelector(".game-result");
+  this.views = {
+   loading: root.querySelector(".loading-screen"),
+   round: root.querySelector(".game-scene"),
+   roundResult: root.querySelector(".round-result"),
+   gameResult: root.querySelector(".game-result")
+  };
  }
 
- setScreen(screen) {
-  [this.loading, this.roundResult, this.gameResult].forEach(el => {
-   if (el) el.style.display = "none";
+ show(name) {
+  Object.values(this.views).forEach(v => {
+   if (v) v.style.display = "none";
   });
 
-  switch (screen) {
-   case "loading":
-    if (this.loading) this.loading.style.display = "flex";
-    break;
-
-   case "result":
-    if (this.roundResult) this.roundResult.style.display = "flex";
-    break;
-
-   case "gameover":
-    if (this.gameResult) this.gameResult.style.display = "flex";
-    break;
-  }
+  const target = this.views[name];
+  if (target) target.style.display = "flex";
  }
 }
