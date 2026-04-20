@@ -101,10 +101,11 @@ export async function init() {
   uiBuilder
  });
 
- const mapOverviewUI = new MapOverviewUI({
+const mapOverviewUI = new MapOverviewUI({
   adapter: mapAdapter,
-  overviewElement: overviewMapEl,
+  element: overviewMapEl,
   uiBuilder
+});
  });
 
  const streetViewUI = new StreetViewUI({
