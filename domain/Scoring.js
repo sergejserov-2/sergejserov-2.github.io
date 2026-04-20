@@ -4,7 +4,7 @@ export class Scoring {
   this.difficulty = difficulty;
  }
 
- calculateResult({ guess, actual }) {
+ calculate(actual, guess, context = {}) {
   if (!guess || !actual) {
    throw new Error("Scoring: invalid input");
   }
@@ -20,9 +20,10 @@ export class Scoring {
   const distanceScore = this.getDistanceScore(distance);
 
   // =========================
-  // DIFFICULTY FACTOR
+  // DIFFICULTY FACTOR (AREA-BASED)
   // =========================
-  const difficultyFactor = this.getDifficultyFactor(distance);
+  const difficultyFactor =
+   this.difficulty?.getMultiplier?.(context.area) ?? 1;
 
   // =========================
   // FINAL SCORE
@@ -45,12 +46,5 @@ export class Scoring {
   const k = 0.002;
 
   return maxScore * Math.exp(-k * distance);
- }
-
- // =========================
- // DIFFICULTY CURVE
- // =========================
- getDifficultyFactor(distance) {
-  return this.difficulty.get(distance);
  }
 }
