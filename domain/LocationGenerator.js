@@ -1,8 +1,8 @@
 import { Geometry } from "./math/Geometry.js";
 
 export class LocationGenerator {
- constructor({ mapAdapter }) {
-  this.mapAdapter = mapAdapter;
+ constructor({ streetAdapter }) {
+  this.streetAdapter = streetAdapter;
  }
 
  async generate(area) {
@@ -17,7 +17,7 @@ export class LocationGenerator {
    const point = Geometry.getRandomPointInPolygon(polygon);
 
    try {
-    const result = await this.mapAdapter.getStreetViewMeta(point);
+    const result = await this.streetAdapter.getStreetViewMeta(point);
 
     if (result?.valid && result?.location) {
      return result.location;
