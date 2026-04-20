@@ -5,78 +5,86 @@ export class UIFlow {
   streetViewUI,
   staticUI,
   screenManager,
+  uiState,
   uiBuilder
  }) {
   this.gameFlow = gameFlow;
   this.mapUI = mapUI;
   this.streetViewUI = streetViewUI;
-
   this.staticUI = staticUI;
   this.screenManager = screenManager;
-
+  this.uiState = uiState;
   this.uiBuilder = uiBuilder;
 
   this.bind();
-  this.connectInput();
- }
-
- setScreen(screen) {
-  this.screenManager.setScreen(screen);
-  this.staticUI.setScreen(screen);
- }
-
- connectInput() {
-  this.mapUI.bindGuess((point) => {
-   this.gameFlow.onGuess("p1", point);
-  });
-
-  const btn = document.getElementById("makeGuess");
-
-  if (btn) {
-   btn.addEventListener("click", () => {
-    this.gameFlow.finishGuess("p1");
-   });
-  }
  }
 
  bind() {
 
+  // =========================
+  // GAME START
+  // =========================
   this.gameFlow.on("gameStarted", (vm) => {
-   this.setScreen("round");
-   this.staticUI.updateHUD(this.uiBuilder.formatHUD(vm));
+   this.screenManager.setScreen("round");
+
+   if (vm) {
+    this.staticUI.updateHUD(
+     this.uiBuilder.formatHUD(vm)
+    );
+   }
   });
 
-  this.gameFlow.on("roundStarted", (vm) => {
-   this.setScreen("round");
-
-   this.staticUI.updateHUD(this.uiBuilder.formatHUD(vm));
-
-   this.streetViewUI.setLocation(vm.actualLocation);
-   this.mapUI.reset();
-  });
-
-  this.gameFlow.on("guessUpdated", ({ point }) => {
-   this.mapUI.placeGuessMarker(point);
-  });
-
-  this.gameFlow.on("guessFinished", (vm) => {
-   this.setScreen("result");
-
-   this.staticUI.showRoundResult(
-    this.uiBuilder.formatResult(vm)
+  // =========================
+  // ROUND UPDATE (HUD sync)
+  // =========================
+  this.gameFlow.on("stateUpdated", (vm) => {
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatHUD(vm)
    );
   });
 
-  this.gameFlow.on("roundEndFinished", () => {
-   this.setScreen("round");
+  // =========================
+  // ROUND END
+  // =========================
+  this.gameFlow.on("roundEnded", (vm) => {
+
+   // 1. переключаем экран результата
+   this.screenManager.setScreen("result");
+
+   // 2. строим UI model
+   const model = this.uiBuilder.formatRoundResult(vm);
+
+   // 3. рендерим
+   this.staticUI.showRoundResult(model);
   });
 
+  // =========================
+  // NEXT ROUND START
+  // =========================
+  this.gameFlow.on("nextRound", () => {
+   this.screenManager.setScreen("round");
+  });
+
+  // =========================
+  // GAME END
+  // =========================
   this.gameFlow.on("gameEnded", (vm) => {
-   this.setScreen("result");
 
-   this.staticUI.showGameResult(
-    this.uiBuilder.formatGame(vm)
-   );
+   // 1. экран итогов
+   this.screenManager.setScreen("gameover");
+
+   // 2. UI model
+   const model = this.uiBuilder.formatGameResult(vm);
+
+   // 3. рендер
+   this.staticUI.showGameResult(model);
   });
+ }
+
+ // =========================
+ // USER INPUT (MAP GUESS)
+ // =========================
+ onGuess(point) {
+  this.gameFlow.finishGuess(point);
  }
 }
