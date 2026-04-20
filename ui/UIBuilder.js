@@ -16,8 +16,8 @@ export class UIBuilder {
 
    totalScore,
 
-   roundText: `${state.currentRoundIndex + 1}`,
-   totalText: `${totalScore}`,
+   roundText: `Раунд: ${state.currentRoundIndex + 1}`,
+   totalText: `Счёт: ${totalScore}`,
 
    timeText: "",
    movesText: "",
