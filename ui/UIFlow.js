@@ -12,10 +12,6 @@ export class UIFlow {
 
  bind() {
 
-  // =========================
-  // ROUND START
-  // =========================
-
   this.gameFlow.on("roundStarted", (vm) => {
    this.screenManager.show("round");
 
@@ -33,28 +29,18 @@ export class UIFlow {
    }
   });
 
-  // =========================
-  // ROUND END (FIX ORDER)
-  // =========================
-
   this.gameFlow.on("roundEnded", (vm) => {
    const round = vm?.rounds?.[vm.currentRoundIndex];
    if (!round) return;
 
-   // 🔥 СНАЧАЛА данные карты
    this.mapUI?.renderOverview(round);
 
-   // 🔥 ПОТОМ экран
    this.screenManager.show("roundResult");
 
    this.staticUI.showRoundResult(
     this.uiBuilder.formatRoundVM(vm)
    );
   });
-
-  // =========================
-  // INPUT
-  // =========================
 
   this.gameFlow.on("inputLocked", () => {
    this.staticUI.lockInput?.();
@@ -65,10 +51,6 @@ export class UIFlow {
    this.staticUI.unlockInput?.();
    this.mapUI?.unlock();
   });
-
-  // =========================
-  // GAME END
-  // =========================
 
   this.gameFlow.on("gameEnded", (vm) => {
    this.screenManager.show("gameResult");
