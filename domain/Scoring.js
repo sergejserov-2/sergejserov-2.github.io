@@ -4,12 +4,30 @@ export class Scoring {
   this.difficulty = difficulty;
  }
 
- calculateResult({ guess, actual, area }) {
+ calculateResult({ guess, actual }) {
+  if (!guess || !actual) {
+   throw new Error("Scoring: invalid input");
+  }
+
+  // =========================
+  // DISTANCE
+  // =========================
   const distance = this.geometry.distance(guess, actual);
 
-  const difficultyFactor = this.difficulty.get(area);
+  // =========================
+  // DISTANCE SCORE CURVE
+  // =========================
+  const distanceScore = this.getDistanceScore(distance);
 
-  const score = this.calculateScore(distance, difficultyFactor);
+  // =========================
+  // DIFFICULTY FACTOR
+  // =========================
+  const difficultyFactor = this.getDifficultyFactor(distance);
+
+  // =========================
+  // FINAL SCORE
+  // =========================
+  const score = Math.round(distanceScore * difficultyFactor);
 
   return {
    distance,
@@ -17,8 +35,22 @@ export class Scoring {
   };
  }
 
- calculateScore(distance, difficulty) {
-  const base = Math.max(0, 5000 - distance * 10);
-  return Math.round(base * difficulty);
+ // =========================
+ // DISTANCE CURVE
+ // =========================
+ getDistanceScore(distance) {
+  const maxScore = 5000;
+
+  // экспоненциальное затухание
+  const k = 0.002;
+
+  return maxScore * Math.exp(-k * distance);
+ }
+
+ // =========================
+ // DIFFICULTY CURVE
+ // =========================
+ getDifficultyFactor(distance) {
+  return this.difficulty.get(distance);
  }
 }
