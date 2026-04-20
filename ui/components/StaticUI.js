@@ -9,7 +9,7 @@ export class StaticUI {
   this.timeEl = hudElement.querySelector(".time-left b");
   this.movesEl = hudElement.querySelector(".moves-left b");
 
-  // 🔥 TIMER
+  // ROUND END TIMER (UX)
   this.timerEl = document.querySelector(".round-timer");
   this.timerFrame = null;
  }
@@ -17,18 +17,30 @@ export class StaticUI {
  // =========================
  // HUD
  // =========================
-
  updateHUD(model = {}) {
   if (model.roundText != null) this.roundEl.textContent = model.roundText;
   if (model.totalText != null) this.totalEl.textContent = model.totalText;
-  if (model.timeText != null) this.timeEl.textContent = model.timeText;
-  if (model.movesText != null) this.movesEl.textContent = model.movesText;
+ }
+
+ // =========================
+ // GAME TIMER (HUD)
+ // =========================
+ updateTimer(value) {
+  if (!this.timeEl) return;
+  this.timeEl.textContent = value === -1 ? "∞" : value;
+ }
+
+ // =========================
+ // MOVES (HUD)
+ // =========================
+ updateMoves(value) {
+  if (!this.movesEl) return;
+  this.movesEl.textContent = value === -1 ? "∞" : value;
  }
 
  // =========================
  // ROUND RESULT
  // =========================
-
  showRoundResult(model = {}) {
   const root = document.querySelector(".guess-overview");
   if (!root) return;
@@ -38,8 +50,8 @@ export class StaticUI {
   const progress = model.progress ?? 0;
 
   root.querySelector(".score-text").innerHTML = `
-   <p>${distance.toFixed(1)} km</p>
-   <p>${score} pts</p>
+   <p>Ваша точка на расстоянии ${distance.toFixed(1)} км от загаданной</p>
+   <p>Ваш счёт - ${score}</p>
   `;
 
   const bar = root.querySelector(".score-progress");
@@ -49,7 +61,6 @@ export class StaticUI {
  // =========================
  // GAME RESULT
  // =========================
-
  showGameResult(model = {}) {
   const root = document.querySelector(".guess-overview");
   if (!root) return;
@@ -65,9 +76,8 @@ export class StaticUI {
  }
 
  // =========================
- // TIMER
+ // ROUND END TIMER (UX ONLY)
  // =========================
-
  startRoundTimer(duration, startTime) {
   this.stopRoundTimer();
 
