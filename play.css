@@ -32,12 +32,26 @@ body {
 }
 
 /* hud */
-.hud {
+.hud-wrapper {
  position: absolute;
  top: 10px;
  left: 10px;
  z-index: var(--z-hud);
+ background: #161a22;
+ border-radius: 15px;
+ padding: 10px 12px;
+ min-width: 180px;
+ box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.hud {
+ display: flex;
+ flex-direction: column;
+ gap: 6px;
+
  color: #fff;
+ font-size: 14px;
+
  pointer-events: none;
 }
 
@@ -46,11 +60,10 @@ body {
  position: absolute;
  bottom: 10px;
  left: 10px;
-
  width: 400px;
  height: 300px;
-
  z-index: var(--z-map);
+ box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
 .map {
