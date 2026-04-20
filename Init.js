@@ -11,7 +11,8 @@ import { AreaRegistry } from "./domain/AreaRegistry.js";
 import { MapAdapter } from "./adapters/MapAdapter.js";
 import { StreetViewAdapter } from "./adapters/StreetViewAdapter.js";
 
-import { MapUI } from "./ui/components/MapUI.js";
+import { MapWrapperUI } from "./ui/components/MapWrapperUI.js";
+import { MapOverviewUI } from "./ui/components/MapOverviewUI.js";
 import { StreetViewUI } from "./ui/components/StreetViewUI.js";
 import { StaticUI } from "./ui/components/StaticUI.js";
 
@@ -76,7 +77,6 @@ export async function init() {
   players: ["p1"]
  });
 
- // 🔥 FIX: generator теперь зависит от streetAdapter
  const generator = new LocationGenerator({
   streetAdapter
  });
@@ -95,9 +95,14 @@ export async function init() {
  // =========================
  // UI
  // =========================
- const mapUI = new MapUI({
+ const mapWrapperUI = new MapWrapperUI({
   adapter: mapAdapter,
   mapElement: mapEl,
+  uiBuilder
+ });
+
+ const mapOverviewUI = new MapOverviewUI({
+  adapter: mapAdapter,
   overviewElement: overviewMapEl,
   uiBuilder
  });
@@ -115,30 +120,36 @@ export async function init() {
   root: screensEl
  });
 
+ // =========================
+ // FLOW
+ // =========================
  new UIFlow({
   gameFlow,
   screenManager,
   staticUI,
   uiBuilder,
   streetViewUI,
-  mapUI
+  mapWrapperUI,
+  mapOverviewUI
  });
 
  // =========================
  // INIT UI
  // =========================
- mapUI.init();
+ mapWrapperUI.init();
+ mapOverviewUI.init();
  streetViewUI.init({ lat: 0, lng: 0 });
- mapUI.reset();
+
+ mapWrapperUI.reset();
 
  // =========================
- // GAME HOOKS
+ // INPUT
  // =========================
- mapUI.bindGuess((point) => {
+ mapWrapperUI.bindGuess((point) => {
   gameFlow.finishGuess(point);
  });
 
- mapUI.bindGuessButton(guessBtn);
+ mapWrapperUI.bindGuessButton(guessBtn);
 
  // =========================
  // TWEAKS
@@ -152,7 +163,7 @@ export async function init() {
  tweaks.apply();
 
  // =========================
- // START GAME
+ // START
  // =========================
  await gameFlow.startGame();
 
