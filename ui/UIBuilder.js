@@ -1,3 +1,4 @@
+
 export class UIBuilder {
 
  constructor() {
@@ -6,6 +7,8 @@ export class UIBuilder {
    p2: "#4da6ff",
    p3: "#7CFC00"
   };
+
+  this.actualColor = "#9aa0a6";
  }
 
  getPlayerColor(playerId = "p1") {
@@ -13,7 +16,7 @@ export class UIBuilder {
  }
 
  getActualColor() {
-  return "#9aa0a6";
+  return this.actualColor;
  }
 
  formatGameVM(state) {
