@@ -105,11 +105,27 @@ export async function init() {
   streetViewUI
  });
 
+ // =========================
+ // UI INIT
+ // =========================
  mapUI.init();
  streetViewUI.init({ lat: 0, lng: 0 });
 
+ // =========================
+ // CORE GAME HOOK
+ // =========================
+ mapUI.bindGuess((point) => {
+  gameFlow.finishGuess(point);
+ });
+
+ // =========================
+ // GUESS BUTTON (FINALIZE ACTION)
+ // =========================
  mapUI.bindGuessButton(guessBtn);
 
+ // =========================
+ // VISUAL TWEAKS
+ // =========================
  const tweaks = new Tweaks({
   mapElement: mapEl,
   streetElement: streetEl,
@@ -118,6 +134,9 @@ export async function init() {
 
  tweaks.apply();
 
+ // =========================
+ // START
+ // =========================
  await gameFlow.startGame();
 
  console.log("INIT OK");
