@@ -20,14 +20,25 @@ import { UIFlow } from "./ui/UIFlow.js";
 import { UIBuilder } from "./ui/UIBuilder.js";
 import { UIState } from "./ui/UIState.js";
 
-export async function init() {
+import { tweaks } from "./ui/tweaks.js";
 
- // =========================
- // 🧩 ENTER LOG
- // =========================
+export async function init() {
  console.log("INIT ENTER");
 
  try {
+
+  // =========================
+  // DOM SAFE GET
+  // =========================
+  const hud = document.querySelector(".hud");
+  const mapEl = document.querySelector(".map");
+  const streetEl = document.querySelector(".streetview");
+  const screensEl = document.querySelector(".screens");
+  const overviewMapEl = document.querySelector(".overview-map");
+
+  if (!hud || !mapEl || !streetEl || !screensEl) {
+   throw new Error("INIT: required DOM elements not found");
+  }
 
   // =========================
   // ADAPTERS
@@ -38,7 +49,6 @@ export async function init() {
   // DOMAIN
   // =========================
   const geometry = new Geometry();
-
   const area = AreaRegistry.get("europe");
 
   const difficulty = new Difficulty({ area });
@@ -71,28 +81,27 @@ export async function init() {
   });
 
   // =========================
-  // UI LAYER
+  // UI
   // =========================
-
   const mapUI = new MapUI({
    adapter: mapAdapter,
-   mapElement: document.querySelector(".map"),
-   overviewElement: document.querySelector(".overview-map")
+   mapElement: mapEl,
+   overviewElement: overviewMapEl
   });
 
   const streetViewUI = new StreetViewUI({
    adapter: mapAdapter,
-   element: document.querySelector(".streetview")
+   element: streetEl
   });
 
   const staticUI = new StaticUI({
-   hudElement: document.querySelector(".hud"),
-   mapElement: document.querySelector(".map"),
-   streetViewElement: document.querySelector(".streetview")
+   hudElement: hud,
+   mapElement: mapEl,
+   streetViewElement: streetEl
   });
 
   const screenManager = new ScreenManager({
-   screensElement: document.querySelector(".screens")
+   screensElement: screensEl
   });
 
   const uiState = new UIState();
@@ -109,27 +118,27 @@ export async function init() {
   });
 
   // =========================
-  // INIT UI COMPONENTS
+  // INIT UI
   // =========================
   mapUI.init();
   streetViewUI.init();
 
   // =========================
-  // START GAME
+  // TWEAKS (ВАЖНО)
+  // =========================
+  tweaks();
+
+  // =========================
+  // START
   // =========================
   await gameFlow.startGame();
 
-  // =========================
-  // EXIT LOG
-  // =========================
   console.log("INIT SUCCESS");
 
  } catch (err) {
-
-  // =========================
-  // ERROR LOG
-  // =========================
   console.error("💥 INIT ERROR:", err);
-
  }
 }
+
+// 🔥 ОБЯЗАТЕЛЬНЫЙ ЗАПУСК
+init();
