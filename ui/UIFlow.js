@@ -15,13 +15,19 @@ export class UIFlow {
   this.uiState = uiState;
   this.uiBuilder = uiBuilder;
 
-  this.bind();
+  this.bindState();
+  this.bindGameEvents();
   this.connectInput();
+ }
+
+ bindState() {
+  this.uiState.onChange(({ to }) => {
+   this.staticUI.setScreen(to);
+  });
  }
 
  setScreen(screen) {
   this.uiState.setScreen(screen);
-  this.staticUI.setScreen(screen);
  }
 
  connectInput() {
@@ -38,14 +44,16 @@ export class UIFlow {
   }
  }
 
- bind() {
+ bindGameEvents() {
 
+  // start
   this.gameFlow.on("gameStarted", () => {
-   this.setScreen("round");
+   this.uiState.setScreen("round");
   });
 
+  // round start
   this.gameFlow.on("roundStarted", ({ round, actual }) => {
-   this.setScreen("round");
+   this.uiState.setScreen("round");
 
    const hud = this.uiBuilder.buildHUD(
     this.gameFlow.game.state,
@@ -58,12 +66,14 @@ export class UIFlow {
    this.mapUI.reset();
   });
 
+  // guess marker update
   this.gameFlow.on("guessUpdated", ({ guess }) => {
    this.mapUI.placeGuessMarker(guess);
   });
 
+  // result screen
   this.gameFlow.on("guessFinished", ({ result }) => {
-   this.setScreen("result");
+   this.uiState.setScreen("result");
 
    const vm = this.uiBuilder.buildRoundVM(
     this.gameFlow.game.state,
@@ -77,13 +87,18 @@ export class UIFlow {
    );
   });
 
-  // 💣 ВАЖНО: теперь именно здесь задержка следующего раунда
+  // transition → next round
   this.gameFlow.on("roundCommitted", async () => {
-   await this.gameFlow.startNextRoundWithDelay(1500);
+   this.uiState.setScreen("transition");
+
+   await new Promise(r => setTimeout(r, 1500));
+
+   await this.gameFlow.nextRound();
   });
 
+  // game end
   this.gameFlow.on("gameEnded", () => {
-   this.setScreen("result");
+   this.uiState.setScreen("result");
 
    const vm = this.uiBuilder.buildGameVM(
     this.gameFlow.game.state
