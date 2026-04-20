@@ -23,122 +23,98 @@ import { UIState } from "./ui/UIState.js";
 import { tweaks } from "./ui/tweaks.js";
 
 export async function init() {
-  console.log("INIT ENTER");
+ console.log("INIT ENTER");
 
-  try {
-    // =========================
-    // DOM
-    // =========================
-    const hud = document.querySelector(".hud");
-    const mapEl = document.querySelector(".map");
-    const streetEl = document.querySelector(".streetview");
-    const screensEl = document.querySelector(".screens");
-    const overviewMapEl = document.querySelector(".overview-map");
+ try {
 
-    if (!hud || !mapEl || !streetEl || !screensEl) {
-      throw new Error("INIT: required DOM elements not found");
-    }
+  const hud = document.querySelector(".hud");
+  const mapEl = document.querySelector(".map");
+  const streetEl = document.querySelector(".streetview");
+  const screensEl = document.querySelector(".screens");
+  const overviewMapEl = document.querySelector(".overview-map");
 
-    // =========================
-    // ADAPTERS
-    // =========================
-    const mapAdapter = new MapAdapter();
-
-    // =========================
-    // DOMAIN
-    // =========================
-    const geometry = Geometry; // ← без new
-
-    const area = AreaRegistry.get("europe");
-
-    const difficulty = new Difficulty({ area });
-
-    const scoring = new Scoring({
-      geometry,
-      difficulty
-    });
-
-    const generator = new LocationGenerator({
-      mapAdapter,
-      geometry
-    });
-
-    // =========================
-    // CORE
-    // =========================
-    const gameState = new GameState();
-
-    const game = new Game({
-      gameState,
-      scoring,
-      players: ["p1"]
-    });
-
-    const gameFlow = new GameFlow({
-      game,
-      generator,
-      area
-    });
-
-    // =========================
-    // UI
-    // =========================
-    const mapUI = new MapUI({
-      adapter: mapAdapter,
-      mapElement: mapEl,
-      overviewElement: overviewMapEl
-    });
-
-    const streetViewUI = new StreetViewUI({
-      adapter: mapAdapter,
-      element: streetEl
-    });
-
-    const staticUI = new StaticUI({
-      hudElement: hud,
-      mapElement: mapEl,
-      streetViewElement: streetEl
-    });
-
-    const screenManager = new ScreenManager({
-      screensElement: screensEl
-    });
-
-    const uiState = new UIState();
-    const uiBuilder = new UIBuilder();
-
-    const uiFlow = new UIFlow({
-      gameFlow,
-      mapUI,
-      streetViewUI,
-      staticUI,
-      screenManager,
-      uiState,
-      uiBuilder
-    });
-
-    // =========================
-    // INIT UI
-    // =========================
-    mapUI.init();
-    streetViewUI.init();
-
-    // =========================
-    // TWEAKS
-    // =========================
-    tweaks();
-
-    // =========================
-    // START GAME
-    // =========================
-    await gameFlow.startGame();
-
-    console.log("INIT SUCCESS");
-
-  } catch (err) {
-    console.error("💥 INIT ERROR:", err);
+  if (!hud || !mapEl || !streetEl || !screensEl) {
+   throw new Error("INIT: missing DOM elements");
   }
+
+  const mapAdapter = new MapAdapter();
+
+  const geometry = Geometry;
+
+  const area = AreaRegistry.get("europe");
+
+  const difficulty = new Difficulty({ area });
+
+  const scoring = new Scoring({
+   geometry,
+   difficulty
+  });
+
+  const generator = new LocationGenerator({
+   mapAdapter,
+   geometry
+  });
+
+  const gameState = new GameState();
+
+  const game = new Game({
+   gameState,
+   scoring,
+   players: ["p1"]
+  });
+
+  const gameFlow = new GameFlow({
+   game,
+   generator,
+   area
+  });
+
+  const mapUI = new MapUI({
+   adapter: mapAdapter,
+   mapElement: mapEl,
+   overviewElement: overviewMapEl
+  });
+
+  const streetViewUI = new StreetViewUI({
+   adapter: mapAdapter,
+   element: streetEl
+  });
+
+  const staticUI = new StaticUI({
+   hudElement: hud,
+   mapElement: mapEl,
+   streetViewElement: streetEl
+  });
+
+  const screenManager = new ScreenManager({
+   screensElement: screensEl
+  });
+
+  const uiState = new UIState();
+  const uiBuilder = new UIBuilder();
+
+  const uiFlow = new UIFlow({
+   gameFlow,
+   mapUI,
+   streetViewUI,
+   staticUI,
+   screenManager,
+   uiState,
+   uiBuilder
+  });
+
+  mapUI.init();
+  streetViewUI.init();
+
+  tweaks();
+
+  await gameFlow.startGame();
+
+  console.log("INIT SUCCESS");
+
+ } catch (err) {
+  console.error("💥 INIT ERROR:", err);
+ }
 }
 
-// 🔥 ВАЖНО: запуск
 init();
