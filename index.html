@@ -250,6 +250,24 @@ let rounds = 5;
 let timeEnabled = false;
 let movesEnabled = false;
 
+function togglePair(offBtn, onBtn, input, setState) {
+    offBtn.onclick = () => {
+        offBtn.classList.add("active");
+        onBtn.classList.remove("active");
+
+        input.disabled = true;
+        setState(false);
+    };
+
+    onBtn.onclick = () => {
+        onBtn.classList.add("active");
+        offBtn.classList.remove("active");
+
+        input.disabled = false;
+        setState(true);
+    };
+}
+  
 // MODE
 document.querySelectorAll("[data-mode]").forEach(b => {
     b.onclick = () => {
@@ -294,28 +312,22 @@ document.querySelectorAll("[data-area]").forEach(b => {
 });
 
 // TIMER
+const timeOff = document.getElementById("timeOff");
+const timeOn = document.getElementById("timeOn");
 const timeInput = document.getElementById("timeInput");
-document.getElementById("timeOff").onclick = () => {
-    timeEnabled = false;
-    timeInput.disabled = true;
-};
 
-document.getElementById("timeOn").onclick = () => {
-    timeEnabled = true;
-    timeInput.disabled = false;
-};
+togglePair(timeOff, timeOn, timeInput, (v) => {
+    timeEnabled = v;
+});
 
 // MOVES
+const movesOff = document.getElementById("movesOff");
+const movesOn = document.getElementById("movesOn");
 const movesInput = document.getElementById("movesInput");
-document.getElementById("movesOff").onclick = () => {
-    movesEnabled = false;
-    movesInput.disabled = true;
-};
 
-document.getElementById("movesOn").onclick = () => {
-    movesEnabled = true;
-    movesInput.disabled = false;
-};
+togglePair(movesOff, movesOn, movesInput, (v) => {
+    movesEnabled = v;
+});
 
 // START
 document.getElementById("start").onclick = () => {
