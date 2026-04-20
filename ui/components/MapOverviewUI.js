@@ -1,113 +1,116 @@
 import { Geometry } from "../../domain/math/Geometry.js";
 
 export class MapOverviewUI {
- constructor({ adapter, element, uiBuilder }) {
-  this.adapter = adapter;
-  this.uiBuilder = uiBuilder;
-  this.element = element;
+  constructor({ adapter, element, uiBuilder }) {
+    this.adapter = adapter;
+    this.uiBuilder = uiBuilder;
+    this.element = element;
 
-  this.map = null;
+    this.map = null;
+    this.markers = [];
+    this.lines = [];
+  }
 
-  this.markers = [];
-  this.lines = [];
- }
+  // =========================
+  // INIT
+  // =========================
+  init() {
+    if (!this.element) return;
 
- // =========================
- // INIT
- // =========================
+    this.map = this.adapter.createMap(this.element, {
+      center: { lat: 20, lng: 0 },
+      zoom: 2
+    });
+  }
 
- init() {
-  if (!this.element) return;
+  // =========================
+  // RENDER ROUND
+  // =========================
+  render(round) {
+    if (!this.map) return;
 
-  this.map = this.adapter.createMap(this.element, {
-   center: { lat: 20, lng: 0 },
-   zoom: 2
-  });
- }
+    const guessObj = round?.guesses?.[0];
+    const guess = guessObj?.guess;
+    const actual = round?.actualLocation;
 
- // =========================
- // RENDER ROUND
- // =========================
+    if (!guess || !actual) return;
 
- render(round) {
-  if (!this.map) return;
-  const guessObj = round?.guesses?.[0];
-  const guess = guessObj?.guess;
-  const actual = round?.actualLocation;
-  if (!guess || !actual) return;
-  this.clear();
-  const playerId = guessObj?.playerId || "p1";
-  this.fitToPoints([guess, actual]);
-  this.addPlayerResult(guess, actual, playerId)
- }
+    this.clear();
 
- // =========================
- // CAMERA (PURE UI LOGIC)
- // =========================
+    const playerId = guessObj?.playerId || "p1";
 
- fitToPoints(points) {
-  if (!this.map || !points || points.length < 2) return;
+    this.fitToPoints([guess, actual]);
 
-  const a = points[0];
-  const b = points[1];
+    this.addPlayerResult({
+      guess,
+      actual,
+      playerId
+    });
+  }
 
-  const center = {
-   lat: (a.lat + b.lat) / 2,
-   lng: (a.lng + b.lng) / 2
-  };
+  // =========================
+  // CAMERA (PURE UI LOGIC)
+  // =========================
+  fitToPoints(points) {
+    if (!this.map  !points  points.length < 2) return;
 
-  const distance = Geometry.distance(a, b);
+    const a = points[0];
+    const b = points[1];
 
-  let zoom = 5;
+    const center = {
+      lat: (a.lat + b.lat) / 2,
+      lng: (a.lng + b.lng) / 2
+    };
 
-  if (distance < 10) zoom = 7;
-  else if (distance < 50) zoom = 6;
-  else if (distance < 200) zoom = 5;
-  else if (distance < 1000) zoom = 4;
-  else zoom = 3;
+    const distance = Geometry.distance(a, b);
 
-  this.map.setCenter(center);
-  this.map.setZoom(zoom);
- }
+    let zoom = 5;
+    if (distance < 10) zoom = 7;
+    else if (distance < 50) zoom = 6;
+    else if (distance < 200) zoom = 5;
+    else if (distance < 1000) zoom = 4;
+    else zoom = 3;
 
- // =========================
- // CLEAR
- // =========================
+    this.map.setCenter(center);
+    this.map.setZoom(zoom);
+  }
 
- clear() {
-  this.markers.forEach(m => this.adapter.removeMarker(m));
-  this.lines.forEach(l => l.setMap(null));
+  // =========================
+  // CLEAR
+  // =========================
+  clear() {
+    this.markers.forEach(m => this.adapter.removeMarker(m));
+    this.lines.forEach(l => l.setMap(null));
 
-  this.markers = [];
-  this.lines = [];
- }
+    this.markers = [];
+    this.lines = [];
+  }
 
- // =========================
- // MULTIPLAYER RESULT
- // =========================
+  // =========================
+  // MULTIPLAYER RESULT
+  // =========================
+  addPlayerResult({ guess, actual, playerId }) {
+    const playerColor = this.uiBuilder.getPlayerColor(playerId);
+    const actualColor = this.uiBuilder.getActualColor();
 
- addPlayerResult({ guess, actual, playerId }) {
-  const playerColor = this.uiBuilder.getPlayerColor(playerId);
-  const actualColor = this.uiBuilder.getActualColor();
+    const guessMarker = this.adapter.createMarker(this.map, guess, {
+      color: playerColor,
+      size: 20
+    });
 
-  const guessMarker = this.adapter.createMarker(this.map, guess, {
-   color: playerColor,
-   size: 20
-  });
+    const actualMarker = this.adapter.createMarker(this.map, actual, {
+      color: actualColor,
+      size: 30
+    });
 
-  const actualMarker = this.adapter.createMarker(this.map, actual, {
-   color: actualColor,
-   size: 30
-  });
+    const segments = this.adapter.createGradientPolyline(
+      this.map,
+      [guess, actual],
+      playerColor,
+      actualColor
+    );
 
-  const segments = this.adapter.createGradientPolyline(
-   this.map,
-   [guess, actual],
-   playerColor,
-   actualColor
-  );
-
-  this.markers.push(guessMarker, actualMarker);
-  this.lines.push(...segments);
- }
+    this.markers.push(guessMarker, actualMarker);
+    this.lines.push(...segments);
+  }
 }
