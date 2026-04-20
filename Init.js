@@ -22,30 +22,48 @@ import { UIBuilder } from "./ui/UIBuilder.js";
 
 import { Tweaks } from "./ui/Tweaks.js";
 
+// =========================
+// GOOGLE MAPS GATE
+// =========================
+function waitForGoogleMaps() {
+ return new Promise(resolve => {
+  const check = () => {
+   if (window.google?.maps) {
+    resolve();
+   } else {
+    setTimeout(check, 50);
+   }
+  };
+  check();
+ });
+}
+
+// =========================
+// INIT
+// =========================
 export async function init() {
  try {
-  // =========================
-  // DOM
-  // =========================
+  console.log("INIT START");
+
+  // 1. wait Google Maps API
+  await waitForGoogleMaps();
+
+  // 2. DOM
   const hud = document.querySelector(".hud");
   const mapEl = document.querySelector(".map");
   const streetEl = document.querySelector(".streetview");
   const screensEl = document.querySelector(".screens");
   const overviewMapEl = document.querySelector(".overview-map");
 
-  if (!hud || !mapEl || !streetEl || !screensEl) {
+  if (!hud  !mapEl  !streetEl || !screensEl) {
    throw new Error("Missing DOM elements");
   }
 
-  // =========================
-  // ADAPTERS
-  // =========================
+  // 3. ADAPTERS (after Google is ready)
   const mapAdapter = new MapAdapter();
   const streetAdapter = new StreetViewAdapter();
 
-  // =========================
-  // DOMAIN
-  // =========================
+  // 4. DOMAIN
   const area = AreaRegistry.get("europe");
   const geometry = Geometry;
 
@@ -53,9 +71,6 @@ export async function init() {
 
   const scoring = new Scoring({ difficulty });
 
-  // =========================
-  // CORE GAME
-  // =========================
   const gameState = new GameState();
 
   const game = new Game({
@@ -64,25 +79,18 @@ export async function init() {
    players: ["p1"]
   });
 
-  // =========================
-  // GENERATOR
-  // =========================
+  // 5. GENERATOR
   const generator = new LocationGenerator({
    mapAdapter
   });
 
-  // =========================
-  // FLOW
-  // =========================
   const gameFlow = new GameFlow({
    game,
    generator,
    area
   });
 
-  // =========================
-  // UI
-  // =========================
+  // 6. UI
   const mapUI = new MapUI({
    adapter: mapAdapter,
    mapElement: mapEl,
@@ -111,29 +119,27 @@ export async function init() {
    uiBuilder
   });
 
-  // =========================
-  // TWEAKS (SIDE EFFECT LAYER)
-  // =========================
-  const tweaks = new Tweaks();
-  tweaks.apply();
+  // 7. TWEAKS
+  const tweaks = new Tweaks({
+   mapElement: mapEl,
+   streetElement: streetEl,
+   root: screensEl
+  });
 
-  // =========================
-  // INIT UI
-  // =========================
+  // 8. INIT UI
   mapUI.init();
   streetViewUI.init({ lat: 0, lng: 0 });
 
-  // =========================
-  // START GAME
-  // =========================
+  tweaks.apply?.();
+
+  // 9. START GAME
   await gameFlow.startGame();
+
+  console.log("INIT OK");
 
  } catch (err) {
   console.error("INIT ERROR:", err);
  }
 }
 
-// =========================
-// BOOT
-// =========================
 init();
