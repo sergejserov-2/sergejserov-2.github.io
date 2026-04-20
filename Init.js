@@ -102,7 +102,7 @@ export async function init() {
   screenManager,
   staticUI,
   uiBuilder,
-  streetViewUI
+  streetViewUI,
   mapUI
  });
 
