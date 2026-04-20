@@ -40,28 +40,33 @@ export class MapOverviewUI {
 
   const playerId = guessObj?.playerId || "p1";
 
-  const playerColor =
-   this.uiBuilder?.getPlayerColor?.(playerId) ?? "#ff4d4d";
-
-  const actualColor =
-   this.uiBuilder?.getActualColor?.() ?? "#9aa0a6";
+  const playerColor = this.uiBuilder.getPlayerColor(playerId);
+  const actualColor = this.uiBuilder.getActualColor();
 
   const guessMarker = this.adapter.createMarker(
    this.map,
    guess,
-   { color: playerColor, size: 20 }
+   {
+    color: playerColor,
+    size: 20
+   }
   );
 
   const actualMarker = this.adapter.createMarker(
    this.map,
    actual,
-   { color: actualColor, size: 30 }
+   {
+    color: actualColor,
+    size: 30
+   }
   );
 
   const line = this.adapter.createPolyline(
    this.map,
    [guess, actual],
-   { color: playerColor }
+   {
+    color: playerColor
+   }
   );
 
   this.fitToPoints([guess, actual]);
@@ -69,7 +74,6 @@ export class MapOverviewUI {
   this.markers.push(guessMarker, actualMarker);
   this.lines.push(line);
 
-  // 🔥 SAFE RESIZE (без прямого google access)
   setTimeout(() => {
    if (this.map && window.google?.maps?.event) {
     google.maps.event.trigger(this.map, "resize");
@@ -108,7 +112,7 @@ export class MapOverviewUI {
  }
 
  // =========================
- // DISTANCE (PURE)
+ // DISTANCE
  // =========================
 
  _distance(a, b) {
@@ -143,25 +147,32 @@ export class MapOverviewUI {
  // =========================
 
  addPlayerResult({ guess, actual, playerId }) {
-  const color =
-   this.uiBuilder?.getPlayerColor?.(playerId) ?? "#ff4d4d";
+  const color = this.uiBuilder.getPlayerColor(playerId);
 
   const guessMarker = this.adapter.createMarker(
    this.map,
    guess,
-   { color, size: 20 }
+   {
+    color,
+    size: 20
+   }
   );
 
   const actualMarker = this.adapter.createMarker(
    this.map,
    actual,
-   { color: "#9aa0a6", size: 30 }
+   {
+    color: this.uiBuilder.getActualColor(),
+    size: 30
+   }
   );
 
   const line = this.adapter.createPolyline(
    this.map,
    [guess, actual],
-   { color }
+   {
+    color
+   }
   );
 
   this.markers.push(guessMarker, actualMarker);
