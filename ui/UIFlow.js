@@ -22,6 +22,7 @@ export class UIFlow {
  bind() {
 
   this.gameFlow.on("roundStarted", (vm) => {
+   this.staticUI.stopRoundTimer();
    this.screenManager.show("round");
 
    this.mapWrapperUI.reset();
@@ -48,6 +49,10 @@ export class UIFlow {
     this.uiBuilder.formatRoundVM(vm)
    );
   });
+
+  this.gameFlow.on("roundEndTimerStarted", ({ duration, startTime }) => {
+  this.staticUI.startRoundTimer(duration, startTime);
+});
 
   this.gameFlow.on("inputLocked", () => {
    this.staticUI.lockInput?.();
