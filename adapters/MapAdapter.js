@@ -1,7 +1,5 @@
 export class MapAdapter {
- constructor() {
-  this.svService = new google.maps.StreetViewService();
- }
+ constructor() {}
 
  createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   if (!element) throw new Error("Map container missing");
@@ -65,43 +63,5 @@ export class MapAdapter {
   });
 
   map.fitBounds(bounds);
- }
-
- createStreetView(element, { lat = 0, lng = 0 }) {
-  if (!element) throw new Error("StreetView container missing");
-
-  return new google.maps.StreetViewPanorama(element, {
-   position: { lat, lng },
-   pov: { heading: 0, pitch: 0 },
-   addressControl: false,
-   showRoadLabels: false,
-   fullscreenControl: false,
-   zoomControl: true,
-   disableDefaultUI: true
-  });
- }
-
- getStreetViewMeta({ lat, lng }) {
-  return new Promise(resolve => {
-   this.svService.getPanorama(
-    { location: { lat, lng }, radius: 50000 },
-    (data, status) => {
-     const valid =
-      status === "OK" &&
-      data?.location &&
-      data?.location?.latLng;
-
-     resolve({
-      valid,
-      location: valid
-       ? {
-          lat: data.location.latLng.lat(),
-          lng: data.location.latLng.lng()
-         }
-       : null
-     });
-    }
-   );
-  });
  }
 }
