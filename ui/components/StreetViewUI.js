@@ -5,37 +5,22 @@ export class StreetViewUI {
   this.panorama = null;
  }
 
- init(initialPosition = { lat: 0, lng: 0 }) {
+ init(position = { lat: 0, lng: 0 }) {
   if (!this.element) return;
 
-  this.panorama = this.adapter.createStreetView(
+  this.panorama = this.adapter.create(
    this.element,
-   initialPosition
+   position
   );
  }
 
  setLocation(pos) {
   if (!this.panorama || !pos) return;
-  this.panorama.setPosition(pos);
+  this.adapter.setPosition(this.panorama, pos);
  }
 
- lock() {
-  this.panorama?.setOptions({
-   disableDefaultUI: true,
-   scrollwheel: false,
-   clickToGo: false
-  });
- }
-
- unlock() {
-  this.panorama?.setOptions({
-   disableDefaultUI: false,
-   scrollwheel: true,
-   clickToGo: true
-  });
- }
-
- reset() {
-  this.unlock();
+ setPov(pov) {
+  if (!this.panorama) return;
+  this.adapter.setPov(this.panorama, pov);
  }
 }
