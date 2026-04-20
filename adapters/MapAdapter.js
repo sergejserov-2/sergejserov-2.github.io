@@ -64,17 +64,13 @@ export class MapAdapter {
    this.svService.getPanorama(
     {
      location: { lat, lng },
-     radius: 20000
+     radius: 50000
     },
     (data, status) => {
      const valid =
       status === "OK" &&
       data?.location &&
       data?.location?.latLng;
-
-     if (!valid) {
-      console.warn("StreetView meta fail:", status);
-     }
 
      resolve({
       valid,
@@ -87,19 +83,6 @@ export class MapAdapter {
      });
     }
    );
-  });
- }
-
- async ensureReady() {
-  return new Promise(resolve => {
-   const check = () => {
-    if (window.google?.maps?.StreetViewService) {
-     resolve();
-    } else {
-     setTimeout(check, 50);
-    }
-   };
-   check();
   });
  }
 }
