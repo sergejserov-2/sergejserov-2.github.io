@@ -1,16 +1,15 @@
 import { Game } from "./core/Game.js";
 import { GameState } from "./core/GameState.js";
 import { GameFlow } from "./core/GameFlow.js";
-
 import { Scoring } from "./domain/Scoring.js";
 import { Difficulty } from "./domain/math/Difficulty.js";
-
 import { LocationGenerator } from "./domain/LocationGenerator.js";
 import { AreaRegistry } from "./domain/AreaRegistry.js";
-
 import { MapAdapter } from "./adapters/MapAdapter.js";
 import { StreetViewAdapter } from "./adapters/StreetViewAdapter.js";
-
+import { TimerService } from "./services/TimerService.js";
+import { MovesService } from "./services/MovesService.js";
+import { RoundsService } from "./services/RoundsService.js";
 import { MapWrapperUI } from "./ui/components/MapWrapperUI.js";
 import { MapOverviewUI } from "./ui/components/MapOverviewUI.js";
 import { StreetViewUI } from "./ui/components/StreetViewUI.js";
@@ -22,9 +21,6 @@ import { UIBuilder } from "./ui/UIBuilder.js";
 
 import { Tweaks } from "./ui/Tweaks.js";
 
-// =========================
-// GOOGLE MAPS GATE
-// =========================
 function waitForGoogleMaps() {
  return new Promise(resolve => {
   const check = () => {
@@ -35,17 +31,11 @@ function waitForGoogleMaps() {
  });
 }
 
-// =========================
-// INIT
-// =========================
 export async function init() {
  console.log("INIT START");
 
  await waitForGoogleMaps();
 
- // =========================
- // DOM
- // =========================
  const hud = document.querySelector(".hud");
  const mapEl = document.querySelector(".map");
  const streetEl = document.querySelector(".streetview");
@@ -53,22 +43,13 @@ export async function init() {
  const overviewMapEl = document.querySelector(".overview-map");
  const guessBtn = document.querySelector("#makeGuess");
 
- // =========================
- // ADAPTERS
- // =========================
  const mapAdapter = new MapAdapter();
  const streetAdapter = new StreetViewAdapter();
 
- // =========================
- // DOMAIN
- // =========================
  const area = AreaRegistry.get("europe");
  const difficulty = new Difficulty();
  const scoring = new Scoring({ difficulty });
 
- // =========================
- // CORE
- // =========================
  const gameState = new GameState();
 
  const game = new Game({
@@ -81,20 +62,21 @@ export async function init() {
   streetAdapter
  });
 
+ const services = {
+  timer: new TimerService(),
+  moves: new MovesService(),
+  rounds: new RoundsService()
+ };
+
  const gameFlow = new GameFlow({
   game,
   generator,
-  area
+  area,
+  services
  });
 
- // =========================
- // UI BUILDER
- // =========================
  const uiBuilder = new UIBuilder();
 
- // =========================
- // UI
- // =========================
  const mapWrapperUI = new MapWrapperUI({
   adapter: mapAdapter,
   element: mapEl,
@@ -102,9 +84,9 @@ export async function init() {
  });
 
  const mapOverviewUI = new MapOverviewUI({
-   adapter: mapAdapter,
-   element: overviewMapEl,
-   uiBuilder
+  adapter: mapAdapter,
+  element: overviewMapEl,
+  uiBuilder
  });
 
  const streetViewUI = new StreetViewUI({
@@ -120,9 +102,6 @@ export async function init() {
   root: screensEl
  });
 
- // =========================
- // FLOW
- // =========================
  new UIFlow({
   gameFlow,
   screenManager,
@@ -133,27 +112,17 @@ export async function init() {
   mapOverviewUI
  });
 
- // =========================
- // INIT UI
- // =========================
  mapWrapperUI.init();
  mapOverviewUI.init();
  streetViewUI.init({ lat: 0, lng: 0 });
 
  mapWrapperUI.reset();
-
- // =========================
- // INPUT
- // =========================
  mapWrapperUI.bindGuess((point) => {
   gameFlow.finishGuess(point);
  });
 
  mapWrapperUI.bindGuessButton(guessBtn);
 
- // =========================
- // TWEAKS
- // =========================
  const tweaks = new Tweaks({
   mapElement: mapEl,
   streetElement: streetEl,
@@ -162,9 +131,6 @@ export async function init() {
 
  tweaks.apply();
 
- // =========================
- // START
- // =========================
  await gameFlow.startGame();
 
  console.log("INIT OK");
