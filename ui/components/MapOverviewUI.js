@@ -55,15 +55,9 @@ export class MapOverviewUI {
    size: 30
   });
 
-  // обычная линия (fallback / базовый слой)
-  const line = this.adapter.createPolyline(this.map, [guess, actual], {
-   color: playerColor
-  });
-
   this.fitToPoints([guess, actual]);
 
   this.markers.push(guessMarker, actualMarker);
-  this.lines.push(line);
  }
 
  // =========================
