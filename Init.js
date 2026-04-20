@@ -20,54 +20,29 @@ import { ScreenManager } from "./ui/ScreenManager.js";
 import { UIFlow } from "./ui/UIFlow.js";
 import { UIBuilder } from "./ui/UIBuilder.js";
 
-import { Tweaks } from "./ui/Tweaks.js";
+import { Tweaks } from "./ui/tweaks.js";
 
-// =========================
-// GOOGLE MAPS GATE
-// =========================
-function waitForGoogleMaps() {
- return new Promise(resolve => {
-  const check = () => {
-   if (window.google?.maps) {
-    resolve();
-   } else {
-    setTimeout(check, 50);
-   }
-  };
-  check();
- });
-}
-
-// =========================
-// INIT
-// =========================
 export async function init() {
  try {
-  console.log("INIT START");
-
-  // 1. wait Google Maps API
-  await waitForGoogleMaps();
-
-  // 2. DOM
   const hud = document.querySelector(".hud");
   const mapEl = document.querySelector(".map");
   const streetEl = document.querySelector(".streetview");
   const screensEl = document.querySelector(".screens");
   const overviewMapEl = document.querySelector(".overview-map");
+  const guessBtn = document.querySelector("#makeGuess");
 
   if (!hud || !mapEl || !streetEl || !screensEl) {
    throw new Error("Missing DOM elements");
   }
 
-  // 3. ADAPTERS (after Google is ready)
   const mapAdapter = new MapAdapter();
   const streetAdapter = new StreetViewAdapter();
 
-  // 4. DOMAIN
-  const area = AreaRegistry.get("europe");
-  const geometry = Geometry;
+  await mapAdapter.ensureReady();
 
-  const difficulty = new Difficulty({ area });
+  const area = AreaRegistry.get("europe");
+
+  const difficulty = new Difficulty();
 
   const scoring = new Scoring({ difficulty });
 
@@ -79,7 +54,6 @@ export async function init() {
    players: ["p1"]
   });
 
-  // 5. GENERATOR
   const generator = new LocationGenerator({
    mapAdapter
   });
@@ -90,7 +64,6 @@ export async function init() {
    area
   });
 
-  // 6. UI
   const mapUI = new MapUI({
    adapter: mapAdapter,
    mapElement: mapEl,
@@ -112,32 +85,28 @@ export async function init() {
 
   const uiBuilder = new UIBuilder();
 
- const uiFlow = new UIFlow({
-  gameFlow,
-  screenManager,
-  staticUI,
-  uiBuilder,
-  streetViewUI
- });
-
-  // 7. TWEAKS
-  const tweaks = new Tweaks({
-   mapElement: mapEl,
-   streetElement: streetEl,
-   root: screensEl
+  const uiFlow = new UIFlow({
+   gameFlow,
+   screenManager,
+   staticUI,
+   uiBuilder,
+   streetViewUI
   });
 
-  // 8. INIT UI
   mapUI.init();
   streetViewUI.init({ lat: 0, lng: 0 });
 
-  tweaks.apply?.();
+  mapUI.bindGuess((point) => {
+   gameFlow.finishGuess(point);
+  });
 
-  // 9. START GAME
+  mapUI.bindGuessButton(guessBtn);
+
+  const tweaks = new Tweaks();
+
   await gameFlow.startGame();
 
   console.log("INIT OK");
-
  } catch (err) {
   console.error("INIT ERROR:", err);
  }
