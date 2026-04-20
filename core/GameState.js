@@ -31,7 +31,7 @@ export class GameState {
   return round?.guesses.find(g => g.playerId === playerId);
  }
 
- addGuess(playerId, guess, result) {
+ addGuess(playerId, guess) {
   const round = this.getCurrentRound();
   if (!round) return;
 
@@ -41,10 +41,29 @@ export class GameState {
     lat: guess.lat,
     lng: guess.lng
    },
-   distance: result.distance,
-   score: result.score,
-   isFinished: result.isFinished ?? false
+   distance: 0,
+   score: 0,
+   isFinished: false
   });
+ }
+
+ updateGuess(playerId, point) {
+  const guess = this.getPlayerGuess(playerId);
+  if (!guess || guess.isFinished) return;
+
+  guess.guess = {
+   lat: point.lat,
+   lng: point.lng
+  };
+ }
+
+ finalizeGuess(playerId, result) {
+  const guess = this.getPlayerGuess(playerId);
+  if (!guess || guess.isFinished) return;
+
+  guess.distance = result.distance;
+  guess.score = result.score;
+  guess.isFinished = true;
  }
 
  commitRound() {
