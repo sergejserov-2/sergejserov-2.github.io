@@ -50,7 +50,6 @@ export class GameFlow {
 
     this.game.startRound(location);
 
-    // reset services
     this.moves.reset(this.game.config.rules.moves);
 
     this.timer.start(
@@ -73,7 +72,6 @@ export class GameFlow {
     if (this.locked) return;
 
     const canMove = this.moves.consume();
-
     this.emit("movesUpdated", this.moves.getRemaining());
 
     if (!canMove) {
@@ -110,15 +108,15 @@ export class GameFlow {
       return;
     }
 
-    // ⚠️ ВАЖНО:
-    // мы НЕ вызываем nextRound автоматически
-    // UI решает когда продолжить
-
-    this.emit("awaitNextRound", this.game.getState());
+    // 🎯 ВАЖНО: UX ТЕПЕРЬ В UIFLOW
+    this.emit("roundResultShown", {
+      state: this.game.getState(),
+      reason
+    });
   }
 
   // =========================
-  // NEXT ROUND (manual trigger)
+  // NEXT ROUND
   // =========================
   async nextRound() {
     this.rounds.next();
