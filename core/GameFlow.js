@@ -1,11 +1,13 @@
 export class GameFlow {
- constructor({ game, generator, scoring, area }) {
+ constructor({ game, generator, scoring }) {
   this.game = game;
   this.generator = generator;
   this.scoring = scoring;
-  this.area = area;
 
   this.listeners = {};
+
+  // runtime context (inject from init)
+  this.area = null;
  }
 
  on(event, fn) {
@@ -43,9 +45,6 @@ export class GameFlow {
   });
  }
 
- // =========================
- // FIXED: finishGuess moved here
- // =========================
  finishGuess(playerId = "p1") {
   const round = this.game.state.getCurrentRound();
   if (!round) return;
@@ -55,7 +54,8 @@ export class GameFlow {
 
   const result = this.scoring.calculateResult({
    guess: guess.guess,
-   actual: round.actualLocation
+   actual: round.actualLocation,
+   area: this.area
   });
 
   guess.distance = result.distance;
