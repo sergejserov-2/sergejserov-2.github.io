@@ -74,19 +74,15 @@ export class UIFlow {
   // ROUND END
   // =========================
 
-  this.gameFlow.on("roundEnded", (vm) => {
+  this.gameFlow.on("roundEnded", async (vm) => {
+   const round = vm?.rounds?.[vm.currentRoundIndex];
+   if (!round) return;
+   await this.mapUI?.renderOverviewAsync(round);
    this.screenManager.show("roundResult");
-
    this.staticUI.showRoundResult(
     this.uiBuilder.formatRoundVM(vm)
    );
-
-   const roundIndex = vm.currentRoundIndex;
-   const round = vm?.rounds?.[roundIndex];
-
-   if (round && round.guesses?.length) {
-    this.mapUI?.renderOverview(round);
-   }
+  
   });
 
   // =========================
