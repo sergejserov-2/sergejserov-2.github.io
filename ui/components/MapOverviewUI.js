@@ -52,7 +52,7 @@ export class MapOverviewUI {
   // CAMERA (PURE UI LOGIC)
   // =========================
   fitToPoints(points) {
-    if (!this.map  !points  points.length < 2) return;
+    if (!this.map || !points || points.length < 2) return;
 
     const a = points[0];
     const b = points[1];
