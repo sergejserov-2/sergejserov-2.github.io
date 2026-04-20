@@ -24,7 +24,8 @@ export class UIFlow {
   this.gameFlow.on("roundStarted", (vm) => {
    this.screenManager.show("round");
 
-   this.mapWrapperUI?.reset();
+   this.mapWrapperUI.reset();
+   this.mapOverviewUI.clear();
 
    this.staticUI.updateHUD(
     this.uiBuilder.formatGameVM(vm)
@@ -39,7 +40,7 @@ export class UIFlow {
    const round = vm?.rounds?.[vm.currentRoundIndex];
    if (!round) return;
 
-   this.mapOverviewUI?.render(round);
+   this.mapOverviewUI.render(round);
 
    this.screenManager.show("roundResult");
 
@@ -50,12 +51,12 @@ export class UIFlow {
 
   this.gameFlow.on("inputLocked", () => {
    this.staticUI.lockInput?.();
-   this.mapWrapperUI?.lock();
+   this.mapWrapperUI.lock();
   });
 
   this.gameFlow.on("inputUnlocked", () => {
    this.staticUI.unlockInput?.();
-   this.mapWrapperUI?.unlock();
+   this.mapWrapperUI.unlock();
   });
 
   this.gameFlow.on("gameEnded", (vm) => {
