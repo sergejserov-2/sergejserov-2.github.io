@@ -1,43 +1,42 @@
 export class StaticUI {
- constructor({ hudElement, mapElement, streetViewElement }) {
-  if (!hudElement) throw new Error("StaticUI: hudElement is required");
+ constructor({ hudElement }) {
+  if (!hudElement) throw new Error("StaticUI: missing hud");
 
   this.hudElement = hudElement;
-  this.mapElement = mapElement;
-  this.streetViewElement = streetViewElement;
 
   this.roundEl = hudElement.querySelector(".round b");
   this.totalEl = hudElement.querySelector(".total-score b");
   this.timeEl = hudElement.querySelector(".time-left b");
   this.movesEl = hudElement.querySelector(".moves-left b");
-
-  this.progressEl = hudElement.querySelector(".score-progress");
-
-  if (!this.roundEl || !this.totalEl) {
-   throw new Error("StaticUI: invalid HUD structure");
-  }
  }
 
- setScreen(screen) {
-  document.body.dataset.screen = screen;
+ updateHUD(model) {
+  if (model.roundText) this.roundEl.textContent = model.roundText;
+  if (model.totalText) this.totalEl.textContent = model.totalText;
+  if (model.timeText) this.timeEl.textContent = model.timeText;
+  if (model.movesText) this.movesEl.textContent = model.movesText;
  }
 
- updateHUD(hud) {
-  if (hud.roundText) this.roundEl.textContent = hud.roundText;
-  if (hud.totalText) this.totalEl.textContent = hud.totalText;
-  if (hud.timeText && this.timeEl) this.timeEl.textContent = hud.timeText;
-  if (hud.movesText && this.movesEl) this.movesEl.textContent = hud.movesText;
+ showRoundResult(model) {
+  const root = document.querySelector(".round-result");
+  if (!root) return;
 
-  if (this.progressEl && typeof hud.progress === "number") {
-   this.progressEl.style.width = `${hud.progress * 100}%`;
-  }
+  root.querySelector(".score-text").innerHTML = `
+   <p>${model.distance} km</p>
+   <p>${model.score} pts</p>
+  `;
+
+  const bar = root.querySelector(".score-progress");
+  if (bar) bar.style.width = `${model.progress * 100}%`;
  }
 
- showRoundResult(vm) {
-  console.log("ROUND RESULT VM:", vm);
- }
+ showGameResult(model) {
+  const root = document.querySelector(".game-result");
+  if (!root) return;
 
- showGameResult(vm) {
-  console.log("GAME RESULT VM:", vm);
+  root.querySelector(".score-text").innerHTML = `
+   <p>Игра завершена</p>
+   <p>Раундов: ${model.rounds}</p>
+  `;
  }
 }
