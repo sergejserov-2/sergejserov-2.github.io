@@ -66,7 +66,7 @@ export class MapUI {
  }
 
  // =========================
- // MARKERS (GAME MAP)
+ // MARKERS
  // =========================
 
  placeGuessMarker(point) {
@@ -78,7 +78,7 @@ export class MapUI {
    this.map,
    point,
    {
-    color: this.uiBuilder.getPlayerColor("p1"),
+    color: this.uiBuilder?.getPlayerColor?.("p1") ?? "#ff4d4d",
     size: 20
    }
   );
@@ -127,20 +127,20 @@ export class MapUI {
 
   const playerId = guessObj?.playerId || "p1";
 
+  const color =
+   this.uiBuilder?.getPlayerColor?.(playerId) ?? "#ff4d4d";
+
   const guessMarker = this.adapter.createMarker(
    this.overviewMap,
    guess,
-   {
-    color: this.uiBuilder.getPlayerColor(playerId),
-    size: 20
-   }
+   { color, size: 20 }
   );
 
   const actualMarker = this.adapter.createMarker(
    this.overviewMap,
    actual,
    {
-    color: this.uiBuilder.getActualColor(),
+    color: this.uiBuilder?.getActualColor?.() ?? "#9aa0a6",
     size: 30
    }
   );
@@ -148,9 +148,7 @@ export class MapUI {
   const line = this.adapter.createPolyline(
    this.overviewMap,
    [guess, actual],
-   {
-    color: this.uiBuilder.getPlayerColor(playerId)
-   }
+   { color }
   );
 
   this.adapter.fitToMarkers(this.overviewMap, [
@@ -166,10 +164,6 @@ export class MapUI {
   }, 100);
  }
 
- // =========================
- // CLEANUP
- // =========================
-
  clearOverview() {
   this.overviewLines.forEach(l => l.setMap(null));
   this.overviewMarkers.forEach(m => this.adapter.removeMarker(m));
@@ -184,7 +178,7 @@ export class MapUI {
  }
 
  // =========================
- // RESIZE
+ // RESIZE (FIXED)
  // =========================
 
  initResize() {
@@ -204,17 +198,18 @@ export class MapUI {
 
    startX = e.clientX;
    startY = e.clientY;
-   sta
-
-rtW = rect.width;
+   startW = rect.width;
    startH = rect.height;
 
    const onMove = (e) => {
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
 
-    wrapper.style.width = Math.max(200, startW + dx) + "px";
-    wrapper.style.height = Math.max(200, startH - dy) + "px";
+    const newW = Math.max(200, startW + dx);
+    const newH = Math.max(200, startH - dy);
+
+    wrapper.style.width = newW + "px";
+    wrapper.style.height = newH + "px";
 
     this.adapter.triggerResize?.(this.map);
    };
@@ -222,13 +217,13 @@ rtW = rect.width;
    const onUp = () => {
     window.removeEventListener("mousemove", onMove);
     window.removeEventListener("mouseup", onUp);
+    document.body.style.userSelect = "";
    };
+
+   document.body.style.userSelect = "none";
 
    window.addEventListener("mousemove", onMove);
    window.addEventListener("mouseup", onUp);
   });
  }
 }
-
-
-
