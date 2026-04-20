@@ -19,6 +19,7 @@ export class GameFlow {
  async startGame() {
   this.game.startGame();
   this.emit("gameStarted");
+
   await this.nextRound();
  }
 
@@ -42,13 +43,28 @@ export class GameFlow {
   });
  }
 
+ // =========================
+ // FIXED: finishGuess moved here
+ // =========================
  finishGuess(playerId = "p1") {
-  const result = this.game.finishGuess(playerId);
-  if (!result) return;
+  const round = this.game.state.getCurrentRound();
+  if (!round) return;
+
+  const guess = this.game.state.getPlayerGuess(playerId);
+  if (!guess || guess.isFinished) return;
+
+  const result = this.scoring.calculateResult({
+   guess: guess.guess,
+   actual: round.actualLocation
+  });
+
+  guess.distance = result.distance;
+  guess.score = result.score;
+  guess.isFinished = true;
 
   this.emit("guessFinished", {
    result,
-   round: this.game.state.getCurrentRound()
+   round
   });
 
   if (this.game.areAllPlayersFinished()) {
