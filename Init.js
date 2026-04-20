@@ -97,7 +97,7 @@ export async function init() {
  // =========================
  const mapWrapperUI = new MapWrapperUI({
   adapter: mapAdapter,
-  mapElement: mapEl,
+  element: mapEl,
   uiBuilder
  });
 
