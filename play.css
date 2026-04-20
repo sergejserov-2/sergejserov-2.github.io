@@ -101,6 +101,7 @@ body {
  position: absolute;
  inset: 0;
  z-index: var(--z-overlay);
+ pointers-events: none;
 }
 
 /* overlay */
