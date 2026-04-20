@@ -1,12 +1,12 @@
+import { Geometry } from "../../domain/math/Geometry.js";
+
 export class MapOverviewUI {
  constructor({ adapter, element, uiBuilder }) {
   this.adapter = adapter;
   this.uiBuilder = uiBuilder;
-
   this.element = element;
 
   this.map = null;
-
   this.markers = [];
   this.lines = [];
  }
@@ -19,12 +19,13 @@ export class MapOverviewUI {
   if (!this.element) return;
 
   this.map = this.adapter.createMap(this.element, {
+   center: { lat: 20, lng: 0 },
    zoom: 2
   });
  }
 
  // =========================
- // RENDER ROUND
+ // RENDER
  // =========================
 
  render(round) {
@@ -43,61 +44,42 @@ export class MapOverviewUI {
   const playerColor = this.uiBuilder.getPlayerColor(playerId);
   const actualColor = this.uiBuilder.getActualColor();
 
-  const guessMarker = this.adapter.createMarker(
-   this.map,
-   guess,
-   {
-    color: playerColor,
-    size: 20
-   }
-  );
+  const guessMarker = this.adapter.createMarker(this.map, guess, {
+   color: playerColor,
+   size: 20
+  });
 
-  const actualMarker = this.adapter.createMarker(
-   this.map,
-   actual,
-   {
-    color: actualColor,
-    size: 30
-   }
-  );
+  const actualMarker = this.adapter.createMarker(this.map, actual, {
+   color: actualColor,
+   size: 30
+  });
 
-  const line = this.adapter.createPolyline(
-   this.map,
-   [guess, actual],
-   {
-    color: playerColor
-   }
-  );
+  const line = this.adapter.createPolyline(this.map, [guess, actual], {
+   color: playerColor
+  });
 
   this.fitToPoints([guess, actual]);
 
   this.markers.push(guessMarker, actualMarker);
   this.lines.push(line);
-
-  setTimeout(() => {
-   if (this.map && window.google?.maps?.event) {
-    google.maps.event.trigger(this.map, "resize");
-   }
-  }, 100);
  }
 
  // =========================
- // CAMERA LOGIC
+ // CAMERA (NO GOOGLE DEPENDENCY)
  // =========================
 
  fitToPoints(points) {
-  if (!this.map || !points?.length || points.length < 2) return;
+  if (!this.map || !points || points.length < 2) return;
 
-  const [a, b] = points;
-
-  if (!a || !b) return;
+  const a = points[0];
+  const b = points[1];
 
   const center = {
    lat: (a.lat + b.lat) / 2,
    lng: (a.lng + b.lng) / 2
   };
 
-  const distance = this._distance(a, b);
+  const distance = Geometry.distance(a, b);
 
   let zoom = 4;
 
@@ -109,25 +91,6 @@ export class MapOverviewUI {
 
   this.map.setCenter(center);
   this.map.setZoom(zoom);
- }
-
- // =========================
- // DISTANCE
- // =========================
-
- _distance(a, b) {
-  const R = 6371;
-
-  const dLat = (b.lat - a.lat) * Math.PI / 180;
-  const dLng = (b.lng - a.lng) * Math.PI / 180;
-
-  const x =
-   Math.sin(dLat / 2) ** 2 +
-   Math.cos(a.lat * Math.PI / 180) *
-   Math.cos(b.lat * Math.PI / 180) *
-   Math.sin(dLng / 2) ** 2;
-
-  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
  }
 
  // =========================
@@ -143,37 +106,25 @@ export class MapOverviewUI {
  }
 
  // =========================
- // MULTIPLAYER HOOK
+ // MULTI
  // =========================
 
  addPlayerResult({ guess, actual, playerId }) {
   const color = this.uiBuilder.getPlayerColor(playerId);
 
-  const guessMarker = this.adapter.createMarker(
-   this.map,
-   guess,
-   {
-    color,
-    size: 20
-   }
-  );
+  const guessMarker = this.adapter.createMarker(this.map, guess, {
+   color,
+   size: 20
+  });
 
-  const actualMarker = this.adapter.createMarker(
-   this.map,
-   actual,
-   {
-    color: this.uiBuilder.getActualColor(),
-    size: 30
-   }
-  );
+  const actualMarker = this.adapter.createMarker(this.map, actual, {
+   color: this.uiBuilder.getActualColor(),
+   size: 30
+  });
 
-  const line = this.adapter.createPolyline(
-   this.map,
-   [guess, actual],
-   {
-    color
-   }
-  );
+  const line = this.adapter.createPolyline(this.map, [guess, actual], {
+   color
+  });
 
   this.markers.push(guessMarker, actualMarker);
   this.lines.push(line);
