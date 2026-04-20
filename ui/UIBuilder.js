@@ -28,8 +28,8 @@ export class UIBuilder {
    status: state.status,
    currentRoundIndex: state.currentRoundIndex,
    totalScore,
-   roundText: `Раунд: ${state.currentRoundIndex + 1}`,
-   totalText: `Счёт: ${totalScore}`,
+   roundText: `Раунд: <b>${state.currentRoundIndex + 1}</b>`,
+   totalText: `Счёт: <b>${totalScore}</b>`,
    progress: 0
   };
  }
