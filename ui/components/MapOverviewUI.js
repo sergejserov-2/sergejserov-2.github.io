@@ -46,63 +46,47 @@ export class MapOverviewUI {
   const actualColor =
    this.uiBuilder?.getActualColor?.() ?? "#9aa0a6";
 
-  // =========================
-  // MARKERS
-  // =========================
-
   const guessMarker = this.adapter.createMarker(
    this.map,
    guess,
-   {
-    color: playerColor,
-    size: 20
-   }
+   { color: playerColor, size: 20 }
   );
 
   const actualMarker = this.adapter.createMarker(
    this.map,
    actual,
-   {
-    color: actualColor,
-    size: 30
-   }
+   { color: actualColor, size: 30 }
   );
-
-  // =========================
-  // LINE
-  // =========================
 
   const line = this.adapter.createPolyline(
    this.map,
    [guess, actual],
-   {
-    color: playerColor
-   }
+   { color: playerColor }
   );
-
-  // =========================
-  // CAMERA (НОВАЯ ЛОГИКА ВНУТРИ UI)
-  // =========================
 
   this.fitToPoints([guess, actual]);
 
   this.markers.push(guessMarker, actualMarker);
   this.lines.push(line);
 
+  // 🔥 SAFE RESIZE (без прямого google access)
   setTimeout(() => {
-   google.maps.event.trigger(this.map, "resize");
+   if (this.map && window.google?.maps?.event) {
+    google.maps.event.trigger(this.map, "resize");
+   }
   }, 100);
  }
 
  // =========================
- // CAMERA LOGIC (NO GOOGLE API COUPLING)
+ // CAMERA LOGIC
  // =========================
 
  fitToPoints(points) {
-  if (!this.map || !points?.length) return;
-  if (points.length < 2) return;
+  if (!this.map || !points?.length || points.length < 2) return;
 
   const [a, b] = points;
+
+  if (!a || !b) return;
 
   const center = {
    lat: (a.lat + b.lat) / 2,
