@@ -118,6 +118,8 @@ body {
  pointer-events: none;
 
  transition: 0.2s ease;
+ background: rgba(0, 0, 0, 0.6);
+ backdrop-filter: blur(3px);
 }
 
 .guess-overview.active {
