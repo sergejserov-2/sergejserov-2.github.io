@@ -1,58 +1,61 @@
-import { Game } from "./core/Game.js";
-import { GameFlow } from "./core/GameFlow.js";
-import { GameState } from "./core/GameState.js";
+import { Game } from "./game/Game.js";
+import { GameState } from "./game/GameState.js";
+import { GameFlow } from "./game/GameFlow.js";
 
-import { Scoring } from "./domain/Scoring.js";
+import { Scoring } from "./core/Scoring.js";
+import { Geometry } from "./core/Geometry.js";
+import { Difficulty } from "./core/Difficulty.js";
+
 import { LocationGenerator } from "./domain/LocationGenerator.js";
-import { Geometry } from "./domain/math/Geometry.js";
-import { Difficulty } from "./domain/math/Difficulty.js";
 import { AreaRegistry } from "./domain/AreaRegistry.js";
 
 import { MapAdapter } from "./adapters/MapAdapter.js";
+import { StreetViewAdapter } from "./adapters/StreetViewAdapter.js";
 
 import { MapUI } from "./ui/components/MapUI.js";
 import { StreetViewUI } from "./ui/components/StreetViewUI.js";
-
 import { StaticUI } from "./ui/components/StaticUI.js";
-import { ScreenManager } from "./ui/components/ScreenManager.js";
 
+import { ScreenManager } from "./ui/ScreenManager.js";
 import { UIFlow } from "./ui/UIFlow.js";
 import { UIBuilder } from "./ui/UIBuilder.js";
-import { UIState } from "./ui/UIState.js";
 
-import { tweaks } from "./ui/tweaks.js";
+// =========================
+// BOOTSTRAP
+// =========================
 
 export async function init() {
- console.log("INIT ENTER");
+ console.log("🚀 INIT START");
 
  try {
 
+  // =========================
+  // DOM
+  // =========================
   const hud = document.querySelector(".hud");
   const mapEl = document.querySelector(".map");
   const streetEl = document.querySelector(".streetview");
   const screensEl = document.querySelector(".screens");
   const overviewMapEl = document.querySelector(".overview-map");
 
-  if (!hud || !mapEl || !streetEl || !screensEl) {
-   throw new Error("INIT: missing DOM elements");
+  if (!hud  !mapEl  !streetEl || !screensEl) {
+   throw new Error("Missing DOM elements");
   }
 
-  const mapAdapter = new MapAdapter();
-
+  // =========================
+  // CORE (RULES)
+  // =========================
   const geometry = Geometry;
 
   const area = AreaRegistry.get("europe");
 
-  const difficulty = new Difficulty({ area });
+  const difficulty = new Difficulty({
+   area
+  });
 
   const scoring = new Scoring({
    geometry,
    difficulty
-  });
-
-  const generator = new LocationGenerator({
-   mapAdapter,
-   geometry
   });
 
   const gameState = new GameState();
@@ -63,12 +66,27 @@ export async function init() {
    players: ["p1"]
   });
 
+  // =========================
+  // GAME FLOW
+  // =========================
   const gameFlow = new GameFlow({
    game,
-   generator,
+   generator: new LocationGenerator({
+    mapAdapter: new MapAdapter(),
+    geometry
+   }),
    area
   });
 
+  // =========================
+  // ADAPTERS
+  // =========================
+  const mapAdapter = new MapAdapter();
+  const streetAdapter = new StreetViewAdapter();
+
+  // =========================
+  // UI COMPONENTS
+  // =========================
   const mapUI = new MapUI({
    adapter: mapAdapter,
    mapElement: mapEl,
@@ -76,45 +94,49 @@ export async function init() {
   });
 
   const streetViewUI = new StreetViewUI({
-   adapter: mapAdapter,
+   adapter: streetAdapter,
    element: streetEl
   });
 
   const staticUI = new StaticUI({
-   hudElement: hud,
-   mapElement: mapEl,
-   streetViewElement: streetEl
+   hudElement: hud
   });
 
   const screenManager = new ScreenManager({
-   screensElement: screensEl
+   root: screensEl
   });
 
-  const uiState = new UIState();
   const uiBuilder = new UIBuilder();
 
+  // =========================
+  // UI FLOW (EVENT LAYER)
+  // =========================
   const uiFlow = new UIFlow({
    gameFlow,
-   mapUI,
-   streetViewUI,
-   staticUI,
    screenManager,
-   uiState,
+   staticUI,
    uiBuilder
   });
 
+  // =========================
+  // INIT UI
+  // =========================
   mapUI.init();
-  streetViewUI.init();
+  streetViewUI.init({ lat: 0, lng: 0 });
 
-  tweaks();
-
+  // =========================
+  // START GAME
+  // =========================
   await gameFlow.startGame();
 
-  console.log("INIT SUCCESS");
+  console.log("✅ INIT OK");
 
  } catch (err) {
   console.error("💥 INIT ERROR:", err);
  }
 }
 
+// =========================
+// START
+// =========================
 init();
