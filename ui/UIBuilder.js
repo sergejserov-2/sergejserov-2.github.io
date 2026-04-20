@@ -1,4 +1,3 @@
-
 export class UIBuilder {
 
  constructor() {
@@ -11,8 +10,8 @@ export class UIBuilder {
   this.actualColor = "#9aa0a6";
  }
 
- getPlayerColor(playerId = "p1") {
-  return this.playerColors[playerId] || "#ff4d4d";
+ getPlayerColor(id = "p1") {
+  return this.playerColors[id] || "#ff4d4d";
  }
 
  getActualColor() {
@@ -31,8 +30,6 @@ export class UIBuilder {
    totalScore,
    roundText: `Раунд: ${state.currentRoundIndex + 1}`,
    totalText: `Счёт: ${totalScore}`,
-   timeText: "",
-   movesText: "",
    progress: 0
   };
  }
@@ -42,29 +39,26 @@ export class UIBuilder {
   const guess = round?.guesses?.[0];
 
   return {
-   index: round.index,
+   index: round?.index,
    distance: guess?.distance ?? 0,
    score: guess?.score ?? 0,
    progress: Math.min((guess?.score ?? 0) / 5000, 1),
    guess: guess?.guess,
-   actual: round.actualLocation
+   actual: round?.actualLocation
   };
  }
 
  formatGameResultVM(state) {
-  const rounds = state.rounds;
-
   return {
-   totalScore: rounds.reduce((sum, r) => {
+   totalScore: state.rounds.reduce((s, r) => {
     const g = r.guesses?.[0];
-    return sum + (g?.score || 0);
+    return s + (g?.score || 0);
    }, 0),
 
-   roundsCount: rounds.length,
+   roundsCount: state.rounds.length,
 
-   rounds: rounds.map(r => {
+   rounds: state.rounds.map(r => {
     const g = r.guesses?.[0];
-
     return {
      index: r.index,
      distance: g?.distance ?? 0,
