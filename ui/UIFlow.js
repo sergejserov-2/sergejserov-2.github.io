@@ -13,11 +13,11 @@ export class UIFlow {
 
   this.gameFlow.on("gameStarted", (vm) => {
    this.screenManager.show("round");
-   this.staticUI.updateHUD(this.uiBuilder.formatHUD(vm));
+   this.staticUI.updateHUD(this.uiBuilder.formatGameVM(vm));
   });
 
   this.gameFlow.on("stateUpdated", (vm) => {
-   this.staticUI.updateHUD(this.uiBuilder.formatHUD(vm));
+   this.staticUI.updateHUD(this.uiBuilder.formatGameVM(vm));
   });
 
   this.gameFlow.on("inputLocked", () => {
@@ -30,10 +30,12 @@ export class UIFlow {
 
   this.gameFlow.on("roundStarted", (vm) => {
    this.screenManager.show("round");
-   this.staticUI.updateHUD(this.uiBuilder.formatHUD(vm));
 
-   // 🔥 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ
-   const location = vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
+   this.staticUI.updateHUD(this.uiBuilder.formatGameVM(vm));
+
+   const location =
+    vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
+
    if (location) {
     this.streetViewUI?.setLocation(location);
    }
@@ -43,7 +45,7 @@ export class UIFlow {
    this.screenManager.show("roundResult");
 
    this.staticUI.showRoundResult(
-    this.uiBuilder.formatRoundResult(vm)
+    this.uiBuilder.formatRoundVM(vm)
    );
   });
 
@@ -51,7 +53,7 @@ export class UIFlow {
    this.screenManager.show("gameResult");
 
    this.staticUI.showGameResult(
-    this.uiBuilder.formatGameResult(vm)
+    this.uiBuilder.formatGameResultVM(vm)
    );
   });
  }
