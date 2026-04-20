@@ -42,10 +42,10 @@ export class MapAdapter {
   const config = this._getMarkerStyle(type);
 
   const svg = 
-  <svg width="${config.size}" height="${config.size}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+  `<svg width="${config.size}" height="${config.size}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
     <circle cx="10" cy="10" r="${config.radius}" fill="${config.color}" opacity="0.9"/>
     <circle cx="10" cy="10" r="${config.radius + 3}" stroke="${config.color}" stroke-width="2" fill="none" opacity="0.4"/>
-  </svg>
+  </svg>`
   ;
 
   return {
