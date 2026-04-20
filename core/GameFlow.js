@@ -42,7 +42,7 @@ export class GameFlow {
   this.emit("stateUpdated", this.game.getState());
  }
 
- finishGuess(point, playerId = "p1") {
+finishGuess(point, playerId = "p1") {
   if (this.locked) return;
 
   this.locked = true;
@@ -54,10 +54,18 @@ export class GameFlow {
   this.emit("roundEnded", this.game.getState());
   this.emit("stateUpdated", this.game.getState());
 
-  setTimeout(() => this.nextRound(), 10000);
+  const duration = 10000;
+  const startTime = Date.now();
+
+ this.emit("roundEndTimerStarted", {
+    duration,
+    startTime
+  });
+
+  setTimeout(() => this.nextRound(), duration);
 
   return result;
- }
+}
 
  async nextRound() {
   this.game.commitRound();
