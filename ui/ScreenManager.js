@@ -4,23 +4,28 @@ export class ScreenManager {
 
   this.views = {
    loading: root.querySelector(".loading-screen"),
-   round: root.querySelector(".game-scene"),
-   roundResult: root.querySelector(".guess-overview"),
-   gameResult: root.querySelector(".guess-overview")
+   round: document.querySelector(".game-scene"),
+   roundResult: root.querySelector(".round-result"),
+   gameResult: root.querySelector(".game-result")
   };
  }
 
  show(name) {
   Object.values(this.views).forEach(v => {
    if (!v) return;
-   v.classList.remove("active");
    v.style.display = "none";
   });
 
   const target = this.views[name];
   if (!target) return;
 
+  // game-scene — базовый слой
+  if (name === "round") {
+   target.style.display = "block";
+   return;
+  }
+
+  // overlay экраны
   target.style.display = "flex";
-  target.classList.add("active");
  }
 }
