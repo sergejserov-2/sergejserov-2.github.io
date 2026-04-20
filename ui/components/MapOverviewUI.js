@@ -59,10 +59,22 @@ export class MapOverviewUI {
    12
   );
 
-  this.adapter.fitToMarkers(this.map, [
-   guessMarker,
-   actualMarker
-  ]);
+fitToMarkers(map, markers, padding = 80) {
+ const bounds = new google.maps.LatLngBounds();
+
+ markers.forEach(m => {
+  const pos = m.getPosition();
+  if (pos) bounds.extend(pos);
+ });
+
+ map.fitBounds(bounds, padding);
+
+ const listener = google.maps.event.addListenerOnce(map, "idle", () => {
+  const zoom = map.getZoom();
+  if (zoom > 4) map.setZoom(4);
+  google.maps.event.removeListener(listener);
+ });
+}
 
   this.markers.push(guessMarker, actualMarker);
   this.lines.push(...segments);
