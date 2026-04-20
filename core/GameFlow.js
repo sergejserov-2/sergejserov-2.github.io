@@ -1,77 +1,79 @@
-export class GameFlow {
- constructor({ game, generator, area }) {
-  this.game = game;
-  this.generator = generator;
-  this.area = area;
+export class UIFlow {
+ constructor({
+  gameFlow,
+  screenManager,
+  staticUI,
+  uiBuilder,
+  streetViewUI,
+  mapUI
+ }) {
+  this.gameFlow = gameFlow;
+  this.screenManager = screenManager;
+  this.staticUI = staticUI;
+  this.uiBuilder = uiBuilder;
+  this.streetViewUI = streetViewUI;
+  this.mapUI = mapUI;
 
-  this.listeners = {};
-  this.locked = false;
+  this.bind();
  }
 
- on(event, cb) {
-  if (!this.listeners[event]) this.listeners[event] = [];
-  this.listeners[event].push(cb);
- }
+ bind() {
 
- emit(event, data) {
-  const list = this.listeners[event];
-  if (!list) return;
-  list.forEach(cb => cb(data));
- }
+  this.gameFlow.on("gameStarted", (vm) => {
+   this.screenManager.show("round");
+   this.staticUI.updateHUD(this.uiBuilder.formatGameVM(vm));
+  });
 
- async startGame() {
-  this.game.startGame();
+  this.gameFlow.on("stateUpdated", (vm) => {
+   this.staticUI.updateHUD(this.uiBuilder.formatGameVM(vm));
+  });
 
-  this.emit("gameStarted", this.game.getState());
+  this.gameFlow.on("inputLocked", () => {
+   this.staticUI.lockInput?.();
+  });
 
-  await this.startRound();
- }
+  this.gameFlow.on("inputUnlocked", () => {
+   this.staticUI.unlockInput?.();
+  });
 
- async startRound() {
-  this.locked = true;
-  this.emit("inputLocked");
+  this.gameFlow.on("roundStarted", (vm) => {
+   this.screenManager.show("round");
 
-  const location = await this.generator.generate(this.area);
+   this.staticUI.updateHUD(this.uiBuilder.formatGameVM(vm));
 
-  this.game.startRound(location);
+   const location =
+    vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
 
-  this.locked = false;
+   if (location) {
+    this.streetViewUI?.setLocation(location);
+   }
+  });
 
-  this.emit("inputUnlocked");
-  this.emit("roundStarted", this.game.getState());
-  this.emit("stateUpdated", this.game.getState());
- }
+  this.gameFlow.on("roundEnded", (vm) => {
+   this.screenManager.show("roundResult");
 
- finishGuess(point, playerId = "p1") {
-  if (this.locked) return;
+   // HUD/RESULT UI
+   this.staticUI.showRoundResult(
+    this.uiBuilder.formatRoundVM(vm)
+   );
 
-  this.locked = true;
-  this.emit("inputLocked");
+   // =========================
+   // MAP RESULT (FIX)
+   // =========================
+   const round =
+    vm?.rounds?.[vm.currentRoundIndex - 1];
 
-  this.game.setGuess(playerId, point);
-  const result = this.game.finishGuess(playerId);
+   if (round) {
+    this.mapUI?.renderOverview(round);
+   }
+  });
 
-  this.emit("roundEnded", this.game.getState());
-  this.emit("stateUpdated", this.game.getState());
+  this.gameFlow.on("gameEnded", (vm) => {
+   this.screenManager.show("gameResult");
 
-  setTimeout(() => this.nextRound(), 3000);
-
-  return result;
- }
-
- async nextRound() {
-  this.game.commitRound();
-
-  if (this.game.isGameEnded()) {
-   this.endGame();
-   return;
-  }
-
-  await this.startRound();
- }
-
- endGame() {
-  this.game.endGame();
-  this.emit("gameEnded", this.game.getState());
+   this.staticUI.showGameResult(
+    this.uiBuilder.formatGameResultVM(vm)
+   );
+  });
  }
 }
