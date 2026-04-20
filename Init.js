@@ -92,7 +92,8 @@ export async function init() {
  const mapUI = new MapUI({
   adapter: mapAdapter,
   mapElement: mapEl,
-  overviewElement: overviewMapEl
+  overviewElement: overviewMapEl,
+  uiBuilder
  });
 
  const streetViewUI = new StreetViewUI({
@@ -114,7 +115,6 @@ export async function init() {
   gameFlow,
   screenManager,
   staticUI,
-  uiBuilder,
   streetViewUI,
   mapUI
  });
