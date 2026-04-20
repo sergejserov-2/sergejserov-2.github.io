@@ -1,189 +1,104 @@
-export class MapUI {
- constructor({ adapter, mapElement, overviewElement }) {
-  this.adapter = adapter;
-  this.mapElement = mapElement;
-  this.overviewElement = overviewElement;
+export class UIFlow {
+ constructor({ gameFlow, screenManager, staticUI, uiBuilder, streetViewUI, mapUI }) {
+  this.gameFlow = gameFlow;
+  this.screenManager = screenManager;
+  this.staticUI = staticUI;
+  this.uiBuilder = uiBuilder;
+  this.streetViewUI = streetViewUI;
+  this.mapUI = mapUI;
 
-  this.map = null;
-  this.overviewMap = null;
-
-  this.guessMarker = null;
-  this.overviewMarkers = [];
-  this.overviewLines = [];
-
-  this.isLocked = false;
-  this.onGuess = null;
-
-  this.lastGuessPoint = null;
+  this.bind();
  }
 
- init() {
-  if (!this.mapElement || !this.overviewElement) return;
+ bind() {
 
-  this.map = this.adapter.createMap(this.mapElement, { zoom: 2 });
-  this.overviewMap = this.adapter.createMap(this.overviewElement, { zoom: 2 });
+  // =========================
+  // GAME START
+  // =========================
 
-  this.map.addListener("click", (e) => {
-   if (this.isLocked) return;
+  this.gameFlow.on("gameStarted", (vm) => {
+   this.screenManager.show("round");
 
-   const point = {
-    lat: e.latLng.lat(),
-    lng: e.latLng.lng()
-   };
-
-   this.lastGuessPoint = point;
-
-   this.placeGuessMarker(point);
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatGameVM(vm)
+   );
   });
 
-  this.initResize();
- }
+  // =========================
+  // STATE UPDATE
+  // =========================
 
- bindGuess(callback) {
-  this.onGuess = callback;
- }
-
- bindGuessButton(element) {
-  if (!element) return;
-
-  element.addEventListener("click", () => {
-   if (!this.onGuess) return;
-   if (!this.lastGuessPoint) return;
-
-   this.onGuess(this.lastGuessPoint);
+  this.gameFlow.on("stateUpdated", (vm) => {
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatGameVM(vm)
+   );
   });
- }
 
- // =========================
- // RESIZE
- // =========================
+  // =========================
+  // INPUT LOCK
+  // =========================
 
- initResize() {
-  const handle = this.mapElement
-   ?.parentElement
-   ?.querySelector(".resize-handle");
-
-  if (!handle) return;
-
-  let startX, startY, startW, startH;
-
-  handle.addEventListener("mousedown", (e) => {
-   e.preventDefault();
-
-   const wrapper = this.mapElement.parentElement;
-   const rect = wrapper.getBoundingClientRect();
-
-   startX = e.clientX;
-   startY = e.clientY;
-   startW = rect.width;
-   startH = rect.height;
-
-   const onMove = (e) => {
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-
-    const newWidth = Math.max(200, startW + dx);
-    const newHeight = Math.max(200, startH - dy);
-
-    wrapper.style.width = newWidth + "px";
-    wrapper.style.height = newHeight + "px";
-
-    this.mapElement.style.width = "100%";
-    this.mapElement.style.height = "100%";
-
-    this.adapter.triggerResize?.(this.map);
-   };
-
-   const onUp = () => {
-    window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("mouseup", onUp);
-   };
-
-   window.addEventListener("mousemove", onMove);
-   window.addEventListener("mouseup", onUp);
+  this.gameFlow.on("inputLocked", () => {
+   this.staticUI.lockInput?.();
+   this.mapUI?.lock();
   });
- }
 
- // =========================
- // MARKERS
- // =========================
+  this.gameFlow.on("inputUnlocked", () => {
+   this.staticUI.unlockInput?.();
+   this.mapUI?.unlock();
+  });
 
- placeGuessMarker(point) {
-  if (!this.map || !point) return;
+  // =========================
+  // ROUND START
+  // =========================
 
-  this.clearGuessMarker();
-  this.guessMarker = this.adapter.createMarker(this.map, point);
- }
+  this.gameFlow.on("roundStarted", (vm) => {
+   this.screenManager.show("round");
 
- clearGuessMarker() {
-  if (!this.guessMarker) return;
+   // 🔥 очищаем UI перед новым раундом
+   this.mapUI?.reset();
 
-  this.adapter.removeMarker(this.guessMarker);
-  this.guessMarker = null;
- }
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatGameVM(vm)
+   );
 
- // =========================
- // RESET (ВАЖНО)
- // =========================
+   const location =
+    vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
 
- reset() {
-  this.unlock();
+   if (location) {
+    this.streetViewUI?.setLocation(location);
+   }
+  });
 
-  this.clearGuessMarker();
-  this.clearOverview();
+  // =========================
+  // ROUND END
+  // =========================
 
-  this.lastGuessPoint = null;
- }
+  this.gameFlow.on("roundEnded", (vm) => {
+   this.screenManager.show("roundResult");
 
- lock() {
-  this.isLocked = true;
- }
+   this.staticUI.showRoundResult(
+    this.uiBuilder.formatRoundVM(vm)
+   );
 
- unlock() {
-  this.isLocked = false;
- }
+   const roundIndex = vm.currentRoundIndex;
+   const round = vm?.rounds?.[roundIndex];
 
- // =========================
- // OVERVIEW RENDER
- // =========================
+   if (round && round.guesses?.length) {
+    this.mapUI?.renderOverview(round);
+   }
+  });
 
- renderOverview(round) {
-  if (!this.overviewMap) return;
+  // =========================
+  // GAME END
+  // =========================
 
-  const guess = round?.guesses?.[0]?.guess;
-  const actual = round?.actualLocation;
+  this.gameFlow.on("gameEnded", (vm) => {
+   this.screenManager.show("gameResult");
 
-  if (!guess || !actual) return;
-
-  this.clearOverview();
-
-  const guessMarker = this.adapter.createMarker(this.overviewMap, guess);
-  const actualMarker = this.adapter.createMarker(this.overviewMap, actual);
-
-  const line = this.adapter.createPolyline(this.overviewMap, [
-   guess,
-   actual
-  ]);
-
-  this.adapter.fitToMarkers(this.overviewMap, [
-   guessMarker,
-   actualMarker
-  ]);
-
-  this.overviewMarkers.push(guessMarker, actualMarker);
-  this.overviewLines.push(line);
- }
-
- refreshOverview() {
-  if (!this.overviewMap) return;
-  google.maps.event.trigger(this.overviewMap, "resize");
- }
-
- clearOverview() {
-  this.overviewLines.forEach(l => l.setMap(null));
-  this.overviewMarkers.forEach(m => this.adapter.removeMarker(m));
-
-  this.overviewLines = [];
-  this.overviewMarkers = [];
+   this.staticUI.showGameResult(
+    this.uiBuilder.formatGameResultVM(vm)
+   );
+  });
  }
 }
