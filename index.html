@@ -5,10 +5,6 @@
 <title>Geo Game</title>
 
 <style>
-/* =========================
-   BASE
-========================= */
-
 body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -20,12 +16,9 @@ body {
     height: 100vh;
 }
 
-/* =========================
-   CONTAINER
-========================= */
-
+/* CONTAINER */
 .box {
-    width: 440px;
+    width: 460px;
     background: #161a22;
     padding: 20px;
     border-radius: 14px;
@@ -37,10 +30,6 @@ h2 {
     font-size: 20px;
 }
 
-/* =========================
-   SECTIONS
-========================= */
-
 .section {
     margin-bottom: 16px;
 }
@@ -51,24 +40,22 @@ h2 {
     margin-bottom: 8px;
 }
 
-/* =========================
-   ROW BUTTONS
-========================= */
-
+/* ROW */
 .row {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
 }
 
+/* BUTTON */
 .btn {
     padding: 8px 10px;
     background: #2a2f3a;
     border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
-    transition: 0.15s;
     user-select: none;
+    transition: 0.15s;
 }
 
 .btn:hover {
@@ -79,32 +66,16 @@ h2 {
     background: #4ea1ff;
 }
 
-/* =========================
-   SPECIAL COLORS
-========================= */
-
-.btn.country {
-    border: 1px solid #2ecc71;
+/* INPUT ROW (toggle + input) */
+.inline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
-.btn.region {
-    border: 1px solid #f1c40f;
-}
-
-.btn.country.active {
-    background: rgba(46, 204, 113, 0.15);
-}
-
-.btn.region.active {
-    background: rgba(241, 196, 15, 0.15);
-}
-
-/* =========================
-   INPUTS
-========================= */
-
-input[type="number"] {
-    width: 100%;
+.inline input[type="number"],
+.inline input[type="text"] {
+    flex: 1;
     padding: 8px;
     border-radius: 8px;
     border: none;
@@ -113,21 +84,23 @@ input[type="number"] {
     outline: none;
 }
 
-/* =========================
-   CHECKBOXES
-========================= */
-
-label {
-    display: block;
-    margin-top: 6px;
-    font-size: 13px;
-    opacity: 0.9;
+.inline input:disabled {
+    opacity: 0.4;
 }
 
-/* =========================
-   START BUTTON
-========================= */
+/* MAP AREA */
+.map-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
 
+.map-row .btn {
+    flex: 1 1 auto;
+    text-align: center;
+}
+
+/* START */
 .start {
     width: 100%;
     margin-top: 10px;
@@ -143,6 +116,10 @@ label {
 .start:hover {
     background: #27ae60;
 }
+
+.start.wait {
+    background: #f39c12;
+}
 </style>
 
 </head>
@@ -156,9 +133,11 @@ label {
     <!-- MODE -->
     <div class="section">
         <div class="title">Режим</div>
-        <div class="row" id="modes">
+        <div class="row">
             <div class="btn active" data-mode="solo">Соло</div>
             <div class="btn" data-mode="duel">Дуэль</div>
+
+            <input id="duelLink" type="text" placeholder="Ссылка для игрока" disabled />
         </div>
     </div>
 
@@ -174,40 +153,37 @@ label {
         </div>
     </div>
 
-    <!-- TIME -->
+    <!-- TIMER -->
     <div class="section">
-        <div class="title">Время</div>
-        <input id="time" type="number" value="60" min="0">
-
-        <label>
-            <input type="checkbox" id="infiniteTime">
-            Бесконечное время
-        </label>
+        <div class="title">Таймер</div>
+        <div class="inline">
+            <div class="btn active" id="timeOff">Нет</div>
+            <div class="btn" id="timeOn">Установить</div>
+            <input id="timeInput" type="number" value="60" disabled>
+        </div>
     </div>
 
     <!-- MOVES -->
     <div class="section">
-        <div class="title">Ходы</div>
-        <input id="moves" type="number" value="10" min="0">
-
-        <label>
-            <input type="checkbox" id="infiniteMoves">
-            Бесконечные ходы
-        </label>
+        <div class="title">Шаги</div>
+        <div class="inline">
+            <div class="btn active" id="movesOff">Нет</div>
+            <div class="btn" id="movesOn">Установить</div>
+            <input id="movesInput" type="number" value="10" disabled>
+        </div>
     </div>
 
-    <!-- AREA -->
+    <!-- MAP -->
     <div class="section">
         <div class="title">Карта</div>
-        <div class="row" id="areas">
-            <div class="btn active" data-area="moscow">Москва</div>
-            <div class="btn" data-area="europe">Европа</div>
+        <div class="map-row" id="areas">
+            <div class="btn active" data-area="europe">Европа</div>
             <div class="btn" data-area="asia">Азия</div>
             <div class="btn" data-area="northAmerica">Северная Америка</div>
             <div class="btn" data-area="latinAmerica">Латинская Америка</div>
             <div class="btn" data-area="oceania">Океания</div>
             <div class="btn" data-area="middleEast">Ближний Восток</div>
-            <div class="btn" data-area="sovietUnion">Советский союз</div>        
+            <div class="btn" data-area="sovietUnion">СССР</div>
         </div>
     </div>
 
@@ -220,22 +196,35 @@ label {
 let mode = "solo";
 let area = "europe";
 let rounds = 5;
+
+let timeEnabled = false;
+let movesEnabled = false;
 // =========================
 // MODE
 // =========================
-
 document.querySelectorAll("[data-mode]").forEach(b => {
     b.onclick = () => {
         document.querySelectorAll("[data-mode]").forEach(x => x.classList.remove("active"));
         b.classList.add("active");
+
         mode = b.dataset.mode;
+
+        const link = document.getElementById("duelLink");
+
+        if (mode === "duel") {
+            link.disabled = false;
+            link.placeholder = "Ссылка для приглашения...";
+        } else {
+            link.disabled = true;
+            link.value = "";
+            link.placeholder = "";
+        }
     };
 });
 
 // =========================
 // ROUNDS
 // =========================
-
 document.querySelectorAll("[data-rounds]").forEach(b => {
     b.onclick = () => {
         document.querySelectorAll("[data-rounds]").forEach(x => x.classList.remove("active"));
@@ -247,7 +236,6 @@ document.querySelectorAll("[data-rounds]").forEach(b => {
 // =========================
 // AREA
 // =========================
-
 document.querySelectorAll("[data-area]").forEach(b => {
     b.onclick = () => {
         document.querySelectorAll("[data-area]").forEach(x => x.classList.remove("active"));
@@ -257,27 +245,59 @@ document.querySelectorAll("[data-area]").forEach(b => {
 });
 
 // =========================
+// TIMER
+// =========================
+const timeInput = document.getElementById("timeInput");
+document.getElementById("timeOff").onclick = () => {
+    timeEnabled = false;
+    timeInput.disabled = true;
+};
+
+document.getElementById("timeOn").onclick = () => {
+    timeEnabled = true;
+    timeInput.disabled = false;
+};
+
+// =========================
+// MOVES
+// =========================
+const movesInput = document.getElementById("movesInput");
+document.getElementById("movesOff").onclick = () => {
+    movesEnabled = false;
+    movesInput.disabled = true;
+};
+
+document.getElementById("movesOn").onclick = () => {
+    movesEnabled = true;
+    movesInput.disabled = false;
+};
+
+// =========================
 // START
 // =========================
-
 document.getElementById("start").onclick = () => {
-
-    const infiniteTime = document.getElementById("infiniteTime").checked;
-    const infiniteMoves = document.getElementById("infiniteMoves").checked;
 
     const config = {
         mode,
         area,
         rules: {
             rounds,
-            time: infiniteTime ? -1 : +document.getElementById("time").value,
-            moves: infiniteMoves ? -1 : +document.getElementById("moves").value,
+            time: timeEnabled ? +timeInput.value : -1,
+            moves: movesEnabled ? +movesInput.value : -1,
             zoom: true,
             pan: true
         }
     };
 
     localStorage.setItem("gameConfig", JSON.stringify(config));
+
+    const startBtn = document.getElementById("start");
+
+    if (mode === "duel") {
+        startBtn.textContent = "Ожидание игрока...";
+        startBtn.classList.add("wait");
+        return;
+    }
 
     window.location.href = "/play.html";
 };
