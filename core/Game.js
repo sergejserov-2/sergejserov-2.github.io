@@ -36,4 +36,34 @@ export class Game {
   if (!guess || guess.isFinished) return;
 
   const result = this.scoring.calculate(
-   round
+   round.actualLocation,
+   guess.guess,
+   { area: round.area }
+  );
+
+  // через GameState API
+  this.state.finalizeGuess(playerId, result);
+
+  return result;
+ }
+
+ commitRound() {
+  this.state.commitRound();
+ }
+
+ endGame() {
+  this.state.end();
+ }
+
+ getState() {
+  return this.state.getState();
+ }
+
+ getCurrentRound() {
+  return this.state.getCurrentRound();
+ }
+
+ isGameEnded() {
+  return this.state.getState().status === "ended";
+ }
+}
