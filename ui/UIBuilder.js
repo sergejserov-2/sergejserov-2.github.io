@@ -1,27 +1,27 @@
 export class UIBuilder {
 
+ formatRoundResult(vm) {
+  return {
+   distance: vm.distance,
+   score: vm.score,
+   progress: vm.progress
+  };
+ }
+
+ formatGameResult(vm) {
+  return {
+   totalScore: vm.totalScore,
+   rounds: vm.rounds
+  };
+ }
+
  formatHUD(vm) {
   return {
-   roundText: vm.type === "ROUND_VM"
-    ? `Раунд ${vm.index + 1}`
-    : `Игра`,
-   totalText: `Раунды: ${vm.totalRounds}`,
-   progress: vm.progress ?? 0
-  };
- }
-
- formatResult(vm) {
-  return {
-   distanceText: `Дистанция: ${vm.distance} км`,
-   scoreText: `Счёт: ${vm.score}`
-  };
- }
-
- formatGame(vm) {
-  return {
-   statusText: `Игра завершена`,
-   roundsText: `Раундов: ${vm.totalRounds}`,
-   progress: vm.progress ?? 1
+   roundText: vm.roundText,
+   totalText: vm.totalText,
+   timeText: vm.timeText,
+   movesText: vm.movesText,
+   progress: vm.progress
   };
  }
 }
