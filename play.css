@@ -18,19 +18,20 @@ body {
  height: 100vh;
 }
 
-/* =========================
-   WORLD LAYER
-========================= */
-.game-scene,
+/* world */
+.game-scene {
+ position: absolute;
+ inset: 0;
+ z-index: var(--z-world);
+}
+
 .streetview {
  position: absolute;
  inset: 0;
  z-index: var(--z-world);
 }
 
-/* =========================
-   HUD
-========================= */
+/* hud */
 .hud {
  position: absolute;
  top: 10px;
@@ -40,9 +41,7 @@ body {
  pointer-events: none;
 }
 
-/* =========================
-   MAP
-========================= */
+/* map */
 .map-wrapper {
  position: absolute;
  bottom: 10px;
@@ -62,9 +61,7 @@ body {
  overflow: hidden;
 }
 
-/* =========================
-   MAP CONTROLS
-========================= */
+/* map controls */
 .resize-handle,
 .guess-button {
  position: absolute;
@@ -99,46 +96,36 @@ body {
  background: #3b8ee6;
 }
 
-/* =========================
-   SCREENS LAYER
-========================= */
+/* screens */
 .screens {
  position: absolute;
  inset: 0;
  z-index: var(--z-overlay);
-
- display: flex;
- justify-content: center;
- align-items: center;
-
- pointer-events: none;
 }
 
-/* overlay container */
+/* overlay */
 .guess-overview {
  position: absolute;
  inset: 0;
 
- display: none;
+ display: flex;
  justify-content: center;
  align-items: center;
 
+ opacity: 0;
+ visibility: hidden;
+ pointer-events: none;
+
+ transition: 0.2s ease;
+}
+
+.guess-overview.active {
+ opacity: 1;
+ visibility: visible;
  pointer-events: auto;
 }
 
-.guess-overview.round-result,
-.guess-overview.game-result {
- display: none;
-}
-
-/* active screens */
-.guess-overview.active {
- display: flex;
-}
-
-/* =========================
-   PANEL
-========================= */
+/* panel */
 .score-view {
  width: 650px;
  max-width: 92vw;
@@ -154,9 +141,7 @@ body {
  color: #fff;
 }
 
-/* =========================
-   MAP INSIDE RESULT
-========================= */
+/* result map */
 .overview-map {
  width: 100%;
  height: 450px;
@@ -166,9 +151,7 @@ body {
  background: #111;
 }
 
-/* =========================
-   PROGRESS BAR (ONLY RESULT)
-========================= */
+/* progress */
 .score-progress-bar {
  width: 100%;
  height: 12px;
@@ -186,9 +169,7 @@ body {
  transition: 0.4s ease;
 }
 
-/* =========================
-   TEXT
-========================= */
+/* text */
 .score-text {
  text-align: center;
 }
@@ -197,9 +178,7 @@ body {
  margin: 6px 0;
 }
 
-/* =========================
-   END BUTTONS
-========================= */
+/* buttons */
 .game-end-buttons {
  display: flex;
  gap: 10px;
