@@ -5,108 +5,71 @@ export class GameFlow {
   this.area = area;
 
   this.listeners = {};
+  this.locked = false;
+  this.currentLocation = null;
  }
 
- on(event, fn) {
-  (this.listeners[event] ||= []).push(fn);
+ on(event, cb) {
+  if (!this.listeners[event]) {
+   this.listeners[event] = [];
+  }
+  this.listeners[event].push(cb);
  }
 
- emit(event, payload) {
-  (this.listeners[event] || []).forEach(fn => fn(payload));
+ emit(event, data) {
+  const list = this.listeners[event];
+  if (!list) return;
+  list.forEach(cb => cb(data));
  }
 
- async startGame() {
-  this.game.startGame();
+ startGame() {
+  this.game.reset();
 
-  this.emit("gameStarted", this.buildGameVM());
+  this.emit("gameStarted", this.game.getViewModel());
 
-  await this.nextRound();
+  this.startRound();
  }
 
- async nextRound() {
-  const location = await this.generator.generate(this.area);
+ startRound() {
+  this.currentLocation = this.generator.generate(this.area);
 
-  this.game.startRound(location);
+  this.locked = false;
+  this.emit("inputUnlocked");
 
-  this.emit("roundStarted", this.buildRoundVM(location));
- }
-
- onGuess(playerId, point) {
-  this.game.setGuess(playerId, point);
-
-  this.emit("guessUpdated", {
-   playerId,
-   point
+  this.emit("roundStarted", {
+   round: this.game.state.currentRound
   });
  }
 
- finishGuess(playerId = "p1") {
-  const result = this.game.finishGuess(playerId);
-  if (!result) return;
+ finishGuess(point) {
+  if (this.locked) return;
 
-  this.emit("guessFinished", this.buildResultVM(result));
+  this.locked = true;
+  this.emit("inputLocked");
 
-  this._handleRoundEndWithDelay();
- }
+  const result = this.game.finishGuess(
+   this.currentLocation,
+   point
+  );
 
- _handleRoundEndWithDelay() {
-  this.emit("roundEndStarted");
+  this.emit("roundEnded", result);
+  this.emit("stateUpdated", this.game.getViewModel());
 
   setTimeout(() => {
-   this.emit("roundEndFinished");
-
-   this.game.commitRound();
-
-   if (this.game.isGameEnded()) {
-    this.emit("gameEnded", this.buildGameVM());
-   } else {
-    this.nextRound();
-   }
+   this.nextRound();
   }, 3000);
  }
 
- // =====================
- // 🔥 VM CONTRACT LAYER
- // =====================
+ nextRound() {
+  if (this.game.isFinished()) {
+   this.endGame();
+   return;
+  }
 
- buildRoundVM(actualLocation = null) {
-  const round = this.game.getCurrentRound();
-  const state = this.game.getState();
-
-  return {
-   type: "ROUND_VM",
-   index: round?.index ?? 0,
-   totalRounds: state.rounds.length + 1,
-   actualLocation,
-
-   // 🔥 PROGRESS (раундовый)
-   progress: (round?.index ?? 0) / Math.max(state.rounds.length + 1, 1)
-  };
+  this.startRound();
  }
 
- buildResultVM(result) {
-  const round = this.game.getCurrentRound();
-
-  return {
-   type: "RESULT_VM",
-   distance: result.distance,
-   score: result.score,
-   roundIndex: round?.index ?? 0
-  };
- }
-
- buildGameVM() {
-  const state = this.game.getState();
-
-  return {
-   type: "GAME_VM",
-   status: state.status,
-   totalRounds: state.rounds.length,
-
-   // 🔥 PROGRESS (игровой)
-   progress: state.rounds.length > 0
-    ? state.currentRoundIndex / Math.max(state.rounds.length, 1)
-    : 0
-  };
+ endGame() {
+  this.emit("gameEnded", this.game.getViewModel());
  }
 }
