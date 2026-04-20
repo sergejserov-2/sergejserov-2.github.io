@@ -1,88 +1,117 @@
 export class MapAdapter {
  constructor() {
-  this.svService = new google.maps.StreetViewService();
+  this.maps = google.maps;
  }
 
- createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
-  if (!element) throw new Error("Map container missing");
+ // =========================
+ // MAP
+ // =========================
 
-  return new google.maps.Map(element, {
-   center,
-   zoom,
-   disableDefaultUI: true
+ createMap(element, options = {}) {
+  return new this.maps.Map(element, {
+   center: { lat: 0, lng: 0 },
+   zoom: options.zoom ?? 2,
+   ...options
   });
  }
 
+ triggerResize(map) {
+  if (!map) return;
+  this.maps.event.trigger(map, "resize");
+ }
+
+ // =========================
+ // MARKERS (LEGACY + ADVANCED)
+ // =========================
+
  createMarker(map, { lat, lng }) {
-  return new google.maps.Marker({
-   position: { lat, lng },
-   map
+  const position = { lat, lng };
+
+  // =========================
+  // NEW API (AdvancedMarker)
+  // =========================
+  if (this.maps.marker?.AdvancedMarkerElement) {
+   const el = document.createElement("div");
+
+   el.style.width = "12px";
+   el.style.height = "12px";
+   el.style.background = "#ff4d4d";
+   el.style.borderRadius = "50%";
+   el.style.boxShadow = "0 0 10px rgba(255,0,0,0.6)";
+
+   return new this.maps.marker.AdvancedMarkerElement({
+    map,
+    position,
+    content: el
+   });
+  }
+
+  // =========================
+  // FALLBACK (old Marker)
+  // =========================
+  return new this.maps.Marker({
+   map,
+   position
   });
  }
 
  removeMarker(marker) {
-  marker?.setMap(null);
+  if (!marker) return;
+
+  // legacy Marker
+  if (marker.setMap) {
+   marker.setMap(null);
+   return;
+  }
+
+  // AdvancedMarkerElement
+  marker.map = null;
  }
 
+ // =========================
+ // POLYLINE
+ // =========================
+
  createPolyline(map, path) {
-  return new google.maps.Polyline({
+  return new this.maps.Polyline({
+   map,
    path,
-   geodesic: true,
+   strokeColor: "#4ea1ff",
    strokeOpacity: 1,
-   strokeWeight: 2,
-   map
+   strokeWeight: 3
   });
  }
 
+ // =========================
+ // FIT BOUNDS
+ // =========================
+
  fitToMarkers(map, markers) {
-  const bounds = new google.maps.LatLngBounds();
+  const bounds = new this.maps.LatLngBounds();
 
   markers.forEach(m => {
-   const pos = m.getPosition();
-   if (pos) bounds.extend(pos);
+   let pos = null;
+
+   // legacy Marker
+   if (m.getPosition) {
+    pos = m.getPosition();
+   }
+
+   // AdvancedMarkerElement
+   if (!pos && m.position) {
+    pos = m.position;
+   }
+
+   if (!pos) return;
+
+   const lat = typeof pos.lat === "function" ? pos.lat() : pos.lat;
+   const lng = typeof pos.lng === "function" ? pos.lng() : pos.lng;
+
+   if (lat != null && lng != null) {
+    bounds.extend({ lat, lng });
+   }
   });
 
   map.fitBounds(bounds);
- }
-
- createStreetView(element, { lat = 0, lng = 0 }) {
-  if (!element) throw new Error("StreetView container missing");
-
-  return new google.maps.StreetViewPanorama(element, {
-   position: { lat, lng },
-   pov: { heading: 0, pitch: 0 },
-   addressControl: false,
-   showRoadLabels: false,
-   fullscreenControl: false,
-   zoomControl: true,
-   disableDefaultUI: true
-  });
- }
-
- getStreetViewMeta({ lat, lng }) {
-  return new Promise(resolve => {
-   this.svService.getPanorama(
-    {
-     location: { lat, lng },
-     radius: 50000
-    },
-    (data, status) => {
-     const valid =
-      status === "OK" &&
-      data?.location &&
-      data?.location?.latLng;
-
-     resolve({
-      valid,
-      location: valid
-       ? {
-          lat: data.location.latLng.lat(),
-          lng: data.location.latLng.lng()
-         }
-       : null
-     });
-    }
-   );
-  });
  }
 }
