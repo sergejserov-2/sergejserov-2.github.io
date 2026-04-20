@@ -79,7 +79,7 @@ export class MapAdapter {
    el.style.width = "12px";
    el.style.height = "12px";
    el.style.background = color;
-   el.style.boxShadow = 0 0 10px ${color}66;
+   el.style.boxShadow = `0 0 10px ${color}66`;
   }
 
   return el;
