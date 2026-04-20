@@ -54,7 +54,7 @@ export class GameFlow {
   this.emit("roundEnded", this.game.getState());
   this.emit("stateUpdated", this.game.getState());
 
-  setTimeout(() => this.nextRound(), 3000);
+  setTimeout(() => this.nextRound(), 5000);
 
   return result;
  }
