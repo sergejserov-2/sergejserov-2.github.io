@@ -1,18 +1,14 @@
 export class Difficulty {
- constructor({ area }) {
-  this.area = area;
- }
-
  get(area) {
+  if (!area || !area.polygon) {
+   throw new Error("Difficulty: invalid area");
+  }
 
-  // базовая идея:
-  // чем меньше зона — тем сложнее
+  const base = area.minDistance || 1;
 
-  const size = area.polygon.length;
+  // чем меньше minDistance → тем сложнее угадывать
+  const factor = 1000 / base;
 
-  // инверсия размера
-  const raw = 100 / size;
-
-  return raw;
+  return Math.min(2, Math.max(0.3, factor));
  }
 }
