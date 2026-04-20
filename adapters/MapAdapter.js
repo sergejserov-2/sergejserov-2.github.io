@@ -64,4 +64,67 @@ export class MapAdapter {
 
   map.fitBounds(bounds);
  }
+
+ // =========================
+ // 🌈 GRADIENT LINE
+ // =========================
+
+ createGradientPolyline(map, path, fromColor, toColor, steps = 12) {
+  const segments = [];
+
+  for (let i = 0; i < steps; i++) {
+   const t1 = i / steps;
+   const t2 = (i + 1) / steps;
+
+   const p1 = this._interpolate(path[0], path[1], t1);
+   const p2 = this._interpolate(path[0], path[1], t2);
+
+   const color = this._mixColor(fromColor, toColor, t1);
+
+   const line = new google.maps.Polyline({
+    path: [p1, p2],
+    geodesic: true,
+    strokeColor: color,
+    strokeOpacity: 1,
+    strokeWeight: 3,
+    map
+   });
+
+   segments.push(line);
+  }
+
+  return segments;
+ }
+
+ // =========================
+ // HELPERS
+ // =========================
+
+ _interpolate(a, b, t) {
+  return {
+   lat: a.lat + (b.lat - a.lat) * t,
+   lng: a.lng + (b.lng - a.lng) * t
+  };
+ }
+
+ _mixColor(c1, c2, t) {
+  const a = this._hexToRgb(c1);
+  const b = this._hexToRgb(c2);
+
+  const r = Math.round(a.r + (b.r - a.r) * t);
+  const g = Math.round(a.g + (b.g - a.g) * t);
+  const bl = Math.round(a.b + (b.b - a.b) * t);
+
+  return `rgb(${r},${g},${bl})`;
+ }
+
+ _hexToRgb(hex) {
+  const h = hex.replace("#", "");
+
+  return {
+   r: parseInt(h.slice(0, 2), 16),
+   g: parseInt(h.slice(2, 4), 16),
+   b: parseInt(h.slice(4, 6), 16)
+  };
+ }
 }
