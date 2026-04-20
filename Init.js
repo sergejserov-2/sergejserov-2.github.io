@@ -112,12 +112,13 @@ export async function init() {
 
   const uiBuilder = new UIBuilder();
 
-  const uiFlow = new UIFlow({
-   gameFlow,
-   screenManager,
-   staticUI,
-   uiBuilder
-  });
+ const uiFlow = new UIFlow({
+  gameFlow,
+  screenManager,
+  staticUI,
+  uiBuilder,
+  streetViewUI
+ });
 
   // 7. TWEAKS
   const tweaks = new Tweaks({
