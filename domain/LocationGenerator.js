@@ -8,30 +8,30 @@ export class LocationGenerator {
  async generate(area) {
   const polygon = area.polygon;
 
-  const maxAttempts = 100;
   let attempts = 0;
+  const maxAttempts = 100;
 
-  while (attempts < maxAttempts) {
-   attempts++;
-
-   const point = Geometry.getRandomPointInPolygon(polygon);
+  while (attempts++ < maxAttempts) {
+   const point =
+    Geometry.getRandomPointInPolygon(polygon);
 
    try {
-    const result = await this.mapAdapter.getStreetViewMeta(point);
+    const result =
+     await this.mapAdapter.getStreetViewMeta(point);
 
-    if (!result?.valid || !result?.location) continue;
+    if (!result?.valid) continue;
 
-    const verify = await this.mapAdapter.getStreetViewMeta(result.location);
+    const verify =
+     await this.mapAdapter.getStreetViewMeta(
+      result.location
+     );
 
     if (verify?.valid) {
      return result.location;
     }
-
-   } catch (e) {
-    console.warn("StreetView meta error:", e);
-   }
+   } catch (_) {}
   }
 
-  throw new Error("LocationGenerator: failed to find valid location");
+  throw new Error("LocationGenerator failed");
  }
 }
