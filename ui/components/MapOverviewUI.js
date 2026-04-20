@@ -11,9 +11,6 @@ export class MapOverviewUI {
     this.lines = [];
   }
 
-  // =========================
-  // INIT
-  // =========================
   init() {
     if (!this.element) return;
 
@@ -23,9 +20,6 @@ export class MapOverviewUI {
     });
   }
 
-  // =========================
-  // RENDER ROUND
-  // =========================
   render(round) {
     if (!this.map) return;
 
@@ -48,12 +42,7 @@ export class MapOverviewUI {
     });
   }
 
-  // =========================
-  // CAMERA
-  // =========================
   fitToPoints(points) {
-    if (!this.map || !points || points.length < 2) return;
-
     const a = points[0];
     const b = points[1];
 
@@ -75,9 +64,6 @@ export class MapOverviewUI {
     this.map.setZoom(zoom);
   }
 
-  // =========================
-  // CLEAR
-  // =========================
   clear() {
     this.markers.forEach(m => this.adapter.removeMarker(m));
     this.lines.forEach(l => l.setMap(null));
@@ -86,9 +72,6 @@ export class MapOverviewUI {
     this.lines = [];
   }
 
-  // =========================
-  // RESULT RENDER
-  // =========================
   addPlayerResult({ guess, actual, playerId }) {
     const playerColor = this.uiBuilder.getPlayerColor(playerId);
     const actualColor = this.uiBuilder.getActualColor();
@@ -103,13 +86,10 @@ export class MapOverviewUI {
       size: 30
     });
 
-    // =========================
-    // NEW: smooth path
-    // =========================
     const distance = Geometry.distance(guess, actual);
-    const segments = this.getSegmentsCount(distance);
+    const segments = Geometry.getSegmentsCount(distance);
 
-    const path = Geometry.createLine(guess, actual, segments);
+    const path = Geometry.createPath(guess, actual, segments);
 
     const lines = this.adapter.createGradientPolyline(
       this.map,
@@ -120,12 +100,5 @@ export class MapOverviewUI {
 
     this.markers.push(guessMarker, actualMarker);
     this.lines.push(...lines);
-  }
-
-  getSegmentsCount(distance) {
-    if (distance < 50) return 10;
-    if (distance < 200) return 20;
-    if (distance < 1000) return 40;
-    return 80;
   }
 }
