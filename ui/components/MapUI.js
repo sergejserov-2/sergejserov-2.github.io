@@ -17,6 +17,10 @@ export class MapUI {
   this.lastGuessPoint = null;
  }
 
+ // =========================
+ // INIT
+ // =========================
+
  init() {
   if (!this.mapElement || !this.overviewElement) return;
 
@@ -39,6 +43,10 @@ export class MapUI {
   this.initResize();
  }
 
+ // =========================
+ // BINDINGS
+ // =========================
+
  bindGuess(callback) {
   this.onGuess = callback;
  }
@@ -47,6 +55,7 @@ export class MapUI {
   if (!element) return;
 
   element.addEventListener("click", () => {
+   if (this.isLocked) return;
    if (!this.onGuess) return;
    if (!this.lastGuessPoint) return;
 
@@ -105,13 +114,14 @@ export class MapUI {
  }
 
  // =========================
- // MARKERS
+ // MARKERS (GAME MAP)
  // =========================
 
  placeGuessMarker(point) {
   if (!this.map || !point) return;
 
   this.clearGuessMarker();
+
   this.guessMarker = this.adapter.createMarker(this.map, point);
  }
 
@@ -123,7 +133,7 @@ export class MapUI {
  }
 
  // =========================
- // RESET (ВАЖНО)
+ // STATE
  // =========================
 
  reset() {
@@ -144,7 +154,7 @@ export class MapUI {
  }
 
  // =========================
- // OVERVIEW RENDER
+ // OVERVIEW (SYNC)
  // =========================
 
  renderOverview(round) {
@@ -174,8 +184,42 @@ export class MapUI {
   this.overviewLines.push(line);
  }
 
+ // =========================
+ // OVERVIEW (ASYNC - 🔥 НОВОЕ)
+ // =========================
+
+ async renderOverviewAsync(round) {
+  if (!this.overviewMap) return;
+
+  const guess = round?.guesses?.[0]?.guess;
+  const actual = round?.actualLocation;
+
+  if (!guess || !actual) return;
+  this.clearOverview();
+
+  const guessMarker = this.adapter.createMarker(this.overviewMap, guess);
+  const actualMarker = this.adapter.createMarker(this.overviewMap, actual);
+
+  const line = this.adapter.createPolyline(this.overviewMap, [
+   guess,
+   actual
+  ]);
+
+  this.adapter.fitToMarkers(this.overviewMap, [
+   guessMarker,
+   actualMarker
+  ]);
+
+  this.overviewMarkers.push(guessMarker, actualMarker);
+  this.overviewLines.push(line);
+
+  // 🔥 Ждём стабилизацию карты
+  await new Promise(resolve => setTimeout(resolve, 300));
+ }
+
  refreshOverview() {
   if (!this.overviewMap) return;
+
   google.maps.event.trigger(this.overviewMap, "resize");
  }
 
