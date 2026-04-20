@@ -16,7 +16,7 @@ export class UIBuilder {
 
    totalScore,
 
-   roundText: `${state.currentRoundIndex}`,
+   roundText: `${state.currentRoundIndex} + 1`,
    totalText: `${totalScore}`,
 
    timeText: "",
