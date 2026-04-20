@@ -13,6 +13,12 @@ export class StreetViewUI {
     this.element,
     position
    );
+
+   setTimeout(() => {
+    if (this.panorama && window.google?.maps?.event) {
+     google.maps.event.trigger(this.panorama, "resize");
+    }
+   }, 50);
   });
  }
 
@@ -29,6 +35,8 @@ export class StreetViewUI {
  refresh() {
   if (!this.panorama) return;
 
-  google.maps.event.trigger(this.panorama, "resize");
+  if (window.google?.maps?.event) {
+   google.maps.event.trigger(this.panorama, "resize");
+  }
  }
 }
