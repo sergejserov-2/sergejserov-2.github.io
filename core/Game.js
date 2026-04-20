@@ -17,13 +17,11 @@ export class Game {
   const existing = this.state.getPlayerGuess(playerId);
 
   if (existing) {
-   // через addGuess запрещено — поэтому обновляем через API GameState
    this.state.updateGuess(playerId, point);
   } else {
-   this.state.addGuess(playerId, point, {
-    distance: 0,
-    score: 0,
-    isFinished: false
+   this.state.addGuess(playerId, {
+    lat: point.lat,
+    lng: point.lng
    });
   }
  }
@@ -41,7 +39,6 @@ export class Game {
    { area: round.area }
   );
 
-  // через GameState API
   this.state.finalizeGuess(playerId, result);
 
   return result;
