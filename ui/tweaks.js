@@ -22,7 +22,7 @@ const observer2 = new MutationObserver(() => {
   }
 });
 
-export function tweaks() {
+export class Tweaks() {
   observer.observe(document.body, {
     childList: true,
     subtree: true
