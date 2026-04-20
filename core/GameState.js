@@ -37,10 +37,7 @@ export class GameState {
 
   round.guesses.push({
    playerId,
-   guess: {
-    lat: guess.lat,
-    lng: guess.lng
-   },
+   guess,
    distance: 0,
    score: 0,
    isFinished: false
