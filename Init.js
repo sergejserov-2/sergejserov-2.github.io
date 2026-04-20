@@ -3,7 +3,6 @@ import { GameState } from "./core/GameState.js";
 import { GameFlow } from "./core/GameFlow.js";
 
 import { Scoring } from "./domain/Scoring.js";
-import { Geometry } from "./domain/math/Geometry.js";
 import { Difficulty } from "./domain/math/Difficulty.js";
 
 import { LocationGenerator } from "./domain/LocationGenerator.js";
@@ -22,94 +21,106 @@ import { UIBuilder } from "./ui/UIBuilder.js";
 
 import { Tweaks } from "./ui/Tweaks.js";
 
+// =========================
+// GOOGLE MAPS GATE
+// =========================
+function waitForGoogleMaps() {
+ return new Promise(resolve => {
+  const check = () => {
+   if (window.google?.maps) resolve();
+   else setTimeout(check, 50);
+  };
+  check();
+ });
+}
+
+// =========================
+// INIT
+// =========================
 export async function init() {
- try {
-  const hud = document.querySelector(".hud");
-  const mapEl = document.querySelector(".map");
-  const streetEl = document.querySelector(".streetview");
-  const screensEl = document.querySelector(".screens");
-  const overviewMapEl = document.querySelector(".overview-map");
-  const guessBtn = document.querySelector("#makeGuess");
+ console.log("INIT START");
 
-  if (!hud || !mapEl || !streetEl || !screensEl) {
-   throw new Error("Missing DOM elements");
-  }
+ await waitForGoogleMaps();
 
-  const mapAdapter = new MapAdapter();
-  const streetAdapter = new StreetViewAdapter();
+ const hud = document.querySelector(".hud");
+ const mapEl = document.querySelector(".map");
+ const streetEl = document.querySelector(".streetview");
+ const screensEl = document.querySelector(".screens");
+ const overviewMapEl = document.querySelector(".overview-map");
+ const guessBtn = document.querySelector("#makeGuess");
 
-  await mapAdapter.ensureReady();
+ const mapAdapter = new MapAdapter();
+ const streetAdapter = new StreetViewAdapter();
 
-  const area = AreaRegistry.get("europe");
+ const area = AreaRegistry.get("europe");
 
-  const difficulty = new Difficulty();
+ const difficulty = new Difficulty();
 
-  const scoring = new Scoring({ difficulty });
+ const scoring = new Scoring({ difficulty });
 
-  const gameState = new GameState();
+ const gameState = new GameState();
 
-  const game = new Game({
-   gameState,
-   scoring,
-   players: ["p1"]
-  });
+ const game = new Game({
+  gameState,
+  scoring,
+  players: ["p1"]
+ });
 
-  const generator = new LocationGenerator({
-   mapAdapter
-  });
+ const generator = new LocationGenerator({
+  mapAdapter
+ });
 
-  const gameFlow = new GameFlow({
-   game,
-   generator,
-   area
-  });
+ const gameFlow = new GameFlow({
+  game,
+  generator,
+  area
+ });
 
-  const mapUI = new MapUI({
-   adapter: mapAdapter,
-   mapElement: mapEl,
-   overviewElement: overviewMapEl
-  });
+ const mapUI = new MapUI({
+  adapter: mapAdapter,
+  mapElement: mapEl,
+  overviewElement: overviewMapEl
+ });
 
-  const streetViewUI = new StreetViewUI({
-   adapter: streetAdapter,
-   element: streetEl
-  });
+ const streetViewUI = new StreetViewUI({
+  adapter: streetAdapter,
+  element: streetEl
+ });
 
-  const staticUI = new StaticUI({
-   hudElement: hud
-  });
+ const staticUI = new StaticUI({
+  hudElement: hud
+ });
 
-  const screenManager = new ScreenManager({
-   root: screensEl
-  });
+ const screenManager = new ScreenManager({
+  root: screensEl
+ });
 
-  const uiBuilder = new UIBuilder();
+ const uiBuilder = new UIBuilder();
 
-  const uiFlow = new UIFlow({
-   gameFlow,
-   screenManager,
-   staticUI,
-   uiBuilder,
-   streetViewUI
-  });
+ const uiFlow = new UIFlow({
+  gameFlow,
+  screenManager,
+  staticUI,
+  uiBuilder,
+  streetViewUI
+ });
 
-  mapUI.init();
-  streetViewUI.init({ lat: 0, lng: 0 });
+ mapUI.init();
+ streetViewUI.init({ lat: 0, lng: 0 });
 
-  mapUI.bindGuess((point) => {
-   gameFlow.finishGuess(point);
-  });
+ mapUI.bindGuessButton(guessBtn);
 
-  mapUI.bindGuessButton(guessBtn);
+ const tweaks = new Tweaks({
+  mapElement: mapEl,
+  streetElement: streetEl,
+  root: screensEl
+ });
 
-  const tweaks = new Tweaks();
+ tweaks.apply();
 
-  await gameFlow.startGame();
+ await gameFlow.startGame();
 
-  console.log("INIT OK");
- } catch (err) {
-  console.error("INIT ERROR:", err);
- }
+ console.log("INIT OK");
 }
 
 init();
