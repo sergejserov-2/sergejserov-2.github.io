@@ -1,4 +1,4 @@
-import { Geometry } from "./Geometry.js";
+import { Geometry } from "./math/Geometry.js";
 
 export class Scoring {
  constructor({ difficulty }) {
