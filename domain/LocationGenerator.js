@@ -8,7 +8,7 @@ export class LocationGenerator {
  async generate(area) {
   const polygon = area.polygon;
 
-  const maxAttempts = 100;
+  const maxAttempts = 300;
   let attempts = 0;
 
   while (attempts < maxAttempts) {
