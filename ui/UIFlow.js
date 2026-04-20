@@ -4,15 +4,16 @@ export class UIFlow {
   mapUI,
   streetViewUI,
   staticUI,
-  uiState,
+  screenManager,
   uiBuilder
  }) {
   this.gameFlow = gameFlow;
   this.mapUI = mapUI;
   this.streetViewUI = streetViewUI;
-  this.staticUI = staticUI;
 
-  this.uiState = uiState;
+  this.staticUI = staticUI;
+  this.screenManager = screenManager;
+
   this.uiBuilder = uiBuilder;
 
   this.bind();
@@ -20,7 +21,7 @@ export class UIFlow {
  }
 
  setScreen(screen) {
-  this.uiState.setScreen(screen);
+  this.screenManager.setScreen(screen);
   this.staticUI.setScreen(screen);
  }
 
