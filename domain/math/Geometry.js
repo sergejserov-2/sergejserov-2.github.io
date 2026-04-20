@@ -1,5 +1,4 @@
 export class Geometry {
-
  static distance(a, b) {
   const R = 6371;
 
@@ -49,7 +48,6 @@ export class Geometry {
   let inside = false;
 
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-
    const a = polygon[i];
    const b = polygon[j];
 
