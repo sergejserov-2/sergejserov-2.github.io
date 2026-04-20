@@ -49,7 +49,7 @@ export class MapOverviewUI {
   }
 
   // =========================
-  // CAMERA (PURE UI LOGIC)
+  // CAMERA
   // =========================
   fitToPoints(points) {
     if (!this.map || !points || points.length < 2) return;
@@ -87,7 +87,7 @@ export class MapOverviewUI {
   }
 
   // =========================
-  // MULTIPLAYER RESULT
+  // RESULT RENDER
   // =========================
   addPlayerResult({ guess, actual, playerId }) {
     const playerColor = this.uiBuilder.getPlayerColor(playerId);
@@ -103,14 +103,29 @@ export class MapOverviewUI {
       size: 30
     });
 
-    const segments = this.adapter.createGradientPolyline(
+    // =========================
+    // NEW: smooth path
+    // =========================
+    const distance = Geometry.distance(guess, actual);
+    const segments = this.getSegmentsCount(distance);
+
+    const path = Geometry.createLine(guess, actual, segments);
+
+    const lines = this.adapter.createGradientPolyline(
       this.map,
-      [guess, actual],
+      path,
       playerColor,
       actualColor
     );
 
     this.markers.push(guessMarker, actualMarker);
-    this.lines.push(...segments);
+    this.lines.push(...lines);
+  }
+
+  getSegmentsCount(distance) {
+    if (distance < 50) return 20;
+    if (distance < 200) return 40;
+    if (distance < 1000) return 80;
+    return 160;
   }
 }
