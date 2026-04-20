@@ -11,6 +11,10 @@ export class MapOverviewUI {
   this.lines = [];
  }
 
+ // =========================
+ // INIT
+ // =========================
+
  init() {
   if (!this.overviewElement) return;
 
@@ -18,6 +22,10 @@ export class MapOverviewUI {
    zoom: 2
   });
  }
+
+ // =========================
+ // RENDER
+ // =========================
 
  render(round) {
   if (!this.map) return;
@@ -38,19 +46,32 @@ export class MapOverviewUI {
   const actualColor =
    this.uiBuilder?.getActualColor?.() ?? "#9aa0a6";
 
+  // =========================
+  // MARKERS
+  // =========================
+
   const guessMarker = this.adapter.createMarker(
    this.map,
    guess,
-   { color: playerColor, size: 20 }
+   {
+    color: playerColor,
+    size: 20
+   }
   );
 
   const actualMarker = this.adapter.createMarker(
    this.map,
    actual,
-   { color: actualColor, size: 30 }
+   {
+    color: actualColor,
+    size: 30
+   }
   );
 
-  // 🌈 ГРАДИЕНТНАЯ ЛИНИЯ
+  // =========================
+  // GRADIENT LINE
+  // =========================
+
   const segments = this.adapter.createGradientPolyline(
    this.map,
    [guess, actual],
@@ -59,37 +80,37 @@ export class MapOverviewUI {
    12
   );
 
-fitToMarkers(map, markers, padding = 80) {
- const bounds = new google.maps.LatLngBounds();
+  // =========================
+  // ZOOM CONTROLLED FIT
+  // =========================
 
- markers.forEach(m => {
-  const pos = m.getPosition();
-  if (pos) bounds.extend(pos);
- });
-
- map.fitBounds(bounds, padding);
-
- const listener = google.maps.event.addListenerOnce(map, "idle", () => {
-  const zoom = map.getZoom();
-  if (zoom > 4) map.setZoom(4);
-  google.maps.event.removeListener(listener);
- });
-}
+  this.adapter.fitToMarkers(
+   this.map,
+   [guessMarker, actualMarker],
+   120 // padding
+  );
 
   this.markers.push(guessMarker, actualMarker);
   this.lines.push(...segments);
 
+  // фикс рендера Google Maps
   setTimeout(() => {
    google.maps.event.trigger(this.map, "resize");
   }, 100);
  }
 
- clear() {
-  this.markers.forEach(m =>
-   this.adapter.removeMarker(m)
-  );
+ // =========================
+ // CLEAR
+ // =========================
 
-  this.lines.forEach(l => l.setMap(null));
+ clear() {
+  this.markers.forEach(m => {
+   this.adapter.removeMarker(m);
+  });
+
+  this.lines.forEach(l => {
+   l.setMap(null);
+  });
 
   this.markers = [];
   this.lines = [];
