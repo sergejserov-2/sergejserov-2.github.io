@@ -1,9 +1,9 @@
 export class MapWrapperUI {
- constructor({ adapter, mapElement, uiBuilder }) {
+ constructor({ adapter, element, uiBuilder }) {
   this.adapter = adapter;
   this.uiBuilder = uiBuilder;
 
-  this.mapElement = mapElement;
+  this.element = element;
 
   this.map = null;
   this.guessMarker = null;
@@ -15,9 +15,9 @@ export class MapWrapperUI {
  }
 
  init() {
-  if (!this.mapElement) return;
+  if (!this.element) return;
 
-  this.map = this.adapter.createMap(this.mapElement, { zoom: 2 });
+  this.map = this.adapter.createMap(this.element, { zoom: 2 });
 
   this.map.addListener("click", (e) => {
    if (this.isLocked) return;
@@ -103,7 +103,7 @@ export class MapWrapperUI {
  // =========================
 
  initResize() {
-  const handle = this.mapElement
+  const handle = this.element
    ?.parentElement
    ?.querySelector(".resize-handle");
 
@@ -114,7 +114,7 @@ export class MapWrapperUI {
   handle.addEventListener("mousedown", (e) => {
    e.preventDefault();
 
-   const wrapper = this.mapElement.parentElement;
+   const wrapper = this.element.parentElement;
    const rect = wrapper.getBoundingClientRect();
 
    startX = e.clientX;
