@@ -1,11 +1,20 @@
 export class UIFlow {
- constructor({ gameFlow, screenManager, staticUI, uiBuilder, streetViewUI, mapUI }) {
+ constructor({
+  gameFlow,
+  screenManager,
+  staticUI,
+  uiBuilder,
+  streetViewUI,
+  mapWrapperUI,
+  mapOverviewUI
+ }) {
   this.gameFlow = gameFlow;
   this.screenManager = screenManager;
   this.staticUI = staticUI;
   this.uiBuilder = uiBuilder;
   this.streetViewUI = streetViewUI;
-  this.mapUI = mapUI;
+  this.mapWrapperUI = mapWrapperUI;
+  this.mapOverviewUI = mapOverviewUI;
 
   this.bind();
  }
@@ -15,13 +24,14 @@ export class UIFlow {
   this.gameFlow.on("roundStarted", (vm) => {
    this.screenManager.show("round");
 
-   this.mapUI?.reset();
+   this.mapWrapperUI?.reset();
 
    this.staticUI.updateHUD(
     this.uiBuilder.formatGameVM(vm)
    );
 
    const loc = vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
+
    if (loc) this.streetViewUI?.setLocation(loc);
   });
 
@@ -29,7 +39,7 @@ export class UIFlow {
    const round = vm?.rounds?.[vm.currentRoundIndex];
    if (!round) return;
 
-   this.mapUI?.renderOverview(round);
+   this.mapOverviewUI?.render(round);
 
    this.screenManager.show("roundResult");
 
@@ -40,12 +50,12 @@ export class UIFlow {
 
   this.gameFlow.on("inputLocked", () => {
    this.staticUI.lockInput?.();
-   this.mapUI?.lock();
+   this.mapWrapperUI?.lock();
   });
 
   this.gameFlow.on("inputUnlocked", () => {
    this.staticUI.unlockInput?.();
-   this.mapUI?.unlock();
+   this.mapWrapperUI?.unlock();
   });
 
   this.gameFlow.on("gameEnded", (vm) => {
