@@ -1,12 +1,5 @@
 export class UIFlow {
- constructor({
-  gameFlow,
-  screenManager,
-  staticUI,
-  uiBuilder,
-  streetViewUI,
-  mapUI
- }) {
+ constructor({ gameFlow, screenManager, staticUI, uiBuilder, streetViewUI, mapUI }) {
   this.gameFlow = gameFlow;
   this.screenManager = screenManager;
   this.staticUI = staticUI;
@@ -19,27 +12,55 @@ export class UIFlow {
 
  bind() {
 
+  // =========================
+  // GAME START
+  // =========================
+
   this.gameFlow.on("gameStarted", (vm) => {
    this.screenManager.show("round");
-   this.staticUI.updateHUD(this.uiBuilder.formatGameVM(vm));
+
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatGameVM(vm)
+   );
   });
 
+  // =========================
+  // STATE UPDATE
+  // =========================
+
   this.gameFlow.on("stateUpdated", (vm) => {
-   this.staticUI.updateHUD(this.uiBuilder.formatGameVM(vm));
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatGameVM(vm)
+   );
   });
+
+  // =========================
+  // INPUT LOCK
+  // =========================
 
   this.gameFlow.on("inputLocked", () => {
    this.staticUI.lockInput?.();
+   this.mapUI?.lock();
   });
 
   this.gameFlow.on("inputUnlocked", () => {
    this.staticUI.unlockInput?.();
+   this.mapUI?.unlock();
   });
+
+  // =========================
+  // ROUND START
+  // =========================
 
   this.gameFlow.on("roundStarted", (vm) => {
    this.screenManager.show("round");
 
-   this.staticUI.updateHUD(this.uiBuilder.formatGameVM(vm));
+   // 🔥 очищаем UI перед новым раундом
+   this.mapUI?.reset();
+
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatGameVM(vm)
+   );
 
    const location =
     vm?.rounds?.[vm.currentRoundIndex]?.actualLocation;
@@ -49,24 +70,28 @@ export class UIFlow {
    }
   });
 
+  // =========================
+  // ROUND END
+  // =========================
+
   this.gameFlow.on("roundEnded", (vm) => {
    this.screenManager.show("roundResult");
 
-   // HUD/RESULT UI
    this.staticUI.showRoundResult(
     this.uiBuilder.formatRoundVM(vm)
    );
 
-   // =========================
-   // MAP RESULT (FIX)
-   // =========================
-   const round =
-    vm?.rounds?.[vm.currentRoundIndex - 1];
+   const roundIndex = vm.currentRoundIndex;
+   const round = vm?.rounds?.[roundIndex];
 
-   if (round) {
+   if (round && round.guesses?.length) {
     this.mapUI?.renderOverview(round);
    }
   });
+
+  // =========================
+  // GAME END
+  // =========================
 
   this.gameFlow.on("gameEnded", (vm) => {
    this.screenManager.show("gameResult");
