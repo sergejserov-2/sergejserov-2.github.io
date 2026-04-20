@@ -28,7 +28,7 @@ export async function init() {
  try {
 
   // =========================
-  // DOM SAFE GET
+  // DOM
   // =========================
   const hud = document.querySelector(".hud");
   const mapEl = document.querySelector(".map");
@@ -36,7 +36,7 @@ export async function init() {
   const screensEl = document.querySelector(".screens");
   const overviewMapEl = document.querySelector(".overview-map");
 
-  if (!hud || !mapEl || !streetEl || !screensEl) {
+  if (!hud  !mapEl  !streetEl || !screensEl) {
    throw new Error("INIT: required DOM elements not found");
   }
 
@@ -48,7 +48,8 @@ export async function init() {
   // =========================
   // DOMAIN
   // =========================
-  const geometry = new Geometry();
+  const geometry = Geometry; // 🔥 FIX
+
   const area = AreaRegistry.get("europe");
 
   const difficulty = new Difficulty({ area });
@@ -124,7 +125,7 @@ export async function init() {
   streetViewUI.init();
 
   // =========================
-  // TWEAKS (ВАЖНО)
+  // TWEAKS
   // =========================
   tweaks();
 
@@ -140,5 +141,5 @@ export async function init() {
  }
 }
 
-// 🔥 ОБЯЗАТЕЛЬНЫЙ ЗАПУСК
+// 🔥 запуск
 init();
