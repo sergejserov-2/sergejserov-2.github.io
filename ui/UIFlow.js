@@ -1,10 +1,18 @@
 export class UIFlow {
- constructor({ gameFlow, screenManager, staticUI, uiBuilder, streetViewUI }) {
+ constructor({
+  gameFlow,
+  screenManager,
+  staticUI,
+  uiBuilder,
+  streetViewUI,
+  mapUI
+ }) {
   this.gameFlow = gameFlow;
   this.screenManager = screenManager;
   this.staticUI = staticUI;
   this.uiBuilder = uiBuilder;
   this.streetViewUI = streetViewUI;
+  this.mapUI = mapUI;
 
   this.bind();
  }
@@ -44,9 +52,20 @@ export class UIFlow {
   this.gameFlow.on("roundEnded", (vm) => {
    this.screenManager.show("roundResult");
 
+   // HUD/RESULT UI
    this.staticUI.showRoundResult(
     this.uiBuilder.formatRoundVM(vm)
    );
+
+   // =========================
+   // MAP RESULT (FIX)
+   // =========================
+   const round =
+    vm?.rounds?.[vm.currentRoundIndex - 1];
+
+   if (round) {
+    this.mapUI?.renderOverview(round);
+   }
   });
 
   this.gameFlow.on("gameEnded", (vm) => {
