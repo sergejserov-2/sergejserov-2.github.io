@@ -76,8 +76,9 @@ export async function init() {
   players: ["p1"]
  });
 
+ // 🔥 FIX: generator теперь зависит от streetAdapter
  const generator = new LocationGenerator({
-  mapAdapter
+  streetAdapter
  });
 
  const gameFlow = new GameFlow({
@@ -87,10 +88,13 @@ export async function init() {
  });
 
  // =========================
- // UI
+ // UI BUILDER
  // =========================
  const uiBuilder = new UIBuilder();
 
+ // =========================
+ // UI
+ // =========================
  const mapUI = new MapUI({
   adapter: mapAdapter,
   mapElement: mapEl,
@@ -121,7 +125,7 @@ export async function init() {
  });
 
  // =========================
- // UI INIT
+ // INIT UI
  // =========================
  mapUI.init();
  streetViewUI.init({ lat: 0, lng: 0 });
@@ -148,7 +152,7 @@ export async function init() {
  tweaks.apply();
 
  // =========================
- // START
+ // START GAME
  // =========================
  await gameFlow.startGame();
 
