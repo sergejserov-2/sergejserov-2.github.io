@@ -13,6 +13,8 @@ export class MapUI {
 
   this.isLocked = false;
   this.onGuess = null;
+
+  this.lastGuessPoint = null; // 🔥 важно
  }
 
  init() {
@@ -29,8 +31,9 @@ export class MapUI {
     lng: e.latLng.lng()
    };
 
+   this.lastGuessPoint = point;
+
    this.placeGuessMarker(point);
-   this.onGuess?.(point);
   });
 
   this.initResize();
@@ -38,6 +41,17 @@ export class MapUI {
 
  bindGuess(callback) {
   this.onGuess = callback;
+ }
+
+ bindGuessButton(element) {
+  if (!element) return;
+
+  element.addEventListener("click", () => {
+   if (!this.onGuess) return;
+   if (!this.lastGuessPoint) return;
+
+   this.onGuess(this.lastGuessPoint);
+  });
  }
 
  // =========================
@@ -112,6 +126,7 @@ export class MapUI {
   this.unlock();
   this.clearGuessMarker();
   this.clearOverview();
+  this.lastGuessPoint = null;
  }
 
  lock() {
