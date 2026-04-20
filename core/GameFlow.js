@@ -9,9 +9,7 @@ export class GameFlow {
  }
 
  on(event, cb) {
-  if (!this.listeners[event]) {
-   this.listeners[event] = [];
-  }
+  if (!this.listeners[event]) this.listeners[event] = [];
   this.listeners[event].push(cb);
  }
 
@@ -38,8 +36,8 @@ export class GameFlow {
   this.game.startRound(location);
 
   this.locked = false;
-  this.emit("inputUnlocked");
 
+  this.emit("inputUnlocked");
   this.emit("roundStarted", this.game.getState());
   this.emit("stateUpdated", this.game.getState());
  }
@@ -51,14 +49,14 @@ export class GameFlow {
   this.emit("inputLocked");
 
   this.game.setGuess(playerId, point);
-  this.game.finishGuess(playerId);
+  const result = this.game.finishGuess(playerId);
 
   this.emit("roundEnded", this.game.getState());
   this.emit("stateUpdated", this.game.getState());
 
-  setTimeout(() => {
-   this.nextRound();
-  }, 3000);
+  setTimeout(() => this.nextRound(), 3000);
+
+  return result;
  }
 
  async nextRound() {
@@ -74,7 +72,6 @@ export class GameFlow {
 
  endGame() {
   this.game.endGame();
-
   this.emit("gameEnded", this.game.getState());
  }
 }
