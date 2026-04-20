@@ -15,19 +15,13 @@ export class UIFlow {
   this.uiState = uiState;
   this.uiBuilder = uiBuilder;
 
-  this.bindState();
-  this.bindGameEvents();
+  this.bind();
   this.connectInput();
- }
-
- bindState() {
-  this.uiState.onChange(({ to }) => {
-   this.staticUI.setScreen(to);
-  });
  }
 
  setScreen(screen) {
   this.uiState.setScreen(screen);
+  this.staticUI.setScreen(screen);
  }
 
  connectInput() {
@@ -44,67 +38,44 @@ export class UIFlow {
   }
  }
 
- bindGameEvents() {
+ bind() {
 
-  // start
-  this.gameFlow.on("gameStarted", () => {
-   this.uiState.setScreen("round");
+  this.gameFlow.on("gameStarted", (vm) => {
+   this.setScreen("round");
+   this.staticUI.updateHUD(this.uiBuilder.formatHUD(vm));
   });
 
-  // round start
-  this.gameFlow.on("roundStarted", ({ round, actual }) => {
-   this.uiState.setScreen("round");
+  this.gameFlow.on("roundStarted", (vm) => {
+   this.setScreen("round");
 
-   const hud = this.uiBuilder.buildHUD(
-    this.gameFlow.game.state,
-    round
-   );
+   this.staticUI.updateHUD(this.uiBuilder.formatHUD(vm));
 
-   this.staticUI.updateHUD(hud);
-
-   this.streetViewUI.setLocation(actual);
+   this.streetViewUI.setLocation(vm.actualLocation);
    this.mapUI.reset();
   });
 
-  // guess marker update
-  this.gameFlow.on("guessUpdated", ({ guess }) => {
-   this.mapUI.placeGuessMarker(guess);
+  this.gameFlow.on("guessUpdated", ({ point }) => {
+   this.mapUI.placeGuessMarker(point);
   });
 
-  // result screen
-  this.gameFlow.on("guessFinished", ({ result }) => {
-   this.uiState.setScreen("result");
+  this.gameFlow.on("guessFinished", (vm) => {
+   this.setScreen("result");
 
-   const vm = this.uiBuilder.buildRoundVM(
-    this.gameFlow.game.state,
-    this.gameFlow.game.state.getCurrentRound()
-   );
-
-   this.staticUI.showRoundResult(vm);
-
-   this.mapUI.renderOverview(
-    this.gameFlow.game.state.getCurrentRound()
+   this.staticUI.showRoundResult(
+    this.uiBuilder.formatResult(vm)
    );
   });
 
-  // transition → next round
-  this.gameFlow.on("roundCommitted", async () => {
-   this.uiState.setScreen("transition");
-
-   await new Promise(r => setTimeout(r, 1500));
-
-   await this.gameFlow.nextRound();
+  this.gameFlow.on("roundEndFinished", () => {
+   this.setScreen("round");
   });
 
-  // game end
-  this.gameFlow.on("gameEnded", () => {
-   this.uiState.setScreen("result");
+  this.gameFlow.on("gameEnded", (vm) => {
+   this.setScreen("result");
 
-   const vm = this.uiBuilder.buildGameVM(
-    this.gameFlow.game.state
+   this.staticUI.showGameResult(
+    this.uiBuilder.formatGame(vm)
    );
-
-   this.staticUI.showGameResult(vm);
   });
  }
 }
