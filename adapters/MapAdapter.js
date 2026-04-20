@@ -4,6 +4,8 @@ export class MapAdapter {
  }
 
  createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
+  if (!element) throw new Error("Map container missing");
+
   return new google.maps.Map(element, {
    center,
    zoom,
@@ -24,7 +26,7 @@ export class MapAdapter {
 
  createPolyline(map, path) {
   return new google.maps.Polyline({
-   path, // [{lat,lng}]
+   path,
    geodesic: true,
    strokeOpacity: 1,
    strokeWeight: 2,
@@ -44,6 +46,8 @@ export class MapAdapter {
  }
 
  createStreetView(element, { lat = 0, lng = 0 }) {
+  if (!element) throw new Error("StreetView container missing");
+
   return new google.maps.StreetViewPanorama(element, {
    position: { lat, lng },
    pov: { heading: 0, pitch: 0 },
@@ -60,7 +64,7 @@ export class MapAdapter {
    this.svService.getPanorama(
     {
      location: { lat, lng },
-     radius: 50000
+     radius: 20000
     },
     (data, status) => {
      const valid =
@@ -68,17 +72,34 @@ export class MapAdapter {
       data?.location &&
       data?.location?.latLng;
 
+     if (!valid) {
+      console.warn("StreetView meta fail:", status);
+     }
+
      resolve({
       valid,
       location: valid
        ? {
-        lat: data.location.latLng.lat(),
-        lng: data.location.latLng.lng()
-       }
+          lat: data.location.latLng.lat(),
+          lng: data.location.latLng.lng()
+         }
        : null
      });
     }
    );
+  });
+ }
+
+ async ensureReady() {
+  return new Promise(resolve => {
+   const check = () => {
+    if (window.google?.maps?.StreetViewService) {
+     resolve();
+    } else {
+     setTimeout(check, 50);
+    }
+   };
+   check();
   });
  }
 }
