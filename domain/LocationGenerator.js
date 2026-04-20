@@ -17,12 +17,16 @@ export class LocationGenerator {
    const point = Geometry.getRandomPointInPolygon(polygon);
 
    try {
-    const { valid, location } =
-     await this.mapAdapter.getStreetViewMeta(point);
+    const result = await this.mapAdapter.getStreetViewMeta(point);
 
-    if (valid && location) {
-     return location;
+    if (!result?.valid || !result?.location) continue;
+
+    const verify = await this.mapAdapter.getStreetViewMeta(result.location);
+
+    if (verify?.valid) {
+     return result.location;
     }
+
    } catch (e) {
     console.warn("StreetView meta error:", e);
    }
