@@ -9,7 +9,7 @@ export class StreetViewUI {
   if (!this.element) return;
 
   requestAnimationFrame(() => {
-   this.panorama = this.adapter.create(
+   this.panorama = this.adapter.createStreetView(
     this.element,
     position
    );
@@ -18,11 +18,11 @@ export class StreetViewUI {
 
  setLocation(pos) {
   if (!this.panorama || !pos) return;
-  this.adapter.setPosition(this.panorama, pos);
+  this.panorama.setPosition(pos);
  }
 
  setPov(pov) {
-  if (!this.panorama) return;
-  this.adapter.setPov(this.panorama, pov);
+  if (!this.panorama || !pov) return;
+  this.panorama.setPov(pov);
  }
 }
