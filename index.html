@@ -16,19 +16,27 @@ body {
     height: 100vh;
 }
 
-/* CONTAINER */
+/* =========================
+   CONTAINER
+========================= */
+
 .box {
     width: 460px;
     background: #161a22;
     padding: 20px;
     border-radius: 14px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    box-sizing: border-box;
 }
 
 h2 {
     margin: 0 0 16px;
     font-size: 20px;
 }
+
+/* =========================
+   SECTION
+========================= */
 
 .section {
     margin-bottom: 16px;
@@ -40,14 +48,26 @@ h2 {
     margin-bottom: 8px;
 }
 
-/* ROW */
+/* =========================
+   ROW (FIXED)
+========================= */
+
 .row {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
-/* BUTTON */
+.row input {
+    flex: 1;
+    min-width: 160px;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
 .btn {
     padding: 8px 10px;
     background: #2a2f3a;
@@ -66,16 +86,26 @@ h2 {
     background: #4ea1ff;
 }
 
-/* INPUT ROW (toggle + input) */
-.inline {
+/* =========================
+   ROUNDS (FIXED DISTRIBUTION)
+========================= */
+
+#rounds {
     display: flex;
-    gap: 8px;
-    align-items: center;
+    width: 100%;
 }
 
-.inline input[type="number"],
-.inline input[type="text"] {
+#rounds .btn {
     flex: 1;
+    text-align: center;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+input[type="number"],
+input[type="text"] {
     padding: 8px;
     border-radius: 8px;
     border: none;
@@ -84,25 +114,46 @@ h2 {
     outline: none;
 }
 
-.inline input:disabled {
+input:disabled {
     opacity: 0.4;
 }
 
-/* MAP AREA */
+/* =========================
+   INLINE CONTROL ROWS
+========================= */
+
+.inline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.inline input {
+    flex: 1;
+}
+
+/* =========================
+   MAP (LEFT ALIGN FIX)
+========================= */
+
 .map-row {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    justify-content: flex-start;
 }
 
 .map-row .btn {
-    flex: 1 1 auto;
-    text-align: center;
+    flex: 0 0 auto;
 }
 
-/* START */
+/* =========================
+   START BUTTON (FIXED)
+========================= */
+
 .start {
     width: 100%;
+    box-sizing: border-box;
     margin-top: 10px;
     background: #2ecc71;
     padding: 12px;
@@ -137,7 +188,7 @@ h2 {
             <div class="btn active" data-mode="solo">Соло</div>
             <div class="btn" data-mode="duel">Дуэль</div>
 
-            <input id="duelLink" type="text" placeholder="Ссылка для игрока" disabled />
+            <input id="duelLink" type="text" placeholder="" disabled />
         </div>
     </div>
 
@@ -172,8 +223,7 @@ h2 {
             <input id="movesInput" type="number" value="10" disabled>
         </div>
     </div>
-
-    <!-- MAP -->
+<!-- MAP -->
     <div class="section">
         <div class="title">Карта</div>
         <div class="map-row" id="areas">
@@ -199,9 +249,8 @@ let rounds = 5;
 
 let timeEnabled = false;
 let movesEnabled = false;
-// =========================
+
 // MODE
-// =========================
 document.querySelectorAll("[data-mode]").forEach(b => {
     b.onclick = () => {
         document.querySelectorAll("[data-mode]").forEach(x => x.classList.remove("active"));
@@ -214,17 +263,19 @@ document.querySelectorAll("[data-mode]").forEach(b => {
         if (mode === "duel") {
             link.disabled = false;
             link.placeholder = "Ссылка для приглашения...";
+            start.textContent = "Ожидание игрока...";
+            start.classList.add("wait");
         } else {
             link.disabled = true;
             link.value = "";
             link.placeholder = "";
+            start.textContent = "Начать игру";
+            start.classList.remove("wait");
         }
     };
 });
 
-// =========================
 // ROUNDS
-// =========================
 document.querySelectorAll("[data-rounds]").forEach(b => {
     b.onclick = () => {
         document.querySelectorAll("[data-rounds]").forEach(x => x.classList.remove("active"));
@@ -233,9 +284,7 @@ document.querySelectorAll("[data-rounds]").forEach(b => {
     };
 });
 
-// =========================
 // AREA
-// =========================
 document.querySelectorAll("[data-area]").forEach(b => {
     b.onclick = () => {
         document.querySelectorAll("[data-area]").forEach(x => x.classList.remove("active"));
@@ -244,9 +293,7 @@ document.querySelectorAll("[data-area]").forEach(b => {
     };
 });
 
-// =========================
 // TIMER
-// =========================
 const timeInput = document.getElementById("timeInput");
 document.getElementById("timeOff").onclick = () => {
     timeEnabled = false;
@@ -258,9 +305,7 @@ document.getElementById("timeOn").onclick = () => {
     timeInput.disabled = false;
 };
 
-// =========================
 // MOVES
-// =========================
 const movesInput = document.getElementById("movesInput");
 document.getElementById("movesOff").onclick = () => {
     movesEnabled = false;
@@ -272,9 +317,7 @@ document.getElementById("movesOn").onclick = () => {
     movesInput.disabled = false;
 };
 
-// =========================
 // START
-// =========================
 document.getElementById("start").onclick = () => {
 
     const config = {
@@ -291,11 +334,7 @@ document.getElementById("start").onclick = () => {
 
     localStorage.setItem("gameConfig", JSON.stringify(config));
 
-    const startBtn = document.getElementById("start");
-
     if (mode === "duel") {
-        startBtn.textContent = "Ожидание игрока...";
-        startBtn.classList.add("wait");
         return;
     }
 
