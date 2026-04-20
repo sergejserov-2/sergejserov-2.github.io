@@ -13,88 +13,73 @@ export class MapAdapter {
   return new google.maps.Map(element, {
    center,
    zoom,
-   disableDefaultUI: true,
-   mapID: "DEMO_MAP_ID"
+   disableDefaultUI: true
   });
  }
 
  // =========================
- // MARKERS (ONLY ADVANCED MARKERS)
+ // MARKERS (LEGACY + SVG ICONS)
  // =========================
 
  createMarker(map, { lat, lng }, type = "guess") {
-  const position = { lat, lng };
-
-  const content = this._createMarkerElement(type);
-
-  const marker = new google.maps.marker.AdvancedMarkerElement({
+  return new google.maps.Marker({
+   position: { lat, lng },
    map,
-   position,
-   content
-  });
-
-  this._animateMarker(content);
-
-  return marker;
- }
-
- // =========================
- // VISUAL MARKERS
- // =========================
-
-_createMarkerElement(type) {
- const el = document.createElement("div");
-
- el.style.borderRadius = "50%";
- el.style.transform = "scale(0)";
- el.style.transition = "transform 0.2s ease-out";
-
- el.style.pointerEvents = "auto";
- el.style.cursor = "pointer";
-
- if (type === "guess") {
-  el.style.width = "12px";
-  el.style.height = "12px";
-  el.style.background = "#ff4d4d";
-  el.style.boxShadow = "0 0 10px rgba(255,77,77,0.6)";
- }
-
- if (type === "actual") {
-  el.style.width = "18px";
-  el.style.height = "18px";
-  el.style.background = "#9aa0a6";
-  el.style.boxShadow = "0 0 10px rgba(154,160,166,0.6)";
- }
-
- return el;
-}
-
- // =========================
- // ANIMATION
- // =========================
-
- _animateMarker(el) {
-  requestAnimationFrame(() => {
-   el.style.transform = "scale(1)";
+   icon: this._getIcon(type),
+   optimized: false
   });
  }
-
- // =========================
- // REMOVE MARKER
- // =========================
 
  removeMarker(marker) {
-  if (!marker) return;
-
-  // AdvancedMarkerElement cleanup
-  marker.map = null;
+  marker?.setMap(null);
  }
 
  // =========================
- // POLYLINE
+ // ICON SYSTEM
  // =========================
 
- createPolyline(map, path, { color = "#ff4d4d" } = {}) {
+ _getIcon(type) {
+  const config = this._getMarkerStyle(type);
+
+  const svg = 
+  <svg width="${config.size}" height="${config.size}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10" cy="10" r="${config.radius}" fill="${config.color}" opacity="0.9"/>
+    <circle cx="10" cy="10" r="${config.radius + 3}" stroke="${config.color}" stroke-width="2" fill="none" opacity="0.4"/>
+  </svg>
+  ;
+
+  return {
+   url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+   scaledSize: new google.maps.Size(config.size, config.size),
+   anchor: new google.maps.Point(config.size / 2, config.size / 2)
+  };
+ }
+
+ _getMarkerStyle(type) {
+  switch (type) {
+   case "actual":
+    return {
+     color: "#9aa0a6",   // серый
+     size: 30,           // 1.5x
+     radius: 7
+    };
+
+   case "player":
+   case "guess":
+   default:
+    return {
+     color: "#ff4d4d",   // красный
+     size: 20,           // 1x
+     radius: 6
+    };
+  }
+ }
+
+ // =========================
+ // LINES
+ // =========================
+
+ createPolyline(map, path, color = "#ff4d4d") {
   return new google.maps.Polyline({
    path,
    geodesic: true,
@@ -106,29 +91,15 @@ _createMarkerElement(type) {
  }
 
  // =========================
- // FIT BOUNDS
+ // VIEWPORT
  // =========================
 
  fitToMarkers(map, markers) {
   const bounds = new google.maps.LatLngBounds();
 
   markers.forEach(m => {
-   if (!m) return;
-
-   let pos = null;
-
-   if (m.position) {
-    pos = m.position;
-   }
-
-   if (!pos) return;
-
-   const lat = typeof pos.lat === "function" ? pos.lat() : pos.lat;
-   const lng = typeof pos.lng === "function" ? pos.lng() : pos.lng;
-
-   if (lat != null && lng != null) {
-    bounds.extend({ lat, lng });
-   }
+   const pos = m.getPosition();
+   if (pos) bounds.extend(pos);
   });
 
   map.fitBounds(bounds);
@@ -181,5 +152,14 @@ _createMarkerElement(type) {
     }
    );
   });
+ }
+
+ // =========================
+ // OPTIONAL HELPERS
+ // =========================
+
+ setMarkerColor(type, color) {
+  // задел под мультиплеер
+  return this._getIcon(type, color);
  }
 }
