@@ -20,7 +20,7 @@ import { ScreenManager } from "./ui/ScreenManager.js";
 import { UIFlow } from "./ui/UIFlow.js";
 import { UIBuilder } from "./ui/UIBuilder.js";
 
-import { Tweaks } from "./ui/tweaks.js";
+import { Tweaks } from "./ui/Tweaks.js";
 
 export async function init() {
  try {
