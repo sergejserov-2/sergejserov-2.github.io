@@ -8,10 +8,12 @@ export class StreetViewUI {
  init(position = { lat: 0, lng: 0 }) {
   if (!this.element) return;
 
-  this.panorama = this.adapter.create(
-   this.element,
-   position
-  );
+  requestAnimationFrame(() => {
+   this.panorama = this.adapter.create(
+    this.element,
+    position
+   );
+  });
  }
 
  setLocation(pos) {
@@ -22,5 +24,11 @@ export class StreetViewUI {
  setPov(pov) {
   if (!this.panorama) return;
   this.adapter.setPov(this.panorama, pov);
+ }
+
+ refresh() {
+  if (!this.panorama) return;
+
+  google.maps.event.trigger(this.panorama, "resize");
  }
 }
