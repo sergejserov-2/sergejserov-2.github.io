@@ -6,7 +6,6 @@ export class GameFlow {
 
   this.listeners = {};
   this.locked = false;
-  this.currentLocation = null;
  }
 
  on(event, cb) {
@@ -23,37 +22,42 @@ export class GameFlow {
  }
 
  startGame() {
-  this.game.reset();
+  this.game.startGame();
 
-  this.emit("gameStarted", this.game.getViewModel());
+  this.emit("gameStarted", this.game.getState());
 
   this.startRound();
  }
 
  startRound() {
-  this.currentLocation = this.generator.generate(this.area);
+  const location = this.generator.generate(this.area);
+
+  this.game.startRound(location);
 
   this.locked = false;
   this.emit("inputUnlocked");
 
   this.emit("roundStarted", {
-   round: this.game.state.currentRound
+   roundIndex: this.game.getState().currentRoundIndex
   });
+
+  this.emit("stateUpdated", this.game.getState());
  }
 
- finishGuess(point) {
+ finishGuess(point, playerId = "p1") {
   if (this.locked) return;
 
   this.locked = true;
   this.emit("inputLocked");
 
-  const result = this.game.finishGuess(
-   this.currentLocation,
-   point
-  );
+  // сначала записываем guess
+  this.game.setGuess(playerId, point);
+
+  // затем считаем результат
+  const result = this.game.finishGuess(playerId);
 
   this.emit("roundEnded", result);
-  this.emit("stateUpdated", this.game.getViewModel());
+  this.emit("stateUpdated", this.game.getState());
 
   setTimeout(() => {
    this.nextRound();
@@ -61,7 +65,9 @@ export class GameFlow {
  }
 
  nextRound() {
-  if (this.game.isFinished()) {
+  this.game.commitRound();
+
+  if (this.game.isGameEnded()) {
    this.endGame();
    return;
   }
@@ -70,6 +76,8 @@ export class GameFlow {
  }
 
  endGame() {
-  this.emit("gameEnded", this.game.getViewModel());
+  this.game.endGame();
+
+  this.emit("gameEnded", this.game.getState());
  }
 }
