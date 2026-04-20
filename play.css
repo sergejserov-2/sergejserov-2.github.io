@@ -62,6 +62,7 @@ body {
  width: 400px;
  height: 300px;
  z-index: var(--z-map);
+ border-radius: 10px;
  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
@@ -89,9 +90,9 @@ body {
 }
 
 .guess-button {
- right: 20px;
+ right: 10px;
  bottom: 10px;
- padding: 10px 20px;
+ padding: 20px;
  border-radius: 8px;
  background: #4ea1ff;
  color: #fff;
@@ -139,11 +140,11 @@ body {
  width: 950px;
  max-width: 92vw;
  background: #161a22;
- padding: 10px 20px;
+ padding: 20px;
  border-radius: 10px;
  display: flex;
  flex-direction: column;
- gap: 10px;
+ gap: 20px;
  color: #fff;
 }
 
