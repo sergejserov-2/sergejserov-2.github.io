@@ -55,7 +55,7 @@ export async function init() {
   const screensEl = document.querySelector(".screens");
   const overviewMapEl = document.querySelector(".overview-map");
 
-  if (!hud  !mapEl  !streetEl || !screensEl) {
+  if (!hud || !mapEl || !streetEl || !screensEl) {
    throw new Error("Missing DOM elements");
   }
 
