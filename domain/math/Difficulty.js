@@ -1,20 +1,23 @@
 export class Difficulty {
- constructor({ area }) {
-  if (!area || !area.polygon) {
-   throw new Error("Difficulty: invalid area");
+ constructor() {}
+
+ getMultiplier(area) {
+  if (!area) {
+   return 1;
   }
 
-  this.area = area;
- }
+  // базовая логика:
+  // чем больше регион — тем проще (меньше множитель)
+  // чем меньше регион — тем сложнее (больше множитель)
 
- get(distance) {
-  // 🔹 нормализация дистанции
-  const maxDistance = 20000; // км (пример: половина Земли)
-  const normalized = Math.min(distance / maxDistance, 1);
+  const size = area.size ?? 1;
 
-  // 🔹 кривая сложности (можно потом усложнить)
-  const factor = 1 - normalized;
+  // нормализация (примерная)
+  const normalized = Math.min(Math.max(size, 0.1), 10);
 
-  return factor;
+  // инверсия (маленький регион → больше множитель)
+  const multiplier = 1 + (1 / normalized);
+
+  return multiplier;
  }
 }
