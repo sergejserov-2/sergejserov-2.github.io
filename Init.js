@@ -24,6 +24,9 @@ import { Tweaks } from "./ui/tweaks.js";
 
 export async function init() {
  try {
+  // =========================
+  // DOM
+  // =========================
   const hud = document.querySelector(".hud");
   const mapEl = document.querySelector(".map");
   const streetEl = document.querySelector(".streetview");
@@ -34,9 +37,15 @@ export async function init() {
    throw new Error("Missing DOM elements");
   }
 
+  // =========================
+  // ADAPTERS
+  // =========================
   const mapAdapter = new MapAdapter();
   const streetAdapter = new StreetViewAdapter();
 
+  // =========================
+  // DOMAIN
+  // =========================
   const area = AreaRegistry.get("europe");
   const geometry = Geometry;
 
@@ -44,6 +53,9 @@ export async function init() {
 
   const scoring = new Scoring({ difficulty });
 
+  // =========================
+  // CORE GAME
+  // =========================
   const gameState = new GameState();
 
   const game = new Game({
@@ -52,16 +64,25 @@ export async function init() {
    players: ["p1"]
   });
 
+  // =========================
+  // GENERATOR
+  // =========================
   const generator = new LocationGenerator({
    mapAdapter
   });
 
+  // =========================
+  // FLOW
+  // =========================
   const gameFlow = new GameFlow({
    game,
    generator,
    area
   });
 
+  // =========================
+  // UI
+  // =========================
   const mapUI = new MapUI({
    adapter: mapAdapter,
    mapElement: mapEl,
@@ -90,21 +111,29 @@ export async function init() {
    uiBuilder
   });
 
+  // =========================
+  // TWEAKS (SIDE EFFECT LAYER)
+  // =========================
+  const tweaks = new Tweaks();
+  tweaks.apply();
+
+  // =========================
+  // INIT UI
+  // =========================
   mapUI.init();
   streetViewUI.init({ lat: 0, lng: 0 });
 
-  const tweaks = new Tweaks({
-   mapElement: mapEl,
-   streetElement: streetEl,
-   root: screensEl
-  });
-
-  tweaks.apply();
-
+  // =========================
+  // START GAME
+  // =========================
   await gameFlow.startGame();
+
  } catch (err) {
   console.error("INIT ERROR:", err);
  }
 }
 
+// =========================
+// BOOT
+// =========================
 init();
