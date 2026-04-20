@@ -1,36 +1,46 @@
 export class StreetViewAdapter {
+ constructor() {
+  this.svService = new google.maps.StreetViewService();
+ }
 
- create(element, position = { lat: 0, lng: 0 }) {
-  if (!window.google?.maps?.StreetViewPanorama) {
-   throw new Error("Google Maps not loaded");
-  }
-
-  if (!element) {
-   throw new Error("StreetView container missing");
-  }
+ createStreetView(element, { lat = 0, lng = 0 } = {}) {
+  if (!element) throw new Error("StreetView container missing");
 
   return new google.maps.StreetViewPanorama(element, {
-   position,
+   position: { lat, lng },
    pov: { heading: 0, pitch: 0 },
-   zoom: 1,
-   disableDefaultUI: true,
    addressControl: false,
    showRoadLabels: false,
    fullscreenControl: false,
    zoomControl: true,
-   linksControl: false,
-   clickToGo: true,
-   scrollwheel: true
+   disableDefaultUI: true
   });
  }
 
- setPosition(panorama, pos) {
-  if (!panorama || !pos) return;
-  panorama.setPosition(pos);
- }
+ async getStreetViewMeta({ lat, lng }) {
+  return new Promise(resolve => {
+   this.svService.getPanorama(
+    {
+     location: { lat, lng },
+     radius: 50000
+    },
+    (data, status) => {
+     const valid =
+      status === "OK" &&
+      data?.location &&
+      data?.location?.latLng;
 
- setPov(panorama, pov) {
-  if (!panorama || !pov) return;
-  panorama.setPov(pov);
+     resolve({
+      valid,
+      location: valid
+       ? {
+          lat: data.location.latLng.lat(),
+          lng: data.location.latLng.lng()
+         }
+       : null
+     });
+    }
+   );
+  });
  }
 }
