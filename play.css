@@ -130,7 +130,7 @@ body {
 
 /* panel */
 .score-view {
- width: 650px;
+ width: 950px;
  max-width: 92vw;
 
  background: #161a22;
@@ -147,7 +147,7 @@ body {
 /* result map */
 .overview-map {
  width: 100%;
- height: 450px;
+ height: 650px;
 
  border-radius: 10px;
  overflow: hidden;
