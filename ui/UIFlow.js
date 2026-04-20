@@ -9,14 +9,17 @@ export class UIFlow {
  }
 
  bind() {
-
-  this.gameFlow.on("gameStarted", (vm) => {
+  this.gameFlow.on("gameStarted", vm => {
    this.screenManager.show("round");
-   this.staticUI.updateHUD(this.uiBuilder.formatHUD(vm));
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatHUD(vm)
+   );
   });
 
-  this.gameFlow.on("stateUpdated", (vm) => {
-   this.staticUI.updateHUD(this.uiBuilder.formatHUD(vm));
+  this.gameFlow.on("stateUpdated", vm => {
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatHUD(vm)
+   );
   });
 
   this.gameFlow.on("inputLocked", () => {
@@ -27,7 +30,7 @@ export class UIFlow {
    this.staticUI.unlockInput?.();
   });
 
-  this.gameFlow.on("roundEnded", (vm) => {
+  this.gameFlow.on("roundEnded", vm => {
    this.screenManager.show("roundResult");
 
    this.staticUI.showRoundResult(
@@ -35,7 +38,7 @@ export class UIFlow {
    );
   });
 
-  this.gameFlow.on("gameEnded", (vm) => {
+  this.gameFlow.on("gameEnded", vm => {
    this.screenManager.show("gameResult");
 
    this.staticUI.showGameResult(
