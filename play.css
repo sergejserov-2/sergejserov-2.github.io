@@ -19,15 +19,9 @@ body {
 }
 
 /* =========================
-   WORLD LAYER (StreetView + Map base)
+   WORLD LAYER
 ========================= */
-.game-scene {
- position: absolute;
- inset: 0;
- z-index: var(--z-world);
-}
-
-/* StreetView is part of world */
+.game-scene,
 .streetview {
  position: absolute;
  inset: 0;
@@ -35,21 +29,19 @@ body {
 }
 
 /* =========================
-   HUD LAYER (StaticUI ONLY)
+   HUD
 ========================= */
 .hud {
  position: absolute;
  top: 10px;
  left: 10px;
-
  z-index: var(--z-hud);
-
  color: #fff;
  pointer-events: none;
 }
 
 /* =========================
-   MAP LAYER (interactive gameplay)
+   MAP
 ========================= */
 .map-wrapper {
  position: absolute;
@@ -65,14 +57,13 @@ body {
 .map {
  width: 100%;
  height: 100%;
-
  background: #111;
  border-radius: 10px;
  overflow: hidden;
 }
 
 /* =========================
-   MAP CONTROLS (inside map layer)
+   MAP CONTROLS
 ========================= */
 .resize-handle,
 .guess-button {
@@ -80,7 +71,6 @@ body {
  z-index: 10;
 }
 
-/* resize */
 .resize-handle {
  top: 0;
  right: 0;
@@ -89,7 +79,6 @@ body {
  cursor: nesw-resize;
 }
 
-/* guess button */
 .guess-button {
  right: 10px;
  bottom: 10px;
@@ -102,6 +91,7 @@ body {
 
  cursor: pointer;
  user-select: none;
+
  transition: 0.2s ease;
 }
 
@@ -110,59 +100,46 @@ body {
 }
 
 /* =========================
-   SCREEN SYSTEM (Overlay Layer)
+   SCREENS LAYER
 ========================= */
 .screens {
  position: absolute;
  inset: 0;
  z-index: var(--z-overlay);
 
- pointer-events: none;
-}
-
-/* =========================
-   LOADING SCREEN
-========================= */
-.loading-screen {
- position: absolute;
- inset: 0;
-
- display: none;
+ display: flex;
  justify-content: center;
  align-items: center;
 
- background: rgba(0,0,0,.8);
- color: #fff;
-
- pointer-events: auto;
+ pointer-events: none;
 }
 
-/* =========================
-   RESULT SCREEN
-========================= */
+/* overlay container */
 .guess-overview {
  position: absolute;
  inset: 0;
 
- background: rgba(0,0,0,.75);
-
  display: none;
  justify-content: center;
  align-items: center;
 
- z-index: var(--z-overlay);
+ pointer-events: auto;
 }
 
+.guess-overview.round-result,
+.guess-overview.game-result {
+ display: none;
+}
+
+/* active screens */
 .guess-overview.active {
  display: flex;
 }
 
 /* =========================
-   RESULT PANEL
+   PANEL
 ========================= */
 .score-view {
- position: relative;
-
  width: 650px;
  max-width: 92vw;
 
@@ -178,18 +155,19 @@ body {
 }
 
 /* =========================
-   OVERVIEW MAP
+   MAP INSIDE RESULT
 ========================= */
 .overview-map {
  width: 100%;
- height: 500px;
+ height: 450px;
 
  border-radius: 10px;
  overflow: hidden;
+ background: #111;
 }
 
 /* =========================
-   PROGRESS BAR (UI STATE)
+   PROGRESS BAR (ONLY RESULT)
 ========================= */
 .score-progress-bar {
  width: 100%;
@@ -197,12 +175,11 @@ body {
 
  background: #2a2f3a;
  border-radius: 6px;
-
  overflow: hidden;
 }
 
 .score-progress {
- width: 0;
+ width: 0%;
  height: 100%;
 
  background: #4ea1ff;
@@ -218,11 +195,10 @@ body {
 
 .score-text p {
  margin: 6px 0;
- color: #fff;
 }
 
 /* =========================
-   BUTTONS
+   END BUTTONS
 ========================= */
 .game-end-buttons {
  display: flex;
