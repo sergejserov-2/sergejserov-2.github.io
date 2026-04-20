@@ -13,49 +13,12 @@ export class UIFlow {
  bind() {
 
   // =========================
-  // GAME START
-  // =========================
-
-  this.gameFlow.on("gameStarted", (vm) => {
-   this.screenManager.show("round");
-
-   this.staticUI.updateHUD(
-    this.uiBuilder.formatGameVM(vm)
-   );
-  });
-
-  // =========================
-  // STATE UPDATE
-  // =========================
-
-  this.gameFlow.on("stateUpdated", (vm) => {
-   this.staticUI.updateHUD(
-    this.uiBuilder.formatGameVM(vm)
-   );
-  });
-
-  // =========================
-  // INPUT LOCK
-  // =========================
-
-  this.gameFlow.on("inputLocked", () => {
-   this.staticUI.lockInput?.();
-   this.mapUI?.lock();
-  });
-
-  this.gameFlow.on("inputUnlocked", () => {
-   this.staticUI.unlockInput?.();
-   this.mapUI?.unlock();
-  });
-
-  // =========================
   // ROUND START
   // =========================
 
   this.gameFlow.on("roundStarted", (vm) => {
    this.screenManager.show("round");
 
-   // 🔥 очищаем UI перед новым раундом
    this.mapUI?.reset();
 
    this.staticUI.updateHUD(
@@ -71,18 +34,36 @@ export class UIFlow {
   });
 
   // =========================
-  // ROUND END
+  // ROUND END (FIX ORDER)
   // =========================
 
-  this.gameFlow.on("roundEnded", async (vm) => {
+  this.gameFlow.on("roundEnded", (vm) => {
    const round = vm?.rounds?.[vm.currentRoundIndex];
    if (!round) return;
-   await this.mapUI?.renderOverviewAsync(round);
+
+   // 🔥 СНАЧАЛА данные карты
+   this.mapUI?.renderOverview(round);
+
+   // 🔥 ПОТОМ экран
    this.screenManager.show("roundResult");
+
    this.staticUI.showRoundResult(
     this.uiBuilder.formatRoundVM(vm)
    );
-  
+  });
+
+  // =========================
+  // INPUT
+  // =========================
+
+  this.gameFlow.on("inputLocked", () => {
+   this.staticUI.lockInput?.();
+   this.mapUI?.lock();
+  });
+
+  this.gameFlow.on("inputUnlocked", () => {
+   this.staticUI.unlockInput?.();
+   this.mapUI?.unlock();
   });
 
   // =========================
