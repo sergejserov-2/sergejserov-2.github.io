@@ -14,13 +14,11 @@ export class Game {
  }
 
  setGuess(playerId, point) {
-  const round = this.state.getCurrentRound();
-  if (!round) return;
-
   const existing = this.state.getPlayerGuess(playerId);
 
   if (existing) {
-   existing.guess = point;
+   // через addGuess запрещено — поэтому обновляем через API GameState
+   this.state.updateGuess(playerId, point);
   } else {
    this.state.addGuess(playerId, point, {
     distance: 0,
@@ -37,35 +35,5 @@ export class Game {
   const guess = this.state.getPlayerGuess(playerId);
   if (!guess || guess.isFinished) return;
 
-  const result = this.scoring.calculateResult({
-   guess: guess.guess,
-   actual: round.actualLocation
-  });
-
-  guess.distance = result.distance;
-  guess.score = result.score;
-  guess.isFinished = true;
-
-  return result;
- }
-
- commitRound() {
-  this.state.commitRound();
- }
-
- endGame() {
-  this.state.end();
- }
-
- getState() {
-  return this.state.getState();
- }
-
- getCurrentRound() {
-  return this.state.getCurrentRound();
- }
-
- isGameEnded() {
-  return this.state.getState().status === "ended";
- }
-}
+  const result = this.scoring.calculate(
+   round
