@@ -42,6 +42,9 @@ export async function init() {
 
  await waitForGoogleMaps();
 
+ // =========================
+ // DOM
+ // =========================
  const hud = document.querySelector(".hud");
  const mapEl = document.querySelector(".map");
  const streetEl = document.querySelector(".streetview");
@@ -49,15 +52,22 @@ export async function init() {
  const overviewMapEl = document.querySelector(".overview-map");
  const guessBtn = document.querySelector("#makeGuess");
 
+ // =========================
+ // ADAPTERS
+ // =========================
  const mapAdapter = new MapAdapter();
  const streetAdapter = new StreetViewAdapter();
 
+ // =========================
+ // DOMAIN
+ // =========================
  const area = AreaRegistry.get("europe");
-
  const difficulty = new Difficulty();
-
  const scoring = new Scoring({ difficulty });
 
+ // =========================
+ // CORE
+ // =========================
  const gameState = new GameState();
 
  const game = new Game({
@@ -76,6 +86,9 @@ export async function init() {
   area
  });
 
+ // =========================
+ // UI
+ // =========================
  const mapUI = new MapUI({
   adapter: mapAdapter,
   mapElement: mapEl,
@@ -97,7 +110,7 @@ export async function init() {
 
  const uiBuilder = new UIBuilder();
 
- const uiFlow = new UIFlow({
+ new UIFlow({
   gameFlow,
   screenManager,
   staticUI,
@@ -111,21 +124,19 @@ export async function init() {
  // =========================
  mapUI.init();
  streetViewUI.init({ lat: 0, lng: 0 });
+ mapUI.reset();
 
  // =========================
- // CORE GAME HOOK
+ // GAME HOOKS
  // =========================
  mapUI.bindGuess((point) => {
   gameFlow.finishGuess(point);
  });
 
- // =========================
- // GUESS BUTTON (FINALIZE ACTION)
- // =========================
  mapUI.bindGuessButton(guessBtn);
 
  // =========================
- // VISUAL TWEAKS
+ // TWEAKS
  // =========================
  const tweaks = new Tweaks({
   mapElement: mapEl,
