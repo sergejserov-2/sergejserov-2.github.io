@@ -81,13 +81,13 @@ export class MapOverviewUI {
 
   const distance = Geometry.distance(a, b);
 
-  let zoom = 4;
+  let zoom = 6;
 
-  if (distance < 10) zoom = 6;
-  else if (distance < 50) zoom = 5;
-  else if (distance < 200) zoom = 4;
-  else if (distance < 1000) zoom = 3;
-  else zoom = 2;
+  if (distance < 10) zoom = 8;
+  else if (distance < 50) zoom = 7;
+  else if (distance < 200) zoom = 6;
+  else if (distance < 1000) zoom = 5;
+  else zoom = 4;
 
   this.map.setCenter(center);
   this.map.setZoom(zoom);
