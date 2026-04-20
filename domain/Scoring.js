@@ -1,6 +1,7 @@
+import { Geometry } from "./Geometry.js";
+
 export class Scoring {
- constructor({ geometry, difficulty }) {
-  this.geometry = geometry;
+ constructor({ difficulty }) {
   this.difficulty = difficulty;
  }
 
@@ -10,9 +11,9 @@ export class Scoring {
   }
 
   // =========================
-  // DISTANCE
+  // DISTANCE (STATIC GEOMETRY)
   // =========================
-  const distance = this.geometry.distance(guess, actual);
+  const distance = Geometry.distance(guess, actual);
 
   // =========================
   // DISTANCE SCORE CURVE
