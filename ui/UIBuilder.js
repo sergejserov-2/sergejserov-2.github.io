@@ -1,27 +1,76 @@
 export class UIBuilder {
 
- formatRoundResult(vm) {
+ formatGameVM(state) {
+  const currentRound =
+   state.rounds[state.currentRoundIndex];
+
+  const totalScore =
+   state.rounds.reduce((sum, r) => {
+    const g = r.guesses?.[0];
+    return sum + (g?.score || 0);
+   }, 0);
+
   return {
-   distance: vm.round?.distance ?? 0,
-   score: vm.round?.score ?? 0,
-   progress: vm.round?.progress ?? 0
+   status: state.status,
+   currentRoundIndex: state.currentRoundIndex,
+
+   totalScore,
+
+   roundText: `Раунд ${state.currentRoundIndex}`,
+   totalText: `Счёт: ${totalScore}`,
+
+   timeText: "",
+   movesText: "",
+
+   progress: 0
   };
  }
 
- formatGameResult(vm) {
+ formatRoundVM(state) {
+  const round =
+   state.rounds[state.currentRoundIndex];
+
+  const guess = round?.guesses?.[0];
+
+  const score = guess?.score ?? 0;
+  const distance = guess?.distance ?? 0;
+
   return {
-   totalScore: vm.totalScore ?? 0,
-   rounds: vm.rounds ?? []
+   index: round.index,
+
+   distance,
+   score,
+
+   progress: Math.min(score / 5000, 1),
+
+   guess: guess?.guess,
+   actual: round.actualLocation
   };
  }
 
- formatHUD(vm) {
+ formatGameResultVM(state) {
+  const rounds = state.rounds;
+
   return {
-   roundText: vm.roundText ?? `Раунд ${vm.currentRoundIndex ?? 0}`,
-   totalText: vm.totalText ?? `Счёт: ${vm.totalScore ?? 0}`,
-   timeText: vm.timeText ?? "",
-   movesText: vm.movesText ?? "",
-   progress: vm.progress ?? 0
+   totalScore: rounds.reduce((sum, r) => {
+    const g = r.guesses?.[0];
+    return sum + (g?.score || 0);
+   }, 0),
+
+   roundsCount: rounds.length,
+
+   rounds: rounds.map(r => {
+    const g = r.guesses?.[0];
+
+    return {
+     index: r.index,
+     distance: g?.distance ?? 0,
+     score: g?.score ?? 0,
+     guess: g?.guess,
+     actual: r.actualLocation,
+     progress: (g?.score ?? 0) / 5000
+    };
+   })
   };
  }
 }
