@@ -14,7 +14,7 @@ export class MapUI {
   this.isLocked = false;
   this.onGuess = null;
 
-  this.lastGuessPoint = null; // 🔥 важно
+  this.lastGuessPoint = null;
  }
 
  init() {
@@ -122,10 +122,16 @@ export class MapUI {
   this.guessMarker = null;
  }
 
+ // =========================
+ // RESET (ВАЖНО)
+ // =========================
+
  reset() {
   this.unlock();
+
   this.clearGuessMarker();
   this.clearOverview();
+
   this.lastGuessPoint = null;
  }
 
@@ -138,14 +144,14 @@ export class MapUI {
  }
 
  // =========================
- // OVERVIEW
+ // OVERVIEW RENDER
  // =========================
 
  renderOverview(round) {
   if (!this.overviewMap) return;
 
-  const guess = round.guesses?.[0]?.guess;
-  const actual = round.actualLocation;
+  const guess = round?.guesses?.[0]?.guess;
+  const actual = round?.actualLocation;
 
   if (!guess || !actual) return;
 
