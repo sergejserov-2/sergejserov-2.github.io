@@ -1,10 +1,10 @@
-import { Game } from "./game/Game.js";
-import { GameState } from "./game/GameState.js";
-import { GameFlow } from "./game/GameFlow.js";
+import { Game } from "./core/Game.js";
+import { GameState } from "./core/GameState.js";
+import { GameFlow } from "./core/GameFlow.js";
 
-import { Scoring } from "./core/Scoring.js";
-import { Geometry } from "./core/Geometry.js";
-import { Difficulty } from "./core/Difficulty.js";
+import { Scoring } from "./domain/Scoring.js";
+import { Geometry } from "./domain/math/Geometry.js";
+import { Difficulty } from "./domain/math/Difficulty.js";
 
 import { LocationGenerator } from "./domain/LocationGenerator.js";
 import { AreaRegistry } from "./domain/AreaRegistry.js";
