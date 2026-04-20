@@ -14,7 +14,9 @@ export class MapOverviewUI {
  init() {
   if (!this.overviewElement) return;
 
-  this.map = this.adapter.createMap(this.overviewElement, { zoom: 2 });
+  this.map = this.adapter.createMap(this.overviewElement, {
+   zoom: 2
+  });
  }
 
  render(round) {
@@ -48,10 +50,13 @@ export class MapOverviewUI {
    { color: actualColor, size: 30 }
   );
 
-  const line = this.adapter.createPolyline(
+  // 🌈 ГРАДИЕНТНАЯ ЛИНИЯ
+  const segments = this.adapter.createGradientPolyline(
    this.map,
    [guess, actual],
-   { color: playerColor }
+   playerColor,
+   actualColor,
+   12
   );
 
   this.adapter.fitToMarkers(this.map, [
@@ -60,7 +65,7 @@ export class MapOverviewUI {
   ]);
 
   this.markers.push(guessMarker, actualMarker);
-  this.lines.push(line);
+  this.lines.push(...segments);
 
   setTimeout(() => {
    google.maps.event.trigger(this.map, "resize");
@@ -68,10 +73,13 @@ export class MapOverviewUI {
  }
 
  clear() {
-  this.lines.forEach(l => l.setMap(null));
-  this.markers.forEach(m => this.adapter.removeMarker(m));
+  this.markers.forEach(m =>
+   this.adapter.removeMarker(m)
+  );
 
-  this.lines = [];
+  this.lines.forEach(l => l.setMap(null));
+
   this.markers = [];
+  this.lines = [];
  }
 }
