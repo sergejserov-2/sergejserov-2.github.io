@@ -13,17 +13,18 @@
 <div class="game">
 
     <!-- =========================
-        SCREENS (STATIC UI)
+        SCREENS LAYER (ScreenManager)
     ========================== -->
     <div class="screens">
 
-        <!-- LOADING -->
+        <!-- LOADING SCREEN -->
         <div class="loading-screen">
             Загрузка...
         </div>
 
-        <!-- RESULT -->
+        <!-- RESULT SCREEN -->
         <div class="guess-overview">
+
             <div class="score-view">
 
                 <div class="overview-map"></div>
@@ -33,8 +34,8 @@
                 </div>
 
                 <div class="score-text">
-                    <p></p>
-                    <p></p>
+                    <p class="distance-text"></p>
+                    <p class="score-text-value"></p>
                 </div>
 
                 <div class="game-end-buttons">
@@ -43,30 +44,56 @@
                 </div>
 
             </div>
+
         </div>
+
     </div>
 
     <!-- =========================
-        GAME SCENE
+        GAMEPLAY LAYER (StaticUI + Map + StreetView)
     ========================== -->
     <div class="game-scene">
 
-        <!-- STREETVIEW (StreetViewUI) -->
+        <!-- STREET VIEW -->
         <div class="streetview"></div>
 
-        <!-- HUD (StaticUI) -->
+        <!-- HUD (StaticUI ONLY) -->
         <div class="hud">
-            <div class="round">Раунд: <b>0/0</b></div>
-            <div class="total-score">Счёт: <b>0</b></div>
-            <div class="time-left">Время: <b>0</b></div>
-            <div class="moves-left">Шагов: <b>0</b></div>
+
+            <div class="round">
+                Раунд: <b>0/0</b>
+            </div>
+
+            <div class="total-score">
+                Счёт: <b>0</b>
+            </div>
+
+            <div class="time-left">
+                Время: <b>0</b>
+            </div>
+
+            <div class="moves-left">
+                Шагов: <b>0</b>
+            </div>
+
+            <!-- PROGRESS BAR (belongs to HUD now) -->
+            <div class="score-progress-bar">
+                <div class="score-progress"></div>
+            </div>
+
         </div>
 
-        <!-- MAP (MapUI) -->
+        <!-- MAP LAYER -->
         <div class="map-wrapper">
+
             <div class="map"></div>
+
             <div class="resize-handle"></div>
-            <div class="guess-button" id="makeGuess">Сделать выбор</div>
+
+            <div class="guess-button" id="makeGuess">
+                Сделать выбор
+            </div>
+
         </div>
 
     </div>
