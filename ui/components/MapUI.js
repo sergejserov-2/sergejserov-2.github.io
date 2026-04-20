@@ -1,3 +1,4 @@
+
 export class MapUI {
  constructor({ adapter, mapElement, overviewElement, uiBuilder }) {
   this.adapter = adapter;
@@ -19,7 +20,13 @@ export class MapUI {
   this.lastGuessPoint = null;
  }
 
+ // =========================
+ // INIT
+ // =========================
+
  init() {
+  if (!this.mapElement || !this.overviewElement) return;
+
   this.map = this.adapter.createMap(this.mapElement, { zoom: 2 });
   this.overviewMap = this.adapter.createMap(this.overviewElement, { zoom: 2 });
 
@@ -38,14 +45,18 @@ export class MapUI {
   this.initResize();
  }
 
- bindGuess(cb) {
-  this.onGuess = cb;
+ // =========================
+ // BIND
+ // =========================
+
+ bindGuess(callback) {
+  this.onGuess = callback;
  }
 
- bindGuessButton(el) {
-  if (!el) return;
+ bindGuessButton(element) {
+  if (!element) return;
 
-  el.addEventListener("click", () => {
+  element.addEventListener("click", () => {
    if (this.isLocked) return;
    if (!this.onGuess) return;
    if (!this.lastGuessPoint) return;
@@ -54,7 +65,13 @@ export class MapUI {
   });
  }
 
+ // =========================
+ // MARKERS (GAME MAP)
+ // =========================
+
  placeGuessMarker(point) {
+  if (!this.map || !point) return;
+
   this.clearGuessMarker();
 
   this.guessMarker = this.adapter.createMarker(
@@ -68,9 +85,15 @@ export class MapUI {
  }
 
  clearGuessMarker() {
+  if (!this.guessMarker) return;
+
   this.adapter.removeMarker(this.guessMarker);
   this.guessMarker = null;
  }
+
+ // =========================
+ // STATE
+ // =========================
 
  reset() {
   this.unlock();
@@ -87,7 +110,13 @@ export class MapUI {
   this.isLocked = false;
  }
 
+ // =========================
+ // OVERVIEW
+ // =========================
+
  renderOverview(round) {
+  if (!this.overviewMap) return;
+
   const guessObj = round?.guesses?.[0];
   const guess = guessObj?.guess;
   const actual = round?.actualLocation;
@@ -131,7 +160,15 @@ export class MapUI {
 
   this.overviewMarkers.push(guessMarker, actualMarker);
   this.overviewLines.push(line);
+
+  setTimeout(() => {
+   google.maps.event.trigger(this.overviewMap, "resize");
+  }, 100);
  }
+
+ // =========================
+ // CLEANUP
+ // =========================
 
  clearOverview() {
   this.overviewLines.forEach(l => l.setMap(null));
@@ -140,4 +177,58 @@ export class MapUI {
   this.overviewLines = [];
   this.overviewMarkers = [];
  }
+
+ refreshOverview() {
+  if (!this.overviewMap) return;
+  google.maps.event.trigger(this.overviewMap, "resize");
+ }
+
+ // =========================
+ // RESIZE
+ // =========================
+
+ initResize() {
+  const handle = this.mapElement
+   ?.parentElement
+   ?.querySelector(".resize-handle");
+
+  if (!handle) return;
+
+  let startX, startY, startW, startH;
+
+  handle.addEventListener("mousedown", (e) => {
+   e.preventDefault();
+
+   const wrapper = this.mapElement.parentElement;
+   const rect = wrapper.getBoundingClientRect();
+
+   startX = e.clientX;
+   startY = e.clientY;
+   sta
+
+rtW = rect.width;
+   startH = rect.height;
+
+   const onMove = (e) => {
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    wrapper.style.width = Math.max(200, startW + dx) + "px";
+    wrapper.style.height = Math.max(200, startH - dy) + "px";
+
+    this.adapter.triggerResize?.(this.map);
+   };
+
+   const onUp = () => {
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
+   };
+
+   window.addEventListener("mousemove", onMove);
+   window.addEventListener("mouseup", onUp);
+  });
+ }
 }
+
+
+
