@@ -41,35 +41,32 @@ export class MapAdapter {
  // VISUAL MARKERS
  // =========================
 
- _createMarkerElement(type) {
-  const el = document.createElement("div");
+_createMarkerElement(type) {
+ const el = document.createElement("div");
 
-  el.style.borderRadius = "50%";
-  el.style.transform = "scale(0)";
-  el.style.transition = "transform 0.2s ease-out";
+ el.style.borderRadius = "50%";
+ el.style.transform = "scale(0)";
+ el.style.transition = "transform 0.2s ease-out";
 
-  // =========================
-  // GUESS (player)
-  // =========================
-  if (type === "guess") {
-   el.style.width = "12px";
-   el.style.height = "12px";
-   el.style.background = "#ff4d4d";
-   el.style.boxShadow = "0 0 10px rgba(255,77,77,0.6)";
-  }
+ el.style.pointerEvents = "auto";
+ el.style.cursor = "pointer";
 
-  // =========================
-  // ACTUAL (correct answer)
-  // =========================
-  if (type === "actual") {
-   el.style.width = "18px"; // 1.5x
-   el.style.height = "18px";
-   el.style.background = "#9aa0a6";
-   el.style.boxShadow = "0 0 10px rgba(154,160,166,0.6)";
-  }
-
-  return el;
+ if (type === "guess") {
+  el.style.width = "12px";
+  el.style.height = "12px";
+  el.style.background = "#ff4d4d";
+  el.style.boxShadow = "0 0 10px rgba(255,77,77,0.6)";
  }
+
+ if (type === "actual") {
+  el.style.width = "18px";
+  el.style.height = "18px";
+  el.style.background = "#9aa0a6";
+  el.style.boxShadow = "0 0 10px rgba(154,160,166,0.6)";
+ }
+
+ return el;
+}
 
  // =========================
  // ANIMATION
