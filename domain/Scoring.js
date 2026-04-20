@@ -10,42 +10,24 @@ export class Scoring {
    throw new Error("Scoring: invalid input");
   }
 
-  // =========================
-  // DISTANCE (STATIC GEOMETRY)
-  // =========================
-  const distance = Geometry.distance(guess, actual);
+  const distance =
+   Math.hypot(
+    actual.lat - guess.lat,
+    actual.lng - guess.lng
+   ) * 111; // упрощённый гео-скейл
 
-  // =========================
-  // DISTANCE SCORE CURVE
-  // =========================
-  const distanceScore = this.getDistanceScore(distance);
+  const maxScore = 5000;
+  const k = 0.002;
 
-  // =========================
-  // DIFFICULTY FACTOR (AREA-BASED)
-  // =========================
-  const difficultyFactor =
+  const distanceScore =
+   maxScore * Math.exp(-k * distance);
+
+  const multiplier =
    this.difficulty?.getMultiplier?.(context.area) ?? 1;
-
-  // =========================
-  // FINAL SCORE
-  // =========================
-  const score = Math.round(distanceScore * difficultyFactor);
 
   return {
    distance,
-   score
+   score: Math.round(distanceScore * multiplier)
   };
- }
-
- // =========================
- // DISTANCE CURVE
- // =========================
- getDistanceScore(distance) {
-  const maxScore = 5000;
-
-  // экспоненциальное затухание
-  const k = 0.002;
-
-  return maxScore * Math.exp(-k * distance);
  }
 }
