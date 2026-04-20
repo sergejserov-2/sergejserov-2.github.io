@@ -5,17 +5,22 @@ export class ScreenManager {
   this.views = {
    loading: root.querySelector(".loading-screen"),
    round: root.querySelector(".game-scene"),
-   roundResult: root.querySelector(".round-result"),
-   gameResult: root.querySelector(".game-result")
+   roundResult: root.querySelector(".guess-overview"),
+   gameResult: root.querySelector(".guess-overview")
   };
  }
 
  show(name) {
   Object.values(this.views).forEach(v => {
-   if (v) v.style.display = "none";
+   if (!v) return;
+   v.classList.remove("active");
+   v.style.display = "none";
   });
 
   const target = this.views[name];
-  if (target) target.style.display = "flex";
+  if (!target) return;
+
+  target.style.display = "flex";
+  target.classList.add("active");
  }
 }
