@@ -42,7 +42,7 @@ export class UIBuilder {
  }
 
  // =========================
- // COLORS (ВОЗВРАТ)
+ // COLORS
  // =========================
  getPlayerColor(id = "p1") {
   return this.playerColors[id] || "#ff4d4d";
@@ -102,7 +102,7 @@ export class UIBuilder {
  }
 
  // =========================
- // GAME RESULT
+ // GAME RESULT (UNIFIED)
  // =========================
  formatGameResultVM(state) {
   const rounds = state.rounds || [];
@@ -111,26 +111,20 @@ export class UIBuilder {
    return s + (r.guess?.score || 0);
   }, 0);
 
-  const maxScore = this.getRoundLimit() * 5000;
+  const maxScore = rounds.length * 5000;
 
   return {
-   totalScore,
-   maxScore,
+   distance: null,
+   score: totalScore,
    progress: maxScore ? totalScore / maxScore : 0,
-
-   rounds: rounds.map((r, i) => ({
-    index: i,
-    score: r.guess?.score || 0,
-    distance: r.guess?.distance || 0,
-    guess: r.guess,
-    actual: r.actualLocation
-   })),
 
    text: {
     title: "Игра завершена",
-    scoreLine: `Счёт: ${totalScore} / ${maxScore}`,
+    scoreLine: `Общий счёт: ${totalScore}`,
     roundsLine: `Раундов: ${rounds.length}`
-   }
+   },
+
+   lastRound: rounds[rounds.length - 1] || null
   };
  }
 }
