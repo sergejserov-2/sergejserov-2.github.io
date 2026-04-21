@@ -4,61 +4,78 @@ export class ScreenManager {
 
   this.views = {
    loading: root.querySelector(".loading-screen"),
-   round: root.querySelector(".game-scene"),
+   round: root.querySelector(".game-scene"), // НЕ используется как screen, оставляем только как reference
    roundResult: root.querySelector(".round-result"),
    gameResult: root.querySelector(".game-result")
   };
 
-  this.activeScreen = "loading";
+  // ⚠️ важно: game-scene не является overlay-screen
+  this.overlayScreens = ["loading", "roundResult", "gameResult"];
  }
 
  // =========================
- // INIT
+ // INIT STATE
  // =========================
- init(initial = "loading") {
-  this.activeScreen = initial;
-  this.render();
+
+ initLoading(show = true) {
+  if (!this.views.loading) return;
+
+  this.views.loading.classList.toggle("active", show);
  }
 
  // =========================
  // SHOW SCREEN
  // =========================
+
  show(name) {
   if (!this.views[name]) {
    console.warn(`[ScreenManager] unknown screen: ${name}`);
    return;
   }
 
-  if (this.activeScreen === name) return;
+  // ❗ ВСЕ overlay выключаем
+  for (const key of this.overlayScreens) {
+   const el = this.views[key];
+   if (!el) continue;
+   el.classList.remove("active");
+  }
 
-  this.activeScreen = name;
-  this.render();
+  // ❗ включаем только нужный overlay
+  const target = this.views[name];
+  target.classList.add("active");
+
+  // 🔥 game-scene никогда не трогаем
  }
 
  // =========================
- // CORE RENDER
+ // HIDE ALL OVERLAYS
  // =========================
- render() {
-  Object.entries(this.views).forEach(([key, el]) => {
-   if (!el) return;
 
-   const isActive = key === this.activeScreen;
-
-   el.classList.toggle("active", isActive);
-  });
+ hideAll() {
+  for (const key of this.overlayScreens) {
+   const el = this.views[key];
+   if (!el) continue;
+   el.classList.remove("active");
+  }
  }
 
  // =========================
- // GET CURRENT SCREEN
+ // GAME FLOW HELPERS
  // =========================
- getActive() {
-  return this.activeScreen;
+
+ showLoading() {
+  this.initLoading(true);
  }
 
- // =========================
- // RESET (safe restart)
- // =========================
- reset(initial = "loading") {
-  this.init(initial);
+ hideLoading() {
+  this.initLoading(false);
+ }
+
+ showRoundResult() {
+  this.show("roundResult");
+ }
+
+ showGameResult() {
+  this.show("gameResult");
  }
 }
