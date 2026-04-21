@@ -115,7 +115,7 @@ body {
 .loading-screen {
   position: fixed;
   inset: 0;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   color: #fff;
@@ -124,8 +124,9 @@ body {
   z-index: 9999;
   text-align: center;
 }
-
-
+.loading-screen.active {
+  display: flex;
+}
 
 /* overlay */
 .guess-overview {
