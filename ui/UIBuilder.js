@@ -113,30 +113,34 @@ export class UIBuilder {
  // GAME RESULT DATA ONLY
  // =========================
 
- formatGameResultVM(state) {
+formatGameResultVM(state) {
   const rounds = state.rounds || [];
 
-  return {
-   totalScore: rounds.reduce((s, r) => {
+  const totalScore = rounds.reduce((s, r) => {
     return s + (r.guess?.score || 0);
-   }, 0),
+  }, 0);
 
-   roundsCount: this.getRoundLimit(),
+  const roundsCount = this.getRoundLimit();
+  const maxScore = roundsCount * 5000;
 
-   rounds: rounds.map((r, i) => {
-    const g = r.guess;
+  return {
+    totalScore,
+    maxScore,
+    progress: maxScore ? totalScore / maxScore : 0,
 
-    return {
-     index: i,
-     distance: g?.distance ?? 0,
-     score: g?.score ?? 0,
-     guess: g
-      ? { lat: g.lat, lng: g.lng, playerId: g.playerId }
-      : null,
-     actual: r.actualLocation,
-     progress: (g?.score ?? 0) / 5000
-    };
-   })
+    rounds: rounds.map((r, i) => ({
+      index: i,
+      score: r.guess?.score || 0,
+      distance: r.guess?.distance || 0,
+      guess: r.guess,
+      actual: r.actualLocation
+    })),
+
+    text: {
+      title: "Игра завершена",
+      scoreLine: Счёт: ${totalScore} / ${maxScore},
+      roundsLine: Раундов: ${rounds.length}
+    }
   };
- }
+}
 }
