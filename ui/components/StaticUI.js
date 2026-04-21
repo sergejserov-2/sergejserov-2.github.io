@@ -1,5 +1,7 @@
 export class StaticUI {
  constructor({ hudElement }) {
+  if (!hudElement) throw new Error("StaticUI: missing hud");
+
   this.hudElement = hudElement;
 
   this.roundEl = hudElement.querySelector(".round b");
@@ -8,86 +10,127 @@ export class StaticUI {
   this.movesEl = hudElement.querySelector(".moves-left b");
 
   this.delayBar = document.querySelector(".round-timer-bar");
+
   this.delayFrame = null;
+
+  // 🔥 ВАЖНО: РАЗДЕЛЯЕМ ROOT
+  this.roundRoot = document.querySelector(".round-result");
+  this.gameRoot = document.querySelector(".game-result");
  }
+
+ // =========================
+ // HUD
+ // =========================
 
  updateHUD(vm = {}) {
   if (this.roundEl) {
-   this.roundEl.textContent = `Раунд: ${vm.round} / ${vm.roundLimit}`;
+   this.roundEl.textContent =
+    `Раунд: ${vm.round} / ${vm.roundLimit}`;
   }
 
   if (this.totalEl) {
-   this.totalEl.textContent = `Счёт: ${vm.totalScore}`;
+   this.totalEl.textContent =
+    `Счёт: ${vm.totalScore}`;
   }
 
   const timeWrap = this.timeEl?.parentElement;
-  if (timeWrap) timeWrap.style.display = vm.showTime ? "block" : "none";
+  if (timeWrap) {
+   timeWrap.style.display = vm.showTime ? "block" : "none";
+  }
 
   const movesWrap = this.movesEl?.parentElement;
-  if (movesWrap) movesWrap.style.display = vm.showMoves ? "block" : "none";
+  if (movesWrap) {
+   movesWrap.style.display = vm.showMoves ? "block" : "none";
+  }
  }
 
- updateTimer(v) {
-  if (this.timeEl) this.timeEl.textContent = `Время: ${v}`;
+ updateTimer(value) {
+  if (!this.timeEl) return;
+  this.timeEl.textContent = `Время: ${value}`;
  }
 
- updateMoves(v) {
-  if (this.movesEl) {
-   this.movesEl.textContent = v === -1 ? "∞" : `Ходы: ${v}`;
+ updateMoves(value) {
+  if (!this.movesEl) return;
+  this.movesEl.textContent =
+   value === -1 ? "∞" : `Ходы: ${value}`;
+ }
+
+ // =========================
+ // ROUND RESULT
+ // =========================
+
+ showRoundResult(model = {}) {
+  const root = this.roundRoot;
+  if (!root) return;
+
+  const distance = model.distance ?? 0;
+  const score = model.score ?? 0;
+  const progress = model.progress ?? 0;
+
+  const text = root.querySelector(".score-text");
+  const bar = root.querySelector(".score-progress");
+
+  if (text) {
+   text.innerHTML = `
+    <p>Ваша точка на расстоянии ${distance.toFixed(1)} км от загаданной</p>
+    <p>Ваш счёт — ${score}</p>
+   `;
+  }
+
+  if (bar) {
+   bar.style.width =
+    `${Math.min(Math.max(progress, 0), 1) * 100}%`;
   }
  }
 
  // =========================
- // ROUND + GAME RESULT (ОДИН UI)
+ // GAME RESULT
  // =========================
- showRoundResult(model = {}) {
-  this._renderResult(model, false);
- }
 
  showGameResult(model = {}) {
-  this._renderResult(model, true);
- }
-
- _renderResult(model, isGameEnd) {
-  const root = document.querySelector(".guess-overview");
+  const root = this.gameRoot;
   if (!root) return;
 
   const text = root.querySelector(".score-text");
   const bar = root.querySelector(".score-progress");
 
   if (text) {
-   text.innerHTML = isGameEnd
-    ? `
-     <p>${model.text?.title}</p>
-     <p>${model.text?.scoreLine}</p>
-     <p>${model.text?.roundsLine}</p>
-    `
-    : `
-     <p>Ваша точка на расстоянии ${model.distance.toFixed(1)} км</p>
-     <p>Ваш счёт — ${model.score}</p>
-    `;
+   text.innerHTML = `
+    <p>Ваша точка на расстоянии ${model.rounds?.slice(-1)[0]?.distance?.toFixed(1) ?? 0} км от загаданной</p>
+    <p>Ваш счёт — ${model.rounds?.slice(-1)[0]?.score ?? 0}</p>
+    <p><b>Общий счёт: ${model.totalScore} / ${model.maxScore}</b></p>
+   `;
   }
 
   if (bar) {
-   bar.style.width = `${Math.min(Math.max(model.progress, 0), 1) * 100}%`;
+   const p = Math.min(Math.max(model.progress ?? 0, 0), 1);
+   bar.style.width = `${p * 100}%`;
   }
 
   this.stopRoundDelay();
  }
+
+ // =========================
+ // DELAY BAR
+ // =========================
 
  startRoundDelay(duration, onFinish) {
   this.stopRoundDelay();
 
   if (!this.delayBar) return;
 
+  this.delayBar.style.transition = "none";
+  this.delayBar.style.transform = "scaleX(1)";
+
   const start = performance.now();
 
   const animate = (now) => {
-   const p = 1 - (now - start) / duration;
+   const elapsed = now - start;
+   const progress = Math.max(0, 1 - elapsed / duration);
 
-   this.delayBar.style.transform = `scaleX(${Math.max(0, p)})`;
+   this.delayBar.style.transform = `scaleX(${progress})`;
 
-   if (p > 0) {
+   if (progress > 0) {
     this.delayFrame = requestAnimationFrame(animate);
    } else {
     this.stopRoundDelay();
@@ -99,8 +142,10 @@ export class StaticUI {
  }
 
  stopRoundDelay() {
-  if (this.delayFrame) cancelAnimationFrame(this.delayFrame);
-  this.delayFrame = null;
+  if (this.delayFrame) {
+   cancelAnimationFrame(this.delayFrame);
+   this.delayFrame = null;
+  }
 
   if (this.delayBar) {
    this.delayBar.style.transform = "scaleX(0)";
