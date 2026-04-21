@@ -26,7 +26,7 @@ export class GameState {
 
   const g = result.guess;
 
-  if (!g  g.lat == null  g.lng == null) {
+  if (!g || g.lat == null || g.lng == null) {
    console.warn("Invalid guess in GameState", result);
    return;
   }
