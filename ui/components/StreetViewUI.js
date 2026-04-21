@@ -27,36 +27,23 @@ export class StreetViewUI {
   // =========================
   // LOCATION
   // =========================
-  setLocation(pos) {
-    if (!this.panorama || !pos) return;
+setLocation(pos) {
+  if (!this.panorama || !pos) return;
 
-    let resolved = false;
+  let resolved = false;
 
-    const resolveOnce = () => {
-      if (resolved) return;
-      resolved = true;
+  const resolve = () => {
+    if (resolved) return;
+    resolved = true;
+    this.onReady?.();
+  };
 
-      if (this.onReady) {
-        this.onReady();
-      }
-    };
+  // 🔥 основной сигнал (реальный Google event)
+  const idleListener = this.panorama.addListener("idle", resolve);
 
-    // 🔥 основной сигнал — смена позиции
-    const listener = this.panorama.addListener(
-      "position_changed",
-      () => {
-        resolveOnce();
-        google.maps.event.removeListener(listener);
-      }
-    );
-
-    // применяем позицию
-    this.panorama.setPosition(pos);
-
-    // 🔥 fallback (если Google не прислал событие)
-    setTimeout(resolveOnce, 2000);
-  }
-
+  // применяем позицию
+  this.panorama.setPosition(pos);
+}
   // =========================
   // POV
   // =========================
