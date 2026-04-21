@@ -1,3 +1,5 @@
+import { Geometry } from "./math/Geometry.js";
+
 export class Game {
  constructor({ gameState, scoring, players, config }) {
   this.gameState = gameState;
@@ -6,9 +8,6 @@ export class Game {
   this.config = config;
  }
 
- // =========================
- // GAME LIFECYCLE
- // =========================
  startGame() {
   this.gameState.startGame();
  }
@@ -21,14 +20,10 @@ export class Game {
   this.gameState.endGame();
  }
 
- // =========================
- // CORE ACTION
- // =========================
  setGuess(playerId, point) {
   const round = this.gameState.getCurrentRound();
   if (!round) return null;
 
-  // 🔥 ВАЖНО: нормализация входа (частый источник 0/0)
   const guess = {
    lat: point?.lat,
    lng: point?.lng
@@ -36,14 +31,13 @@ export class Game {
 
   const actual = round.actualLocation;
 
-  if (!actual || guess.lat == null || guess.lng == null) {
+  if (!actual  guess.lat == null  guess.lng == null) {
    console.warn("Invalid scoring input", { actual, guess });
    return null;
   }
 
   const result = this.scoring.calculate(actual, guess);
 
-  // 🔥 ЕДИНСТВЕННАЯ запись результата
   this.gameState.setRoundResult({
    playerId,
    guess,
@@ -54,9 +48,6 @@ export class Game {
   return result;
  }
 
- // =========================
- // ACCESS
- // =========================
  getState() {
   return this.gameState.getState();
  }
