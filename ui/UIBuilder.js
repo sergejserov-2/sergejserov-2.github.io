@@ -11,6 +11,10 @@ export class UIBuilder {
   this.actualColor = "#9aa0a6";
  }
 
+ // =========================
+ // CONFIG
+ // =========================
+
  setConfig(config) {
   this.config = config || {};
  }
@@ -42,8 +46,21 @@ export class UIBuilder {
  }
 
  // =========================
+ // COLORS (🔥 FIXED MISSING API)
+ // =========================
+
+ getPlayerColor(id = "p1") {
+  return this.playerColors[id] || "#ff4d4d";
+ }
+
+ getActualColor() {
+  return this.actualColor;
+ }
+
+ // =========================
  // GAME HUD
  // =========================
+
  formatGameVM(state) {
   const rounds = state.rounds || [];
 
@@ -75,6 +92,7 @@ export class UIBuilder {
  // =========================
  // ROUND RESULT
  // =========================
+
  formatRoundVM(state) {
   const rounds = state.rounds || [];
 
@@ -86,14 +104,22 @@ export class UIBuilder {
    distance: guess?.distance ?? 0,
    score: guess?.score ?? 0,
    progress: Math.min((guess?.score ?? 0) / 5000, 1),
-   guess: guess?.guess,
-   actual: round?.actualLocation
+
+   // 🔥 ПЛОСКАЯ МОДЕЛЬ (ВАЖНО)
+   guess: guess ? {
+    playerId: guess.playerId,
+    lat: guess.lat,
+    lng: guess.lng
+   } : null,
+
+   actual: round?.actualLocation || null
   };
  }
 
  // =========================
  // GAME RESULT
  // =========================
+
  formatGameResultVM(state) {
   const rounds = state.rounds || [];
 
@@ -111,7 +137,12 @@ export class UIBuilder {
      index: i,
      distance: g?.distance ?? 0,
      score: g?.score ?? 0,
-     guess: g?.guess,
+
+     // 🔥 ПЛОСКАЯ МОДЕЛЬ
+     guess: g
+      ? { lat: g.lat, lng: g.lng, playerId: g.playerId }
+      : null,
+
      actual: r.actualLocation,
      progress: (g?.score ?? 0) / 5000
     };
