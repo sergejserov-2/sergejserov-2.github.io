@@ -9,59 +9,66 @@ export class StaticUI {
   this.timeEl = hudElement.querySelector(".time-left b");
   this.movesEl = hudElement.querySelector(".moves-left b");
 
-  // ROUND END TIMER (UX)
-  this.timerEl = document.querySelector(".round-timer");
+  this.timerEl = document.querySelector(".round-timer-bar");
+
   this.timerFrame = null;
  }
 
  // =========================
- // HUD
+ // HUD RENDER (TEXT LAYER)
  // =========================
-updateHUD(model = {}) {
- if (model.roundText != null)
-  this.roundEl.textContent = model.roundText;
 
- if (model.totalText != null)
-  this.totalEl.textContent = model.totalText;
+ updateHUD(vm = {}) {
+  if (this.roundEl) {
+   this.roundEl.textContent =
+    `Раунд: ${vm.round} / ${vm.roundLimit}`;
+  }
 
- // 🔥 TIME
- const timeEl = this.timeEl?.parentElement;
- if (timeEl) {
-  timeEl.style.display = model.showTime ? "block" : "none";
+  if (this.totalEl) {
+   this.totalEl.textContent =
+    `Счёт: ${vm.totalScore}`;
+  }
+
+  // TIME
+  const timeWrap = this.timeEl?.parentElement;
+
+  if (timeWrap) {
+   timeWrap.style.display = vm.showTime ? "block" : "none";
+  }
+
+  if (this.timeEl && vm.showTime) {
+   this.timeEl.textContent =
+    `Время: ${vm.time}`;
+  }
+
+  // MOVES
+  const movesWrap = this.movesEl?.parentElement;
+
+  if (movesWrap) {
+   movesWrap.style.display = vm.showMoves ? "block" : "none";
+  }
+
+  if (this.movesEl && vm.showMoves) {
+   this.movesEl.textContent =
+    `Ходы: ${vm.moves}`;
+  }
  }
 
- if (model.timeText != null)
-  this.timeEl.textContent = model.timeText;
-
- // 🔥 MOVES
- const movesEl = this.movesEl?.parentElement;
- if (movesEl) {
-  movesEl.style.display = model.showMoves ? "block" : "none";
- }
-
- if (model.movesText != null)
-  this.movesEl.textContent = model.movesText;
-}
-
  // =========================
- // GAME TIMER (HUD)
+ // MOVES (fallback)
  // =========================
- updateTimer(value) {
-  if (!this.timeEl) return;
-  this.timeEl.textContent = value === -1 ? "∞" : value;
- }
 
- // =========================
- // MOVES (HUD)
- // =========================
  updateMoves(value) {
   if (!this.movesEl) return;
-  this.movesEl.textContent = value === -1 ? "∞" : value;
+
+  this.movesEl.textContent =
+   value === -1 ? "∞" : `Ходы: ${value}`;
  }
 
  // =========================
  // ROUND RESULT
  // =========================
+
  showRoundResult(model = {}) {
   const root = document.querySelector(".guess-overview");
   if (!root) return;
@@ -70,18 +77,25 @@ updateHUD(model = {}) {
   const score = model.score ?? 0;
   const progress = model.progress ?? 0;
 
-  root.querySelector(".score-text").innerHTML = `
-   <p>Ваша точка на расстоянии ${distance.toFixed(1)} км от загаданной</p>
-   <p>Ваш счёт - ${score}</p>
-  `;
+  const text = root.querySelector(".score-text");
+  if (text) {
+   text.innerHTML = `
+    <p>Ваша точка на расстоянии ${distance.toFixed(1)} км от загаданной</p>
+    <p>Ваш счёт — ${score}</p>
+   `;
+  }
 
   const bar = root.querySelector(".score-progress");
-  if (bar) bar.style.width = `${Math.min(Math.max(progress, 0), 1) * 100}%`;
+  if (bar) {
+   bar.style.width =
+    `${Math.min(Math.max(progress, 0), 1) * 100}%`;
+  }
  }
 
  // =========================
  // GAME RESULT
  // =========================
+
  showGameResult(model = {}) {
   const root = document.querySelector(".guess-overview");
   if (!root) return;
@@ -90,40 +104,49 @@ updateHUD(model = {}) {
    ? model.rounds.length
    : 0;
 
-  root.querySelector(".score-text").innerHTML = `
-   <p>Игра завершена</p>
-   <p>Раундов: ${roundsCount}</p>
-  `;
+  const text = root.querySelector(".score-text");
+  if (text) {
+   text.innerHTML = `
+    <p>Игра завершена</p>
+    <p>Раундов: ${roundsCount}</p>
+   `;
+  }
+
+  const bar = root.querySelector(".score-progress");
+  if (bar) {
+   bar.style.width = "100%";
+  }
  }
 
  // =========================
- // ROUND END TIMER (UX ONLY)
+ // ROUND TIMER (UX ONLY)
  // =========================
-startRoundTimer(duration, onFinish) {
+
+ startRoundTimer(duration, onFinish) {
   this.stopRoundTimer();
 
   if (!this.timerEl) return;
 
-  const startTime = Date.now();
+  const start = Date.now();
 
   const animate = () => {
-    const now = Date.now();
-    const elapsed = now - startTime;
+   const elapsed = Date.now() - start;
+   const progress = Math.max(0, 1 - elapsed / duration);
 
-    const progress = Math.max(0, 1 - elapsed / duration);
-    this.timerEl.style.transform = `scaleX(${progress})`;
+   this.timerEl.style.transform =
+    `scaleX(${progress})`;
 
-    if (progress > 0) {
-      this.timerFrame = requestAnimationFrame(animate);
-    } else {
-      this.stopRoundTimer();
-      onFinish?.(); // 🔥 главный момент
-    }
+   if (progress > 0) {
+    this.timerFrame = requestAnimationFrame(animate);
+   } else {
+    this.stopRoundTimer();
+    onFinish?.();
+   }
   };
 
   this.timerEl.style.transform = "scaleX(1)";
   animate();
-}
+ }
 
  stopRoundTimer() {
   if (this.timerFrame) {
