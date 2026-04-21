@@ -14,13 +14,13 @@ export class ScreenManager {
   Object.values(this.views).forEach(v => {
    if (!v) return;
    v.classList.remove("active");
-   v.style.display = "none";
+   v.hidden = true;
   });
 
   const target = this.views[name];
   if (!target) return;
 
-  target.style.display = "flex";
+  target.hidden = false;
   target.classList.add("active");
  }
 }
