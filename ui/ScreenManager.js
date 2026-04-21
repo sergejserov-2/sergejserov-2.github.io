@@ -31,3 +31,4 @@ export class ScreenManager {
     target.style.display = "flex";
     target.classList.add("active");
   }
+}
