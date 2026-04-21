@@ -67,10 +67,10 @@ export async function init() {
  const mapEl = document.querySelector(".map");
  const streetEl = document.querySelector(".streetview");
  const screensEl = document.querySelector(".screens");
- const roundOverviewMapEl = document.querySelector(
+ const roundOverviewUI = document.querySelector(
    ".round-result .overview-map"
  );
- const gameOverviewMapEl = document.querySelector(
+ const gameOverviewUI = document.querySelector(
    ".game-result .overview-map"
  );
  const guessBtn = document.querySelector("#makeGuess");
