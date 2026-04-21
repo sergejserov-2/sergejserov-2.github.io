@@ -138,8 +138,8 @@ formatGameResultVM(state) {
 
     text: {
       title: "Игра завершена",
-      scoreLine: Счёт: ${totalScore} / ${maxScore},
-      roundsLine: Раундов: ${rounds.length}
+      scoreLine: `Счёт: ${totalScore} / ${maxScore}`,
+      roundsLine: `Раундов: ${rounds.length}`
     }
   };
 }
