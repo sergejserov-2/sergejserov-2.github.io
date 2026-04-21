@@ -81,7 +81,9 @@ this.gameFlow.on("roundResultShown", ({ state }) => {
 
  const duration = 7500;
 
- this.mapOverviewUI.forceResize?.();
+    requestAnimationFrame(() => {
+      this.mapOverviewUI.forceResize?.();
+    });
 
  // 🔥 ТОЛЬКО UI-LAYER CONTROL
  this.staticUI.startRoundDelay(duration, () => {
