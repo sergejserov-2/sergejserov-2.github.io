@@ -116,18 +116,19 @@ export class UIBuilder {
  // =========================
 
  formatRoundVM(state) {
-  const round = state.rounds?.[state.currentRoundIndex];
+  const rounds = state.rounds || [];
+  const index = Math.max(0, state.currentRoundIndex - 1);
+  const round = rounds[index];
   const guess = round?.guesses?.[0];
-
   return {
-   index: round?.index,
-   distance: guess?.distance ?? 0,
-   score: guess?.score ?? 0,
-   progress: Math.min((guess?.score ?? 0) / 5000, 1),
-   guess: guess?.guess,
-   actual: round?.actualLocation
+    index: round?.index ?? index,
+    distance: guess?.distance ?? 0,
+    score: guess?.score ?? 0,
+    progress: Math.min((guess?.score ?? 0) / 5000, 1),
+    guess: guess?.guess,
+    actual: round?.actualLocation
   };
- }
+}
 
  // =========================
  // GAME RESULT
