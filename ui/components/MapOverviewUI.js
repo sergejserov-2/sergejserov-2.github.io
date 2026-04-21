@@ -26,21 +26,27 @@ export class MapOverviewUI {
  }
 
  // =========================
- // RENDER ROUND
+ // RENDER (FIXED FOR GameFlow STATE)
  // =========================
 
- render(round) {
+ render(payload) {
   if (!this.map) return;
 
-  const guessObj = round?.guesses?.[0];
-  const guess = guessObj?.guess;
+  const state = payload?.state ?? payload;
+
+  const rounds = state?.rounds;
+  if (!rounds || rounds.length === 0) return;
+
+  const round = rounds[rounds.length - 1];
+
+  const guess = round?.guess;
   const actual = round?.actualLocation;
 
   if (!guess || !actual) return;
 
   this.clear();
 
-  const playerId = guessObj?.playerId || "p1";
+  const playerId = "p1";
 
   const playerColor = this.uiBuilder.getPlayerColor(playerId);
   const actualColor = this.uiBuilder.getActualColor();
@@ -82,11 +88,11 @@ export class MapOverviewUI {
  }
 
  // =========================
- // CAMERA (CURRENT IMPLEMENTATION)
+ // CAMERA LOGIC
  // =========================
 
  fitToPoints(points) {
-  if (!this.map || !points || points.length < 2) return;
+  if (!this.map  !points  points.length < 2) return;
 
   const a = points[0];
   const b = points[1];
