@@ -41,12 +41,14 @@ export class UIBuilder {
   return typeof m === "number" && m > 0;
  }
 
+ // =========================
+ // GAME HUD
+ // =========================
  formatGameVM(state) {
   const rounds = state.rounds || [];
 
   const totalScore = rounds.reduce((sum, r) => {
-   const g = r.guesses?.[0];
-   return sum + (g?.score || 0);
+   return sum + (r.guess?.score || 0);
   }, 0);
 
   const currentRound = rounds.length;
@@ -55,29 +57,32 @@ export class UIBuilder {
   return {
    status: state.status,
 
-   roundText: `Раунд: ${currentRound} / ${totalRounds}`,
+   roundText: Раунд: ${currentRound} / ${totalRounds},
 
    totalScore,
-   totalText: `Счёт: ${totalScore}`,
+   totalText: Счёт: ${totalScore},
 
    timeText: this.isTimeEnabled()
-    ? `${this.getTimeLimit()}s`
+    ? ${this.getTimeLimit()}s
     : "∞",
 
    movesText: this.isMovesEnabled()
-    ? `${this.getMovesLimit()}`
+    ? ${this.getMovesLimit()}
     : "∞"
   };
  }
 
+ // =========================
+ // ROUND RESULT
+ // =========================
  formatRoundVM(state) {
   const rounds = state.rounds || [];
 
   const round = rounds[rounds.length - 1];
-  const guess = round?.guesses?.[0];
+  const guess = round?.guess;
 
   return {
-   index: round?.index ?? 0,
+   index: rounds.length - 1,
    distance: guess?.distance ?? 0,
    score: guess?.score ?? 0,
    progress: Math.min((guess?.score ?? 0) / 5000, 1),
@@ -86,22 +91,24 @@ export class UIBuilder {
   };
  }
 
+ // =========================
+ // GAME RESULT
+ // =========================
  formatGameResultVM(state) {
   const rounds = state.rounds || [];
 
   return {
    totalScore: rounds.reduce((s, r) => {
-    const g = r.guesses?.[0];
-    return s + (g?.score || 0);
+    return s + (r.guess?.score || 0);
    }, 0),
 
    roundsCount: this.getRoundLimit(),
 
-   rounds: rounds.map(r => {
-    const g = r.guesses?.[0];
+   rounds: rounds.map((r, i) => {
+    const g = r.guess;
 
     return {
-     index: r.index,
+     index: i,
      distance: g?.distance ?? 0,
      score: g?.score ?? 0,
      guess: g?.guess,
