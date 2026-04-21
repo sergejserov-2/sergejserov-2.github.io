@@ -55,8 +55,7 @@ export class GameFlow {
     const location = await this.generator.generate(this.area);
 
     this.game.startRound(location);
-
-    // 🔥 ждём StreetView готовности
+    this.emit("streetViewSetLocation", location);
     await this.waitForStreetViewReady();
 
     this.timer.start(
