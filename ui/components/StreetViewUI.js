@@ -7,6 +7,7 @@ export class StreetViewUI {
 
   // внешний сигнал для GameFlow
   this.onReady = null;
+  this.onMove = null;
  }
 
  // =========================
@@ -20,6 +21,10 @@ export class StreetViewUI {
     this.element,
     position
    );
+  });
+
+  this.panorama.addListener("position_changed", () => {
+   this.onMove?.();
   });
  }
 
@@ -37,6 +42,7 @@ export class StreetViewUI {
   });
  }
 
+ 
  // =========================
  // POV
  // =========================
