@@ -102,9 +102,13 @@ export class GameFlow {
   this.locked = true;
   this.emit("inputLocked");
 
+  // 🔥 ВАЖНО: Game теперь обязан вернуть результат
   const result = this.game.setGuess(playerId, point);
 
-  this.emit("guessResolved", result);
+  // 🔥 фикс: если нет результата — это баг в Game
+  if (result) {
+   this.emit("guessResolved", result);
+  }
 
   this.finishRound("guess");
  }
