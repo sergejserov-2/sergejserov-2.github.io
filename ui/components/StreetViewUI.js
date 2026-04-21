@@ -14,6 +14,11 @@ export class StreetViewUI {
     position
    );
   });
+
+this.panorama.addListener("idle", () => {
+ this.onReady?.();
+}
+  
  }
 
  setLocation(pos) {
