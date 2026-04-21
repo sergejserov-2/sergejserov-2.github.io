@@ -50,6 +50,7 @@ export class GameFlow {
   );
 
   this.moves.reset(this.game.config.rules.moves);
+  this.emit("movesUpdated", this.moves.getRemaining());
 
   this.locked = false;
 
