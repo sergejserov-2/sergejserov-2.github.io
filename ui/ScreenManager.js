@@ -13,23 +13,15 @@ export class ScreenManager {
  }
 
  // =========================
- // INIT (CRITICAL FIX)
+ // INIT
  // =========================
  init(initial = "loading") {
   this.activeScreen = initial;
-
-  Object.entries(this.views).forEach(([name, el]) => {
-   if (!el) return;
-
-   const isActive = name === initial;
-
-   el.hidden = !isActive;
-   el.classList.toggle("active", isActive);
-  });
+  this.render();
  }
 
  // =========================
- // SHOW SCREEN (CORE API)
+ // SHOW SCREEN
  // =========================
  show(name) {
   if (!this.views[name]) {
@@ -40,28 +32,33 @@ export class ScreenManager {
   if (this.activeScreen === name) return;
 
   this.activeScreen = name;
+  this.render();
+ }
 
+ // =========================
+ // CORE RENDER
+ // =========================
+ render() {
   Object.entries(this.views).forEach(([key, el]) => {
    if (!el) return;
 
-   const isActive = key === name;
+   const isActive = key === this.activeScreen;
 
-   el.hidden = !isActive;
    el.classList.toggle("active", isActive);
   });
  }
 
  // =========================
- // GET STATE (optional debug)
+ // GET CURRENT SCREEN
  // =========================
  getActive() {
   return this.activeScreen;
  }
 
  // =========================
- // RESET (safe restart game)
+ // RESET (safe restart)
  // =========================
- reset() {
-  this.init("loading");
+ reset(initial = "loading") {
+  this.init(initial);
  }
 }
