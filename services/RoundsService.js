@@ -1,4 +1,4 @@
-export class RoundService {
+export class RoundsService {
   constructor() {
     this.limit = 0;
     this.current = 0;
