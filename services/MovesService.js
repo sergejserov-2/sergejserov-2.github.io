@@ -1,4 +1,4 @@
-export class MoveService {
+export class MovesService {
   constructor() {
     this.limit = -1;
     this.remaining = -1;
