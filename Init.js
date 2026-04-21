@@ -99,7 +99,7 @@ export async function init() {
  });
 
  const generator = new LocationGenerator({
-  streetAdapter
+ streetAdapter: new StreetViewAdapter()
  });
 
  const gameFlow = new GameFlow({
