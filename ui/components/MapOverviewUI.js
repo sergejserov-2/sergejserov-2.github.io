@@ -54,12 +54,12 @@ export class MapOverviewUI {
 
   const guessMarker = this.adapter.createMarker(this.map, guess, {
    color: playerColor,
-   size: 20
+   size: 18
   });
 
   const actualMarker = this.adapter.createMarker(this.map, actual, {
    color: actualColor,
-   size: 30
+   size: 24
   });
 
   // =========================
