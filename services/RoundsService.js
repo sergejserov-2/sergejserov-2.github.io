@@ -1,23 +1,17 @@
 export class RoundsService {
   constructor() {
-    this.limit = 0;
-    this.current = 0;
+    this.totalRounds = 0;
   }
 
-  start(limit) {
-    this.limit = limit;
-    this.current = 0;
+  start(totalRounds) {
+    this.totalRounds = totalRounds;
   }
 
-  next() {
-    this.current++;
+  getTotal() {
+    return this.totalRounds;
   }
 
-  getCurrent() {
-    return this.current;
-  }
-
-  isFinished() {
-    return this.limit !== -1 && this.current >= this.limit;
+  isFinished(currentIndex) {
+    return currentIndex >= this.totalRounds;
   }
 }
