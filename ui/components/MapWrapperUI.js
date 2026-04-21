@@ -1,58 +1,100 @@
+
 export class MapWrapperUI {
  constructor({ adapter, element, uiBuilder }) {
   this.adapter = adapter;
   this.uiBuilder = uiBuilder;
-
   this.element = element;
 
   this.map = null;
-  this.guessMarker = null;
 
+  this.guessMarker = null;
   this.isLocked = false;
   this.onGuess = null;
-
   this.lastGuessPoint = null;
+
+  // 🔥 POLYGON STATE
+  this.area = null;
+  this.polygon = null;
+  this.polygonVisible = false;
  }
 
-init() {
+ // =========================
+ // INIT
+ // =========================
+
+ init() {
   if (!this.element) return;
 
-  // 🔥 обязательно дать size ready
   const rect = this.element.getBoundingClientRect();
   if (rect.width === 0 || rect.height === 0) {
-    console.warn("Map container not ready");
+   console.warn("Map container not ready");
   }
 
-this.map = this.adapter.createMap(this.element, {
-  zoom: 2,
-  center: { lat: 20, lng: 0 },
-  disableDefaultUI: true,
-  zoomControl: false,
-  fullscreenControl: false,
-  streetViewControl: false,
-  mapTypeControl: false,
-  gestureHandling: "greedy" // можно двигать без UI
-});
-
-  this.map.addListener("click", (e) => {
-    if (this.isLocked) return;
-
-    const point = {
-      lat: e.latLng.lat(),
-      lng: e.latLng.lng()
-    };
-
-    this.lastGuessPoint = point;
-    this.placeGuessMarker(point);
+  this.map = this.adapter.createMap(this.element, {
+   zoom: 2,
+   center: { lat: 20, lng: 0 },
+   disableDefaultUI: true,
+   zoomControl: false,
+   fullscreenControl: false,
+   streetViewControl: false,
+   mapTypeControl: false,
+   gestureHandling: "greedy"
   });
 
-  // 🔥 force resize fix
+  this.map.addListener("click", (e) => {
+   if (this.isLocked) return;
+
+   const point = {
+    lat: e.latLng.lat(),
+    lng: e.latLng.lng()
+   };
+
+   this.lastGuessPoint = point;
+   this.placeGuessMarker(point);
+  });
+
   setTimeout(() => {
-    google.maps.event.trigger(this.map, "resize");
+   google.maps.event.trigger(this.map, "resize");
   }, 50);
 
   this.initResize();
-}
+ }
+
+ // =========================
+ // POLYGON API
+ // =========================
+
+ setArea(area) {
+  this.area = area;
+ }
+
+ togglePolygon() {
+  if (!this.map || !this.area) return;
+
+  if (this.polygonVisible) {
+   this.polygon?.setMap(null);
+   this.polygon = null;
+   this.polygonVisible = false;
+   return;
+  }
+
+  const path = this.area.polygonPoints;
+
+  this.polygon = this.adapter.createPolygon(this.map, path, {
+   strokeColor: "#4ea1ff",
+   fillColor: "#4ea1ff"
+  });
+
+  this.polygonVisible = true;
+ }
+
+ bindPolygonButton(el) {
+  if (!el) return;
+
+  el.addEventListener("click", () => {
+   this.togglePolygon();
+  });
+ }
 
  // =========================
  // INPUT
@@ -95,7 +137,6 @@ this.map = this.adapter.createMap(this.element, {
 
  clearGuessMarker() {
   if (!this.guessMarker) return;
-
   this.adapter.removeMarker(this.guessMarker);
   this.guessMarker = null;
  }
@@ -108,6 +149,12 @@ this.map = this.adapter.createMap(this.element, {
   this.unlock();
   this.clearGuessMarker();
   this.lastGuessPoint = null;
+
+  if (this.polygon) {
+   this.polygon.setMap(null);
+   this.polygon = null;
+   this.polygonVisible = false;
+  }
  }
 
  lock() {
@@ -123,10 +170,7 @@ this.map = this.adapter.createMap(this.element, {
  // =========================
 
  initResize() {
-  const handle = this.element
-   ?.parentElement
-   ?.querySelector(".resize-handle");
-
+  const handle = this.element?.parentElement?.querySelector(".resize-handle");
   if (!handle) return;
 
   let startX, startY, startW, startH;
