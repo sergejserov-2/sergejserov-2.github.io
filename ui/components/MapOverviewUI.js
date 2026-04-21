@@ -41,7 +41,6 @@ export class MapOverviewUI {
   // =========================
   const actualMarker = this.adapter.createMarker(this.map, actual, {
    color: actualColor,
-   size: 24,
    isActual: true
   });
 
@@ -53,7 +52,6 @@ export class MapOverviewUI {
   if (guess) {
    const guessMarker = this.adapter.createMarker(this.map, guess, {
     color: playerColor,
-    size: 18,
     isActual: false
    });
 
