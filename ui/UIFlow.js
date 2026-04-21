@@ -19,22 +19,23 @@ export class UIFlow {
   this.roundOverviewUI = roundOverviewUI;
   this.gameOverviewUI = gameOverviewUI;
 
+  this.boundGameResultButtons = false;
+
   this.bind();
  }
 
  bind() {
-
   // =========================
   // STREET VIEW
   // =========================
   this.streetViewUI.onReady = () => {
    this.gameFlow.streetViewReady();
   };
-  
- this.streetViewUI.onMove = () => {
-  this.gameFlow.registerMove();
- };
-  
+
+  this.streetViewUI.onMove = () => {
+   this.gameFlow.registerMove();
+  };
+
   this.gameFlow.on("loadingStarted", () => {
    this.screenManager.show("loading");
   });
@@ -53,10 +54,10 @@ export class UIFlow {
   this.gameFlow.on("roundStarted", (state) => {
    this.mapWrapperUI.reset();
    this.streetViewUI.unlockMove();
+
    this.roundOverviewUI?.clear();
    this.gameOverviewUI?.clear();
-   this.moves.reset(this.game.config.rules.moves);
-   this.emit("movesUpdated", this.moves.getRemaining());
+
    this.staticUI.stopRoundTimer?.();
 
    this.staticUI.updateHUD(
@@ -76,8 +77,8 @@ export class UIFlow {
   });
 
   this.gameFlow.on("movesLocked", () => {
- this.streetViewUI.lockMove();
-});
+   this.streetViewUI.lockMove();
+  });
 
   // =========================
   // INPUT
@@ -96,7 +97,6 @@ export class UIFlow {
   // ROUND RESULT
   // =========================
   this.gameFlow.on("roundResultShown", ({ state }) => {
-
    const rounds = state.rounds || [];
    const round = rounds[rounds.length - 1];
    if (!round) return;
@@ -108,13 +108,11 @@ export class UIFlow {
    this.screenManager.show("roundResult");
    this.staticUI.showRoundResult(vm);
 
-   const duration = 7500;
-
    requestAnimationFrame(() => {
     this.roundOverviewUI.forceResize?.();
    });
 
-   this.staticUI.startRoundDelay(duration, () => {
+   this.staticUI.startRoundDelay(7500, () => {
     this.gameFlow.nextRound();
    });
   });
@@ -123,11 +121,9 @@ export class UIFlow {
   // GAME END
   // =========================
   this.gameFlow.on("gameEnded", (state) => {
-
    this.screenManager.show("gameResult");
 
    const vm = this.uiBuilder.formatGameResultVM(state);
-
    this.staticUI.showGameResult(vm);
 
    const rounds = state.rounds || [];
@@ -141,20 +137,31 @@ export class UIFlow {
    }
 
    // =========================
-   // BUTTONS
+   // BUTTONS (ОДИН РАЗ)
    // =========================
-   const root = document.querySelector(".game-result");
+   this.bindGameResultButtons();
+  });
+ }
 
-   const playAgain = root?.querySelector(".play-again-button");
-   const home = root?.querySelector(".home-button");
+ // =========================
+ // GAME RESULT BUTTONS
+ // =========================
+ bindGameResultButtons() {
+  if (this.boundGameResultButtons) return;
+  this.boundGameResultButtons = true;
 
-   playAgain?.addEventListener("click", () => {
-    this.gameFlow.startGame();
-   });
+  const root = document.querySelector(".game-result");
+  if (!root) return;
 
-   home?.addEventListener("click", () => {
-    window.location.href = "index.html";
-   });
+  const playAgain = root.querySelector(".play-again-button");
+  const home = root.querySelector(".home-button");
+
+  playAgain?.addEventListener("click", () => {
+   this.gameFlow.startGame();
+  });
+
+  home?.addEventListener("click", () => {
+   window.location.href = "index.html";
   });
  }
 }
