@@ -22,30 +22,22 @@ export class Game {
  }
 
  endGame() {
-  this.gameState.end();
+  this.gameState.endGame();
  }
 
  // =========================
  // GUESSES
  // =========================
  setGuess(playerId, point) {
-  const existing = this.gameState.getPlayerGuess(playerId);
-
-  if (existing) {
-   this.gameState.updateGuess(playerId, point);
-  } else {
-   this.gameState.addGuess(playerId, {
-    lat: point.lat,
-    lng: point.lng
-   });
-  }
+  // всегда просто добавляем/перезаписываем через GameState
+  this.gameState.setGuess(playerId, point);
  }
 
  finishGuess(playerId = "p1") {
   const round = this.gameState.getCurrentRound();
   if (!round) return;
 
-  const guess = this.gameState.getPlayerGuess(playerId);
+  const guess = round.guesses.find(g => g.playerId === playerId);
   if (!guess || guess.isFinished) return;
 
   const result = this.scoring.calculate(
@@ -54,7 +46,7 @@ export class Game {
    { area: round.area }
   );
 
-  this.gameState.finalizeGuess(playerId, result);
+  this.gameState.finishGuess(playerId, result);
 
   return result;
  }
