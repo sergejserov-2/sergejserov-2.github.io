@@ -86,6 +86,25 @@ const svg = `
   return segments;
  }
 
+ createPolygon(map, path, options = {}) {
+ const {
+  strokeColor = "#4ea1ff",
+  fillColor = "#4ea1ff"
+ } = options;
+
+ return new google.maps.Polygon({
+  paths: path,
+  strokeColor,
+  strokeOpacity: 0.8,
+  strokeWeight: 2,
+  fillColor,
+  fillOpacity: 0.15,
+  map
+ });
+}
+
+ 
+
  // =========================
  // HELPERS
  // =========================
