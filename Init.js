@@ -189,7 +189,8 @@ export async function init() {
  streetViewUI.init({ lat: 0, lng: 0 });
 
  mapWrapperUI.init();
- mapOverviewUI.init();
+roundOverviewUI.init();
+gameOverviewUI.init();
 
  // 🔥 POLYGON SETUP (ВАЖНО: после init)
  mapWrapperUI.setArea(area);
