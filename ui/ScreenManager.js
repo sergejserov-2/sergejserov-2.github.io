@@ -33,7 +33,7 @@ export class ScreenManager {
  // =========================
  show(name) {
   if (!this.views[name]) {
-   console.warn([ScreenManager] unknown screen: ${name});
+   console.warn(`[ScreenManager] unknown screen: ${name}`);
    return;
   }
 
