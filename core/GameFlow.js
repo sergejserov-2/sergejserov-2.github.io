@@ -67,10 +67,8 @@ export class GameFlow {
  }
 
  streetViewReady() {
-  if (this._resolveStreetViewReady) {
-   this._resolveStreetViewReady();
-   this._resolveStreetViewReady = null;
-  }
+  this._resolveStreetViewReady?.();
+  this._resolveStreetViewReady = null;
  }
 
  finishGuess(point, playerId = "p1") {
@@ -96,31 +94,35 @@ export class GameFlow {
   this.finishRound("guess");
  }
 
-finishRound(reason = "manual") {
+ finishRound(reason = "manual") {
+  if (this.locked && reason === "guess") {
+   // защита от двойного вызова
+  }
+
   this.timer.clear();
   this.locked = true;
 
   this.emit("inputLocked");
 
-  const isLastRound =
-    this.game.getState().rounds.length >= this.game.config.rules.rounds;
+  const state = this.game.getState();
 
-  const state = this.game.getState(); // 🔥 ВАЖНО: после всех изменений
+  const isLastRound =
+   state.rounds.length >= this.game.config.rules.rounds;
 
   this.emit("roundResultShown", {
-    state,
-    reason
+   state,
+   reason
   });
 
   if (isLastRound) {
-    this.game.endGame();
+   this.game.endGame();
 
-    const finalState = this.game.getState(); // 🔥 актуальный финальный state
+   const finalState = this.game.getState();
 
-    this.emit("gameEnded", finalState);
-    return;
+   this.emit("gameEnded", finalState);
+   return;
   }
-}
+ }
 
  async nextRound() {
   const state = this.game.getState();
