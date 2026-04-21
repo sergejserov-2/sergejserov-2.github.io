@@ -1,122 +1,125 @@
-export class UIFlow {
- constructor({
-  gameFlow,
-  screenManager,
-  staticUI,
-  uiBuilder,
-  streetViewUI,
-  mapWrapperUI,
-  mapOverviewUI
- }) {
-  this.gameFlow = gameFlow;
-  this.screenManager = screenManager;
-  this.staticUI = staticUI;
-  this.uiBuilder = uiBuilder;
-  this.streetViewUI = streetViewUI;
-  this.mapWrapperUI = mapWrapperUI;
-  this.mapOverviewUI = mapOverviewUI;
+export class UIBuilder {
+ constructor(config = {}) {
+  this.config = config;
 
-  this.bind();
- }
-
- bind() {
-
-  this.streetViewUI.onReady = () => {
-   this.gameFlow.streetViewReady();
+  this.playerColors = {
+   p1: "#ff4d4d",
+   p2: "#4da6ff",
+   p3: "#7CFC00"
   };
 
-  this.gameFlow.on("loadingStarted", () => {
-   this.screenManager.show("loading");
-  });
+  this.actualColor = "#9aa0a6";
+ }
 
-  this.gameFlow.on("loadingFinished", () => {
-   this.screenManager.show("round");
-  });
+ setConfig(config) {
+  this.config = config || {};
+ }
 
-  this.gameFlow.on("streetViewSetLocation", (location) => {
-   this.streetViewUI.setLocation(location);
-  });
+ getConfig() {
+  return this.config || {};
+ }
 
-  this.gameFlow.on("roundStarted", (vm) => {
-   this.mapWrapperUI.reset();
-   this.mapOverviewUI.clear();
+ getRoundLimit() {
+  return this.getConfig()?.rules?.rounds ?? 0;
+ }
 
-   this.staticUI.stopRoundTimer?.();
+ getTimeLimit() {
+  return this.getConfig()?.rules?.time ?? null;
+ }
 
-   this.staticUI.updateHUD(
-    this.uiBuilder.formatGameVM(vm)
-   );
-  });
+ getMovesLimit() {
+  return this.getConfig()?.rules?.moves ?? null;
+ }
 
-  this.gameFlow.on("timerTick", (t) => {
-   this.staticUI.updateTimer(t);
-  });
+ isTimeEnabled() {
+  const t = this.getTimeLimit();
+  return typeof t === "number" && t > 0;
+ }
 
-  this.gameFlow.on("movesUpdated", (m) => {
-   this.staticUI.updateMoves?.(m);
-  });
+ isMovesEnabled() {
+  const m = this.getMovesLimit();
+  return typeof m === "number" && m > 0;
+ }
 
-  this.gameFlow.on("inputLocked", () => {
-   this.staticUI.lockInput?.();
-   this.mapWrapperUI.lock();
-  });
+ getPlayerColor(id = "p1") {
+  return this.playerColors[id] || "#ff4d4d";
+ }
 
-  this.gameFlow.on("inputUnlocked", () => {
-   this.staticUI.unlockInput?.();
-   this.mapWrapperUI.unlock();
-  });
+ getActualColor() {
+  return this.actualColor;
+ }
 
-  // =========================
-  // ROUND RESULT
-  // =========================
-this.gameFlow.on("roundResultShown", ({ state }) => {
+ // =========================
+ // HUD
+ // =========================
+ formatGameVM(state) {
+  const rounds = state.rounds || [];
+
+  const totalScore = rounds.reduce((sum, r) => {
+   return sum + (r.guess?.score || 0);
+  }, 0);
+
+  return {
+   round: rounds.length,
+   roundLimit: this.getRoundLimit(),
+   totalScore,
+
+   showTime: this.isTimeEnabled(),
+   showMoves: this.isMovesEnabled()
+  };
+ }
+
+ // =========================
+ // ROUND RESULT
+ // =========================
+ formatRoundVM(state) {
   const rounds = state.rounds || [];
   const round = rounds[rounds.length - 1];
-  if (!round) return;
 
-  this.mapOverviewUI.render(round);
+  const guess = round?.guess;
 
-  const vm = this.uiBuilder.formatRoundVM(state);
+  return {
+   distance: guess?.distance ?? 0,
+   score: guess?.score ?? 0,
+   progress: Math.min((guess?.score ?? 0) / 5000, 1),
 
-  const root = this.screenManager.get("roundResult");
+   guess: guess
+    ? {
+       playerId: guess.playerId,
+       lat: guess.lat,
+       lng: guess.lng
+      }
+    : null,
 
-  this.screenManager.show("roundResult");
+   actual: round?.actualLocation || null
+  };
+ }
 
-  this.staticUI.showRoundResult(vm, root);
+ // =========================
+ // GAME RESULT (ВАЖНО: ИДЕНТИЧНО ROUND)
+ // =========================
+ formatGameResultVM(state) {
+  const rounds = state.rounds || [];
 
-  const duration = 7500;
+  const totalScore = rounds.reduce((s, r) => {
+   return s + (r.guess?.score || 0);
+  }, 0);
 
-  requestAnimationFrame(() => {
-    this.mapOverviewUI.forceResize?.();
-  });
+  const maxScore = this.getRoundLimit() * 5000;
 
-  this.staticUI.startRoundDelay(duration, () => {
-    this.gameFlow.nextRound();
-  });
-});
+  return {
+   distance: 0,
+   score: totalScore,
+   progress: maxScore ? totalScore / maxScore : 0,
 
-  // =========================
-  // GAME END
-  // =========================
-this.gameFlow.on("gameEnded", (vm) => {
-  const root = this.screenManager.get("gameResult");
+   guess: null,
+   actual: rounds.length ? rounds[rounds.length - 1].actualLocation : null,
 
-  this.screenManager.show("gameResult");
-
-  this.staticUI.showGameResult(
-    this.uiBuilder.formatGameResultVM(vm),
-    root
-  );
-
-  const rounds = vm.rounds || [];
-  const last = rounds[rounds.length - 1];
-
-  if (last) {
-    requestAnimationFrame(() => {
-      this.mapOverviewUI.render(last);
-      this.mapOverviewUI.forceResize?.();
-    });
-  }
-});
+   text: {
+    title: "Игра завершена",
+    scoreLine: `Общий счёт: ${totalScore} / ${maxScore}`,
+    roundsLine: `Раундов: ${rounds.length}`
+   }
+  };
  }
 }
