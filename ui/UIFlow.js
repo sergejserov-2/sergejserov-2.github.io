@@ -96,24 +96,22 @@ export class UIFlow {
   // =========================
   // GAME END
   // =========================
-  this.gameFlow.on("gameEnded", (vm) => {
-   this.screenManager.show("gameResult");
+this.gameFlow.on("gameEnded", (vm) => {
+  this.screenManager.show("gameResult");
 
-   this.staticUI.showGameResult(
+  this.staticUI.showGameResult(
     this.uiBuilder.formatGameResultVM(vm)
-   );
+  );
 
-   const rounds = vm.rounds || [];
-   const last = rounds[rounds.length - 1];
+  const rounds = vm.rounds || [];
+  const last = rounds[rounds.length - 1];
 
-   if (last && this.mapOverviewUI) {
-    this.mapOverviewUI.clear();
-    this.mapOverviewUI.render(last);
-
+  if (last) {
     requestAnimationFrame(() => {
-     this.mapOverviewUI.forceResize?.();
+      this.mapOverviewUI.render(last);
+      this.mapOverviewUI.forceResize?.();
     });
-   }
-  });
+  }
+});
  }
 }
