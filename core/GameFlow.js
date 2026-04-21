@@ -10,6 +10,9 @@ export class GameFlow {
 
     this.listeners = {};
     this.locked = false;
+
+    // 🔥 loading sync
+    this._resolveStreetViewReady = null;
   }
 
   // =========================
@@ -27,7 +30,7 @@ export class GameFlow {
   }
 
   // =========================
-  // START GAME
+  // GAME START
   // =========================
   async startGame() {
     this.game.startGame();
@@ -40,17 +43,21 @@ export class GameFlow {
   }
 
   // =========================
-  // START ROUND
+  // ROUND START
   // =========================
   async startRound() {
     this.locked = true;
-    this.emit("inputLocked");
 
+    this.emit("inputLocked");
+    this.emit("loadingStarted");
+
+    // 🔥 генерация локации
     const location = await this.generator.generate(this.area);
 
     this.game.startRound(location);
 
-    this.moves.reset(this.game.config.rules.moves);
+    // 🔥 ждём StreetView готовности
+    await this.waitForStreetViewReady();
 
     this.timer.start(
       this.game.config.rules.time,
@@ -58,11 +65,31 @@ export class GameFlow {
       (t) => this.emit("timerTick", t)
     );
 
+    this.moves.reset(this.game.config.rules.moves);
+
     this.locked = false;
 
+    this.emit("loadingFinished");
     this.emit("inputUnlocked");
+
     this.emit("roundStarted", this.game.getState());
     this.emit("stateUpdated", this.game.getState());
+  }
+
+  // =========================
+  // STREETVIEW SYNC
+  // =========================
+  waitForStreetViewReady() {
+    return new Promise(resolve => {
+      this._resolveStreetViewReady = resolve;
+    });
+  }
+
+  streetViewReady() {
+    if (this._resolveStreetViewReady) {
+      this._resolveStreetViewReady();
+      this._resolveStreetViewReady = null;
+    }
   }
 
   // =========================
@@ -84,6 +111,7 @@ export class GameFlow {
 
     this.game.setGuess(playerId, point);
     this.game.finishGuess(playerId);
+
     this.game.commitRound();
 
     this.emit("roundEnded", this.game.getState());
@@ -99,7 +127,6 @@ export class GameFlow {
     this.locked = true;
     this.emit("inputLocked");
 
-
     this.emit("roundEndedReason", reason);
     this.emit("roundEnded", this.game.getState());
 
@@ -108,7 +135,6 @@ export class GameFlow {
       return;
     }
 
-    // 🎯 ВАЖНО: UX ТЕПЕРЬ В UIFLOW
     this.emit("roundResultShown", {
       state: this.game.getState(),
       reason
