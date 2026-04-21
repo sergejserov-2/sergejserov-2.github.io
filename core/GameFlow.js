@@ -96,27 +96,31 @@ export class GameFlow {
   this.finishRound("guess");
  }
 
- finishRound(reason = "manual") {
+finishRound(reason = "manual") {
   this.timer.clear();
   this.locked = true;
 
   this.emit("inputLocked");
 
-  const state = this.game.getState();
-
   const isLastRound =
-   state.rounds.length >= this.game.config.rules.rounds;
+    this.game.getState().rounds.length >= this.game.config.rules.rounds;
+
+  const state = this.game.getState(); // 🔥 ВАЖНО: после всех изменений
 
   this.emit("roundResultShown", {
-   state,
-   reason
+    state,
+    reason
   });
 
   if (isLastRound) {
-   this.game.endGame();
-   this.emit("gameEnded", state);
+    this.game.endGame();
+
+    const finalState = this.game.getState(); // 🔥 актуальный финальный state
+
+    this.emit("gameEnded", finalState);
+    return;
   }
- }
+}
 
  async nextRound() {
   const state = this.game.getState();
