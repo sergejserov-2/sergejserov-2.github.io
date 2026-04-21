@@ -14,10 +14,6 @@ export class StaticUI {
   this.delayFrame = null;
  }
 
- // =========================
- // HUD
- // =========================
-
  updateHUD(vm = {}) {
   if (this.roundEl) {
    this.roundEl.textContent =
@@ -52,9 +48,8 @@ export class StaticUI {
  }
 
  // =========================
- // ROUND RESULT UI
+ // ROUND RESULT TEXTS (НЕ МЕНЯЛИ)
  // =========================
-
  showRoundResult(model = {}) {
   const root = document.querySelector(".guess-overview");
   if (!root) return;
@@ -79,34 +74,31 @@ export class StaticUI {
   }
  }
 
-showGameResult(model = {}) {
+ // =========================
+ // GAME RESULT TEXTS (НЕ ТРОГАЛИ)
+ // =========================
+ showGameResult(model = {}) {
   const root = document.querySelector(".guess-overview");
   if (!root) return;
 
   const text = root.querySelector(".score-text");
   const bar = root.querySelector(".score-progress");
 
-  // TEXT (как round result)
   if (text) {
-    text.innerHTML = `
-      <p>${model.text?.title ?? "Игра завершена"}</p>
-      <p>${model.text?.scoreLine ?? ""}</p>
-      <p>${model.text?.roundsLine ?? ""}</p>
-    `;
+   text.innerHTML = `
+    <p>${model.text?.title ?? "Игра завершена"}</p>
+    <p>${model.text?.scoreLine ?? ""}</p>
+    <p>${model.text?.roundsLine ?? ""}</p>
+   `;
   }
 
-  // PROGRESS BAR
   if (bar) {
-    const p = Math.min(Math.max(model.progress ?? 0, 0), 1);
-    bar.style.width = ${p * 100}%;
+   const p = Math.min(Math.max(model.progress ?? 0, 0), 1);
+   bar.style.width = `${p * 100}%`;
   }
 
   this.stopRoundDelay();
-}
-
- // =========================
- // UX DELAY BAR (END OF ROUND)
- // =========================
+ }
 
  startRoundDelay(duration, onFinish) {
   this.stopRoundDelay();
@@ -142,7 +134,6 @@ showGameResult(model = {}) {
   }
 
   if (this.delayBar) {
-   this.delayBar.style.transition = "none";
    this.delayBar.style.transform = "scaleX(0)";
   }
  }
