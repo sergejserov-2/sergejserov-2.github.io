@@ -144,7 +144,7 @@ export class UIFlow {
    });
 
    home?.addEventListener("click", () => {
-    this.screenManager.show("loading");
+    window.location.href = "index.html";
    });
   });
  }
