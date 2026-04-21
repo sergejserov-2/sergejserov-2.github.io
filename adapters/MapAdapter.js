@@ -17,19 +17,16 @@ export class MapAdapter {
 createMarker(map, { lat, lng }, options = {}) {
   const {
     color = "#ff4d4d",
-    size = 20,
     scale = 1
   } = options;
 
-  const finalSize = size * scale;
-
-  const radius = finalSize * 0.3;
-
+  const baseSize = 24;
+  const finalSize = baseSize * scale;
   const svg = `
-  <svg width="${finalSize}" height="${finalSize}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="10" cy="10" r="${radius}" fill="${color}" opacity="0.9"/>
-    <circle cx="10" cy="10" r="${radius + 3}" stroke="${color}" stroke-width="2" fill="none" opacity="0.4"/>
-  </svg>`;
+<svg width="100%" height="100%" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="6" fill="${color}" opacity="0.9"/>
+  <circle cx="12" cy="12" r="9" stroke="${color}" stroke-width="2" fill="none" opacity="0.4"/>
+</svg>`;
 
   return new google.maps.Marker({
     position: { lat, lng },
