@@ -6,8 +6,6 @@ export class UIFlow {
   uiBuilder,
   streetViewUI,
   mapWrapperUI,
-
-  // 🔥 НОВОЕ
   roundOverviewUI,
   gameOverviewUI
  }) {
@@ -18,7 +16,6 @@ export class UIFlow {
   this.streetViewUI = streetViewUI;
   this.mapWrapperUI = mapWrapperUI;
 
-  // 🔥 фикс
   this.roundOverviewUI = roundOverviewUI;
   this.gameOverviewUI = gameOverviewUI;
 
@@ -27,6 +24,9 @@ export class UIFlow {
 
  bind() {
 
+  // =========================
+  // STREET VIEW
+  // =========================
   this.streetViewUI.onReady = () => {
    this.gameFlow.streetViewReady();
   };
@@ -46,17 +46,16 @@ export class UIFlow {
   // =========================
   // ROUND START
   // =========================
-  this.gameFlow.on("roundStarted", (vm) => {
+  this.gameFlow.on("roundStarted", (state) => {
    this.mapWrapperUI.reset();
 
-   // 🔥 ВАЖНО
    this.roundOverviewUI?.clear();
    this.gameOverviewUI?.clear();
 
    this.staticUI.stopRoundTimer?.();
 
    this.staticUI.updateHUD(
-    this.uiBuilder.formatGameVM(vm)
+    this.uiBuilder.formatGameVM(state)
    );
   });
 
@@ -93,7 +92,6 @@ export class UIFlow {
    const round = rounds[rounds.length - 1];
    if (!round) return;
 
-   // 🔥 ТЕПЕРЬ ПРАВИЛЬНО
    this.roundOverviewUI.render(round);
 
    const vm = this.uiBuilder.formatRoundVM(state);
@@ -128,11 +126,26 @@ export class UIFlow {
 
    if (last) {
     requestAnimationFrame(() => {
-     // 🔥 ДРУГАЯ КАРТА
      this.gameOverviewUI.render(last);
      this.gameOverviewUI.forceResize?.();
     });
    }
+
+   // =========================
+   // BUTTONS
+   // =========================
+   const root = document.querySelector(".game-result");
+
+   const playAgain = root?.querySelector(".play-again-button");
+   const home = root?.querySelector(".home-button");
+
+   playAgain?.addEventListener("click", () => {
+    this.gameFlow.startGame();
+   });
+
+   home?.addEventListener("click", () => {
+    this.screenManager.show("loading");
+   });
   });
  }
 }
