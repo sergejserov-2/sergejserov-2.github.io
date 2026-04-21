@@ -43,6 +43,9 @@ setLocation(pos) {
 
   // применяем позицию
   this.panorama.setPosition(pos);
+
+  // 🔥 страховка 1
+  setTimeout(resolve, 1500);
 }
   // =========================
   // POV
