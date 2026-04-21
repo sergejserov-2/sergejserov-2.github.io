@@ -17,10 +17,31 @@ export class StaticUI {
  // =========================
  // HUD
  // =========================
- updateHUD(model = {}) {
-  if (model.roundText != null) this.roundEl.textContent = model.roundText;
-  if (model.totalText != null) this.totalEl.textContent = model.totalText;
+updateHUD(model = {}) {
+ if (model.roundText != null)
+  this.roundEl.textContent = model.roundText;
+
+ if (model.totalText != null)
+  this.totalEl.textContent = model.totalText;
+
+ // 🔥 TIME
+ const timeEl = this.timeEl?.parentElement;
+ if (timeEl) {
+  timeEl.style.display = model.showTime ? "block" : "none";
  }
+
+ if (model.timeText != null)
+  this.timeEl.textContent = model.timeText;
+
+ // 🔥 MOVES
+ const movesEl = this.movesEl?.parentElement;
+ if (movesEl) {
+  movesEl.style.display = model.showMoves ? "block" : "none";
+ }
+
+ if (model.movesText != null)
+  this.movesEl.textContent = model.movesText;
+}
 
  // =========================
  // GAME TIMER (HUD)
