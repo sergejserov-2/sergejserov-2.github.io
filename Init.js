@@ -56,12 +56,12 @@ export async function init() {
  await waitForGoogleMaps();
 
  // =========================
- // 1. CONFIG (SOURCE OF TRUTH)
+ // CONFIG
  // =========================
  const config = getConfig();
 
  // =========================
- // 2. DOM
+ // DOM
  // =========================
  const hud = document.querySelector(".hud");
  const mapEl = document.querySelector(".map");
@@ -70,15 +70,18 @@ export async function init() {
  const overviewMapEl = document.querySelector(".overview-map");
  const guessBtn = document.querySelector("#makeGuess");
 
+ // 👉 POLYGON BUTTON
+ const polygonBtn = document.querySelector("#togglePolygon");
+
  // =========================
- // 3. DOMAIN
+ // DOMAIN
  // =========================
  const area = AreaRegistry.get(config.area || "europe");
  const difficulty = new Difficulty();
  const scoring = new Scoring({ difficulty });
 
  // =========================
- // 4. SERVICES (FIXED — НЕ NULL БОЛЬШЕ)
+ // SERVICES
  // =========================
  const services = {
   timer: new TimerService(),
@@ -87,7 +90,7 @@ export async function init() {
  };
 
  // =========================
- // 5. CORE
+ // CORE
  // =========================
  const gameState = new GameState();
 
@@ -99,7 +102,7 @@ export async function init() {
  });
 
  const generator = new LocationGenerator({
- streetAdapter: new StreetViewAdapter()
+  streetAdapter: new StreetViewAdapter()
  });
 
  const gameFlow = new GameFlow({
@@ -110,7 +113,7 @@ export async function init() {
  });
 
  // =========================
- // 6. UI BUILDER
+ // UI BUILDER
  // =========================
  const uiBuilder = new UIBuilder();
 
@@ -119,7 +122,7 @@ export async function init() {
  }
 
  // =========================
- // 7. UI COMPONENTS
+ // UI COMPONENTS
  // =========================
  const mapWrapperUI = new MapWrapperUI({
   adapter: new MapAdapter(),
@@ -147,7 +150,7 @@ export async function init() {
  });
 
  // =========================
- // 8. UI FLOW (BIND EVENTS)
+ // UI FLOW
  // =========================
  new UIFlow({
   gameFlow,
@@ -158,27 +161,32 @@ export async function init() {
   mapWrapperUI,
   mapOverviewUI
  });
-// =========================
- // 9. INIT UI STATE
+
+ // =========================
+ // INIT UI STATE
  // =========================
 
-streetViewUI.onReady = () => {
- gameFlow.streetViewReady();
-};
- 
-gameFlow.on("streetViewSetLocation", (location) => {
+ streetViewUI.onReady = () => {
+  gameFlow.streetViewReady();
+ };
+
+ gameFlow.on("streetViewSetLocation", (location) => {
   streetViewUI.setLocation(location);
-});
- 
+ });
+
  streetViewUI.init({ lat: 0, lng: 0 });
+
  mapWrapperUI.init();
  mapOverviewUI.init();
+
+ // 🔥 POLYGON SETUP (ВАЖНО: после init)
+ mapWrapperUI.setArea(area);
+ mapWrapperUI.bindPolygonButton(polygonBtn);
+
  mapWrapperUI.reset();
 
-
-
  // =========================
- // 10. INPUT
+ // INPUT
  // =========================
  mapWrapperUI.bindGuess((point) => {
   gameFlow.finishGuess(point);
@@ -187,7 +195,7 @@ gameFlow.on("streetViewSetLocation", (location) => {
  mapWrapperUI.bindGuessButton(guessBtn);
 
  // =========================
- // 11. TWEAKS
+ // TWEAKS
  // =========================
  const tweaks = new Tweaks({
   mapElement: mapEl,
@@ -198,7 +206,7 @@ gameFlow.on("streetViewSetLocation", (location) => {
  tweaks.apply();
 
  // =========================
- // 12. START GAME
+ // START GAME
  // =========================
  await gameFlow.startGame();
 
