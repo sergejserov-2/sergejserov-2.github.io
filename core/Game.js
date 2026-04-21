@@ -10,7 +10,7 @@ export class Game {
  // GAME LIFECYCLE
  // =========================
  startGame() {
-  this.gameState.start();
+  this.gameState.startGame();
  }
 
  startRound(location) {
