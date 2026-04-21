@@ -5,21 +5,36 @@ export class Game {
   this.players = players;
   this.config = config;
  }
+
+ // =========================
+ // GAME LIFECYCLE
+ // =========================
  startGame() {
-  this.state.start();
+  this.gameState.start();
  }
 
  startRound(location) {
-  this.state.startRound(location);
+  this.gameState.startRound(location);
  }
 
+ commitRound() {
+  this.gameState.commitRound();
+ }
+
+ endGame() {
+  this.gameState.end();
+ }
+
+ // =========================
+ // GUESSES
+ // =========================
  setGuess(playerId, point) {
-  const existing = this.state.getPlayerGuess(playerId);
+  const existing = this.gameState.getPlayerGuess(playerId);
 
   if (existing) {
-   this.state.updateGuess(playerId, point);
+   this.gameState.updateGuess(playerId, point);
   } else {
-   this.state.addGuess(playerId, {
+   this.gameState.addGuess(playerId, {
     lat: point.lat,
     lng: point.lng
    });
@@ -27,10 +42,10 @@ export class Game {
  }
 
  finishGuess(playerId = "p1") {
-  const round = this.state.getCurrentRound();
+  const round = this.gameState.getCurrentRound();
   if (!round) return;
 
-  const guess = this.state.getPlayerGuess(playerId);
+  const guess = this.gameState.getPlayerGuess(playerId);
   if (!guess || guess.isFinished) return;
 
   const result = this.scoring.calculate(
@@ -39,28 +54,23 @@ export class Game {
    { area: round.area }
   );
 
-  this.state.finalizeGuess(playerId, result);
+  this.gameState.finalizeGuess(playerId, result);
 
   return result;
  }
 
- commitRound() {
-  this.state.commitRound();
- }
-
- endGame() {
-  this.state.end();
- }
-
+ // =========================
+ // STATE ACCESS
+ // =========================
  getState() {
-  return this.state.getState();
+  return this.gameState.getState();
  }
 
  getCurrentRound() {
-  return this.state.getCurrentRound();
+  return this.gameState.getCurrentRound();
  }
 
  isGameEnded() {
-  return this.state.getState().status === "ended";
+  return this.gameState.getState().status === "ended";
  }
 }
