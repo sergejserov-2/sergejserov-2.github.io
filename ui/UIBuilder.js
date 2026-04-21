@@ -46,7 +46,7 @@ export class UIBuilder {
  }
 
  // =========================
- // COLORS (🔥 FIXED MISSING API)
+ // COLORS
  // =========================
 
  getPlayerColor(id = "p1") {
@@ -79,13 +79,17 @@ export class UIBuilder {
    totalScore,
    totalText: `Счёт: ${totalScore}`,
 
+   // 🔥 SIMPLE FORMAT (NO mm:ss)
    timeText: this.isTimeEnabled()
-    ? `${this.getTimeLimit()}s`
-    : "∞",
+    ? `Время: ${this.getTimeLimit()}`
+    : null,
 
    movesText: this.isMovesEnabled()
-    ? `${this.getMovesLimit()}`
-    : "∞"
+    ? `Ходы: ${this.getMovesLimit()}`
+    : null,
+
+   showTime: this.isTimeEnabled(),
+   showMoves: this.isMovesEnabled()
   };
  }
 
@@ -105,7 +109,7 @@ export class UIBuilder {
    score: guess?.score ?? 0,
    progress: Math.min((guess?.score ?? 0) / 5000, 1),
 
-   // 🔥 ПЛОСКАЯ МОДЕЛЬ (ВАЖНО)
+   // 🔥 FLAT MODEL
    guess: guess ? {
     playerId: guess.playerId,
     lat: guess.lat,
@@ -138,7 +142,6 @@ export class UIBuilder {
      distance: g?.distance ?? 0,
      score: g?.score ?? 0,
 
-     // 🔥 ПЛОСКАЯ МОДЕЛЬ
      guess: g
       ? { lat: g.lat, lng: g.lng, playerId: g.playerId }
       : null,
