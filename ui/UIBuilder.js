@@ -58,7 +58,7 @@ export class UIBuilder {
  }
 
  // =========================
- // GAME HUD
+ // HUD DATA ONLY
  // =========================
 
  formatGameVM(state) {
@@ -68,25 +68,14 @@ export class UIBuilder {
    return sum + (r.guess?.score || 0);
   }, 0);
 
-  const currentRound = rounds.length;
-  const totalRounds = this.getRoundLimit();
-
   return {
-   status: state.status,
-
-   roundText: `Раунд: ${currentRound} / ${totalRounds}`,
+   round: rounds.length,
+   roundLimit: this.getRoundLimit(),
 
    totalScore,
-   totalText: `Счёт: ${totalScore}`,
 
-   // 🔥 SIMPLE FORMAT (NO mm:ss)
-   timeText: this.isTimeEnabled()
-    ? `Время: ${this.getTimeLimit()}`
-    : null,
-
-   movesText: this.isMovesEnabled()
-    ? `Ходы: ${this.getMovesLimit()}`
-    : null,
+   time: this.getTimeLimit(),
+   moves: this.getMovesLimit(),
 
    showTime: this.isTimeEnabled(),
    showMoves: this.isMovesEnabled()
@@ -94,12 +83,11 @@ export class UIBuilder {
  }
 
  // =========================
- // ROUND RESULT
+ // ROUND RESULT DATA ONLY
  // =========================
 
  formatRoundVM(state) {
   const rounds = state.rounds || [];
-
   const round = rounds[rounds.length - 1];
   const guess = round?.guess;
 
@@ -109,19 +97,20 @@ export class UIBuilder {
    score: guess?.score ?? 0,
    progress: Math.min((guess?.score ?? 0) / 5000, 1),
 
-   // 🔥 FLAT MODEL
-   guess: guess ? {
-    playerId: guess.playerId,
-    lat: guess.lat,
-    lng: guess.lng
-   } : null,
+   guess: guess
+    ? {
+       playerId: guess.playerId,
+       lat: guess.lat,
+       lng: guess.lng
+      }
+    : null,
 
    actual: round?.actualLocation || null
   };
  }
 
  // =========================
- // GAME RESULT
+ // GAME RESULT DATA ONLY
  // =========================
 
  formatGameResultVM(state) {
@@ -141,11 +130,9 @@ export class UIBuilder {
      index: i,
      distance: g?.distance ?? 0,
      score: g?.score ?? 0,
-
      guess: g
       ? { lat: g.lat, lng: g.lng, playerId: g.playerId }
       : null,
-
      actual: r.actualLocation,
      progress: (g?.score ?? 0) / 5000
     };
