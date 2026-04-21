@@ -1,5 +1,3 @@
-import { Geometry } from "./math/Geometry.js";
-
 export class Game {
  constructor({ gameState, scoring, players, config }) {
   this.gameState = gameState;
