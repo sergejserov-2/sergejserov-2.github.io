@@ -14,19 +14,12 @@ export class GameFlow {
  }
 
  on(event, cb) {
-  if (!this.listeners[event]) this.listeners[event] = [];
-  this.listeners[event].push(cb);
+  (this.listeners[event] ||= []).push(cb);
  }
 
  emit(event, data) {
-  const list = this.listeners[event];
-  if (!list) return;
-  list.forEach(cb => cb(data));
+  this.listeners[event]?.forEach(cb => cb(data));
  }
-
- // =========================
- // GAME
- // =========================
 
  async startGame() {
   this.game.startGame();
@@ -65,8 +58,8 @@ export class GameFlow {
  }
 
  waitForStreetViewReady() {
-  return new Promise(resolve => {
-   this._resolveStreetViewReady = resolve;
+  return new Promise(res => {
+   this._resolveStreetViewReady = res;
   });
  }
 
@@ -76,36 +69,10 @@ export class GameFlow {
  }
 
  // =========================
- // MOVES (ШАГИ)
+ // ГЕСС (НЕ ТРОГАЕМ ШАГИ)
  // =========================
- registerMove() {
-  if (this.locked) return;
-
-  const canMove = this.moves.consume();
-
-  this.emit("movesUpdated", this.moves.getRemaining());
-
-  if (!canMove) {
-   this.locked = true;
-   this.emit("inputLocked");
-   this.emit("movesExhausted");
-  }
- }
-
- // =========================
- // GUESS
- // =========================
-
  finishGuess(point, playerId = "p1") {
   if (this.locked) return;
-
-  const canMove = this.moves.consume();
-  this.emit("movesUpdated", this.moves.getRemaining());
-
-  if (!canMove) {
-   this.finishRound("moves");
-   return;
-  }
 
   this.locked = true;
   this.emit("inputLocked");
@@ -120,8 +87,19 @@ export class GameFlow {
  }
 
  // =========================
- // ROUND END
+ // MOVES теперь отдельным событием
  // =========================
+ registerMove() {
+  if (this.locked) return;
+
+  const ok = this.moves.consume();
+
+  this.emit("movesUpdated", this.moves.getRemaining());
+
+  if (!ok) {
+   this.finishRound("moves");
+  }
+ }
 
  finishRound(reason = "manual") {
   this.timer.clear();
@@ -131,28 +109,20 @@ export class GameFlow {
 
   const state = this.game.getState();
 
-  const isLastRound =
+  const isLast =
    state.rounds.length >= this.game.config.rules.rounds;
 
-  this.emit("roundResultShown", {
-   state,
-   reason
-  });
+  this.emit("roundResultShown", { state, reason });
 
-  if (isLastRound) {
+  if (isLast) {
    this.game.endGame();
-
-   const finalState = this.game.getState();
-
-   this.emit("gameEnded", finalState);
+   this.emit("gameEnded", this.game.getState());
    return;
   }
  }
 
  async nextRound() {
-  const state = this.game.getState();
-  if (state.status === "ended") return;
-
+  if (this.game.getState().status === "ended") return;
   await this.startRound();
  }
 }
