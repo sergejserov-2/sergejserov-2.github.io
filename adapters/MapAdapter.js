@@ -18,59 +18,26 @@ createMarker(map, { lat, lng }, options = {}) {
   const {
     color = "#ff4d4d",
     size = 20,
-    isActual = false
+    scale = 1
   } = options;
 
-  const baseSize = isActual ? size * 1.35 : size;
+  const finalSize = size * scale;
 
-  // =========================
-  // RADII (ВАЖНО: 2 КРУГА)
-  // =========================
-  const innerRadius = baseSize * 0.28;   // заливка
-  const outerRadius = baseSize * 0.42;   // обводка (кольцо)
-
-  const strokeWidth = Math.max(2, baseSize * 0.08);
-
-  const pad = strokeWidth * 2;
-  const viewBox = baseSize + pad * 2;
-
-  const cx = viewBox / 2;
-  const cy = viewBox / 2;
+  const radius = finalSize * 0.3;
 
   const svg = `
-<svg xmlns="http://www.w3.org/2000/svg"
-     width="${viewBox}"
-     height="${viewBox}"
-     viewBox="0 0 ${viewBox} ${viewBox}">
-
-  <!-- ВНЕШНЯЯ ОБВОДКА (КОЛЬЦО) -->
-  <circle
-    cx="${cx}"
-    cy="${cy}"
-    r="${outerRadius}"
-    fill="none"
-    stroke="${color}"
-    stroke-width="${strokeWidth}"
-    opacity="0.9"
-  />
-
-  <!-- ВНУТРЕННИЙ КРУГ (ЗАЛИВКА) -->
-  <circle
-    cx="${cx}"
-    cy="${cy}"
-    r="${innerRadius}"
-    fill="${color}"
-  />
-
-</svg>`;
+  <svg width="${finalSize}" height="${finalSize}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10" cy="10" r="${radius}" fill="${color}" opacity="0.9"/>
+    <circle cx="10" cy="10" r="${radius + 3}" stroke="${color}" stroke-width="2" fill="none" opacity="0.4"/>
+  </svg>`;
 
   return new google.maps.Marker({
     position: { lat, lng },
     map,
     icon: {
       url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
-      scaledSize: new google.maps.Size(viewBox, viewBox),
-      anchor: new google.maps.Point(viewBox / 2, viewBox / 2)
+      scaledSize: new google.maps.Size(finalSize, finalSize),
+      anchor: new google.maps.Point(finalSize / 2, finalSize / 2)
     },
     optimized: false
   });
