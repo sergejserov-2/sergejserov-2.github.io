@@ -170,7 +170,8 @@ export async function init() {
   uiBuilder,
   streetViewUI,
   mapWrapperUI,
-  mapOverviewUI
+  roundOverviewMapEl,
+  gameOverviewMapEl
  });
 
  // =========================
