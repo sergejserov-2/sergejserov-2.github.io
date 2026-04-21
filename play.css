@@ -19,7 +19,7 @@ body {
 }
 
 /* =========================
-   WORLD (ВСЕГДА ВИДИМ)
+   WORLD
 ========================= */
 
 .game-scene {
@@ -84,6 +84,7 @@ body {
 }
 
 /* controls */
+
 .resize-handle,
 .guess-button {
  position: absolute;
@@ -132,7 +133,7 @@ body {
 }
 
 /* =========================
-   OVERLAYS SYSTEM
+   OVERLAY SYSTEM
 ========================= */
 
 .screens {
@@ -167,7 +168,7 @@ body {
 }
 
 /* =========================
-   ROUND / GAME RESULT
+   RESULT OVERLAY (ROUND + GAME)
 ========================= */
 
 .guess-overview {
@@ -180,6 +181,8 @@ body {
 
  background: rgba(0, 0, 0, 0.6);
  backdrop-filter: blur(10px);
+
+ z-index: var(--z-overlay);
 }
 
 .guess-overview.active {
@@ -207,50 +210,68 @@ body {
  color: #fff;
 }
 
-/* map result */
+/* =========================
+   OVERVIEW MAP
+========================= */
+
 .overview-map {
  width: 100%;
- height: 650px;
+ height: 60vh;
+ min-height: 320px;
 
  border-radius: 8px;
  overflow: hidden;
  background: #111;
 }
 
-/* progress */
+/* =========================
+   PROGRESS
+========================= */
+
 .score-progress-bar {
  width: 100%;
- height: 30px;
+ height: 14px;
  background: #2a2f3a;
  border-radius: 8px;
  overflow: hidden;
+ margin-top: 10px;
 }
 
 .score-progress {
  width: 0%;
  height: 100%;
  background: #4ea1ff;
- transition: 0.4s ease;
+ transition: width 0.4s ease;
 }
 
-/* text */
+/* =========================
+   TEXT
+========================= */
+
 .score-text {
  text-align: center;
+ font-size: 15px;
+ line-height: 1.4;
 }
 
 .score-text p {
  margin: 6px 0;
 }
 
-/* buttons */
+/* =========================
+   BUTTONS
+========================= */
+
 .game-end-buttons {
  display: flex;
- gap: 20px;
+ gap: 12px;
  justify-content: center;
+ flex-wrap: wrap;
+ margin-top: 10px;
 }
 
 .button {
- padding: 20px 14px;
+ padding: 12px 18px;
  border-radius: 8px;
 
  background: #4ea1ff;
@@ -259,6 +280,8 @@ body {
  cursor: pointer;
  user-select: none;
  transition: 0.2s ease;
+ font-size: 14px;
+ font-weight: 500;
 }
 
 .button:hover {
@@ -266,7 +289,7 @@ body {
 }
 
 /* =========================
-   ROUND RESULT DELAY BAR
+   ROUND TIMER BAR
 ========================= */
 
 .round-timer-bar {
