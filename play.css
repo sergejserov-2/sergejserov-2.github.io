@@ -266,10 +266,10 @@ body {
 }
 
 /* =========================
-   TIMER
+   ROUND RESULT DELAY BAR
 ========================= */
 
-.round-timer {
+.round-timer-bar {
  position: absolute;
  left: 20px;
  right: 20px;
