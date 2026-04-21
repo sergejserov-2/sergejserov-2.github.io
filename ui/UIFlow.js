@@ -106,15 +106,16 @@ export class UIFlow {
   // ROUND RESULT SHOWN (UX HOOK)
   // =========================
 this.gameFlow.on("roundResultShown", ({ state }) => {
-  this.screenManager.show("roundResult");
-  this.staticUI.showRoundResult(
-    this.uiBuilder.formatRoundVM(state)
-  );
+  const vm = this.uiBuilder.formatRoundVM(state);
 
-  // 🔥 ВРЕМЯ ПОКАЗА
-  setTimeout(() => {
+  this.screenManager.show("roundResult");
+  this.staticUI.showRoundResult(vm);
+
+  const duration = 10000;
+
+  this.staticUI.startRoundTimer(duration, () => {
     this.gameFlow.nextRound();
-  }, 10000);
+  });
 });
 
   // =========================
