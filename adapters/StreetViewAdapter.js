@@ -9,7 +9,7 @@ export class StreetViewAdapter {
   return new google.maps.StreetViewPanorama(element, {
    position: { lat, lng },
    pov: { heading: 0, pitch: 0 },
-  
+
    addressControl: false,
    showRoadLabels: false,
    fullscreenControl: false,
@@ -18,7 +18,33 @@ export class StreetViewAdapter {
    compassControl: true
   });
  }
- 
+
+ // =========================
+ // READY SIGNAL
+ // =========================
+ attachReadySignal(panorama, cb) {
+  if (!panorama) return;
+
+  let resolved = false;
+
+  const resolve = () => {
+   if (resolved) return;
+   resolved = true;
+   cb?.();
+  };
+
+  // 🔥 основной сигнал Google
+  const idleListener = panorama.addListener("idle", resolve);
+
+  // 🔥 страховка 1 (быстрая готовность)
+  setTimeout(resolve, 600);
+
+  // 🔥 очистка listener (чуть позже, чтобы не убить событие раньше времени)
+  setTimeout(() => {
+   google.maps.event.removeListener(idleListener);
+  }, 1000);
+ }
+
  async getStreetViewMeta({ lat, lng }) {
   return new Promise(resolve => {
    this.svService.getPanorama(
