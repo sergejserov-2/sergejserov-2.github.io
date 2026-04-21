@@ -96,29 +96,25 @@ export class GameFlow {
   // USER ACTION
   // =========================
   finishGuess(point, playerId = "p1") {
-    if (this.locked) return;
+  if (this.locked) return;
 
-    const canMove = this.moves.consume();
-    this.emit("movesUpdated", this.moves.getRemaining());
+  const canMove = this.moves.consume();
+  this.emit("movesUpdated", this.moves.getRemaining());
 
-    if (!canMove) {
-      this.finishRound("moves");
-      return;
-    }
-
-    this.locked = true;
-    this.emit("inputLocked");
-
-    this.game.setGuess(playerId, point);
-    this.game.finishGuess(playerId);
-
-    this.game.commitRound();
-
-    this.finishRound("guess");
-
-    this.emit("roundEnded", this.game.getState());
-    this.emit("stateUpdated", this.game.getState());
+  if (!canMove) {
+    this.finishRound("moves");
+    return;
   }
+
+  this.locked = true;
+  this.emit("inputLocked");
+
+  this.game.setGuess(playerId, point);
+
+  this.finishRound("guess");
+
+  this.emit("stateUpdated", this.game.getState());
+}
 
   // =========================
   // FINISH ROUND
