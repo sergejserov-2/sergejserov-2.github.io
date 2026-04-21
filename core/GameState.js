@@ -1,80 +1,65 @@
 export class GameState {
  constructor() {
   this.status = "idle";
-  this.currentRoundIndex = 0;
   this.rounds = [];
  }
 
- start() {
+ startGame() {
   this.status = "active";
   this.rounds = [];
-  this.currentRoundIndex = 0;
  }
 
  startRound(actualLocation) {
   this.rounds.push({
-   index: this.currentRoundIndex,
-   actualLocation: {
-    lat: actualLocation.lat,
-    lng: actualLocation.lng
-   },
+   index: this.rounds.length,
+   actualLocation,
    guesses: []
   });
  }
 
  getCurrentRound() {
-  return this.rounds[this.currentRoundIndex];
+  return this.rounds[this.rounds.length - 1];
  }
 
- getPlayerGuess(playerId) {
-  const round = this.getCurrentRound();
-  return round?.guesses.find(g => g.playerId === playerId);
- }
-
- addGuess(playerId, guess) {
+ setGuess(playerId, point) {
   const round = this.getCurrentRound();
   if (!round) return;
 
-  round.guesses.push({
+  const guess = {
    playerId,
-   guess,
+   guess: { lat: point.lat, lng: point.lng },
    distance: 0,
    score: 0,
    isFinished: false
-  });
- }
-
- updateGuess(playerId, point) {
-  const guess = this.getPlayerGuess(playerId);
-  if (!guess || guess.isFinished) return;
-
-  guess.guess = {
-   lat: point.lat,
-   lng: point.lng
   };
+
+  round.guesses.push(guess);
  }
 
- finalizeGuess(playerId, result) {
-  const guess = this.getPlayerGuess(playerId);
+ finishGuess(playerId, result) {
+  const round = this.getCurrentRound();
+  const guess = round?.guesses.find(g => g.playerId === playerId);
+
   if (!guess || guess.isFinished) return;
 
   guess.distance = result.distance;
   guess.score = result.score;
   guess.isFinished = true;
+
+  return result;
  }
 
  commitRound() {
-  this.currentRoundIndex++;
+  // теперь только фиксация (без индексов)
  }
 
- end() {
+ endGame() {
   this.status = "ended";
  }
 
  getState() {
   return {
    status: this.status,
-   currentRoundIndex: this.currentRoundIndex,
    rounds: this.rounds
   };
  }
