@@ -163,7 +163,7 @@ export async function init() {
  // =========================
 
 streetViewUI.onReady = () => {
- gameFlow.streetViewResady();
+ gameFlow.streetViewReady();
 };
  
 gameFlow.on("streetViewSetLocation", (location) => {
