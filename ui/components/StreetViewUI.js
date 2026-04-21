@@ -46,6 +46,11 @@ setLocation(pos) {
 
   // 🔥 страховка 1
   setTimeout(resolve, 1500);
+
+  // 🔥 страховка 2 (на случай кеша)
+  setTimeout(() => {
+    google.maps.event.removeListener(idleListener);
+  }, 2000);
 }
   // =========================
   // POV
