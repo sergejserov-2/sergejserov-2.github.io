@@ -15,8 +15,8 @@ import { StreetViewAdapter } from "./adapters/StreetViewAdapter.js";
 // SERVICES
 // =========================
 import { TimerService } from "./services/TimerService.js";
-import { MovesService } from "./services/MovesService.js";
-import { RoundsService } from "./services/RoundsService.js";
+import { MoveService } from "./services/MoveService.js";
+import { RoundService } from "./services/RoundService.js";
 
 // =========================
 // CONFIG PIPELINE (NEW)
