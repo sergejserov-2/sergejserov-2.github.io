@@ -29,7 +29,7 @@ export class Game {
 
   const actual = round.actualLocation;
 
-  if (!actual  guess.lat == null  guess.lng == null) {
+  if (!actual || guess.lat == null || guess.lng == null) {
    console.warn("Invalid scoring input", { actual, guess });
    return null;
   }
