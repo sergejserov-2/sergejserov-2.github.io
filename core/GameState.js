@@ -4,27 +4,15 @@ export class GameState {
   this.rounds = [];
  }
 
- // =========================
- // GAME LIFECYCLE
- // =========================
  startGame() {
   this.status = "active";
   this.rounds = [];
  }
 
- endGame() {
-  this.status = "ended";
- }
-
- 
- // =========================
- // ROUND
- // =========================
  startRound(actualLocation) {
   this.rounds.push({
-   index: this.rounds.length,
    actualLocation,
-   guesses: []
+   guess: null
   });
  }
 
@@ -32,46 +20,17 @@ export class GameState {
   return this.rounds[this.rounds.length - 1];
  }
 
- // =========================
- // GUESS
- // =========================
- setGuess(playerId, point) {
+ setRoundResult(result) {
   const round = this.getCurrentRound();
   if (!round) return;
 
-  round.guesses.push({
-   playerId,
-   guess: { lat: point.lat, lng: point.lng },
-   distance: 0,
-   score: 0,
-   isFinished: false
-  });
+  round.guess = result;
  }
 
- finishGuess(playerId, result) {
-  const round = this.getCurrentRound();
-  const guess = round?.guesses.find(g => g.playerId === playerId);
-
-  if (!guess || guess.isFinished) return;
-
-  guess.distance = result.distance;
-  guess.score = result.score;
-  guess.isFinished = true;
-
-  return result;
+ endGame() {
+  this.status = "ended";
  }
 
- // =========================
- // COMMIT
- // =========================
- commitRound() {
-  // intentionally empty
-  // rounds already persisted
- }
-
- // =========================
- // STATE
- // =========================
  getState() {
   return {
    status: this.status,
