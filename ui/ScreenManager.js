@@ -8,19 +8,60 @@ export class ScreenManager {
    roundResult: root.querySelector(".round-result"),
    gameResult: root.querySelector(".game-result")
   };
+
+  this.activeScreen = "loading";
  }
 
- show(name) {
-  Object.values(this.views).forEach(v => {
-   if (!v) return;
-   v.classList.remove("active");
-   v.hidden = true;
+ // =========================
+ // INIT (CRITICAL FIX)
+ // =========================
+ init(initial = "loading") {
+  this.activeScreen = initial;
+
+  Object.entries(this.views).forEach(([name, el]) => {
+   if (!el) return;
+
+   const isActive = name === initial;
+
+   el.hidden = !isActive;
+   el.classList.toggle("active", isActive);
   });
+ }
 
-  const target = this.views[name];
-  if (!target) return;
+ // =========================
+ // SHOW SCREEN (CORE API)
+ // =========================
+ show(name) {
+  if (!this.views[name]) {
+   console.warn([ScreenManager] unknown screen: ${name});
+   return;
+  }
 
-  target.hidden = false;
-  target.classList.add("active");
+  if (this.activeScreen === name) return;
+
+  this.activeScreen = name;
+
+  Object.entries(this.views).forEach(([key, el]) => {
+   if (!el) return;
+
+   const isActive = key === name;
+
+   el.hidden = !isActive;
+   el.classList.toggle("active", isActive);
+  });
+ }
+
+ // =========================
+ // GET STATE (optional debug)
+ // =========================
+ getActive() {
+  return this.activeScreen;
+ }
+
+ // =========================
+ // RESET (safe restart game)
+ // =========================
+ reset() {
+  this.init("loading");
  }
 }
