@@ -17,7 +17,7 @@ export class StreetViewUI {
 
 this.panorama.addListener("idle", () => {
  this.onReady?.();
-}
+});
   
  }
 
