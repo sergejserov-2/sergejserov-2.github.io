@@ -91,12 +91,27 @@ this.gameFlow.on("roundResultShown", ({ state }) => {
 
 
   
-  this.gameFlow.on("gameEnded", (vm) => {
-   this.screenManager.show("gameResult");
+this.gameFlow.on("gameEnded", (vm) => {
+  this.screenManager.show("gameResult");
 
-   this.staticUI.showGameResult(
+  this.staticUI.showGameResult(
     this.uiBuilder.formatGameResultVM(vm)
-   );
-  });
+  );
+
+  // 🔥 MAP RENDER (ВАЖНО)
+  const rounds = vm.rounds || [];
+  const last = rounds[rounds.length - 1];
+
+  if (last && this.mapOverviewUI) {
+    this.mapOverviewUI.clear();
+
+    // показать ВСЕ раунды (или хотя бы последний)
+    this.mapOverviewUI.render(last);
+
+    requestAnimationFrame(() => {
+      this.mapOverviewUI.forceResize?.();
+    });
+  }
+});
  }
 }
