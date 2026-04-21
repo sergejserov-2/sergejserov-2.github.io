@@ -45,27 +45,17 @@ export class StreetViewUI {
  // =========================
  // 🚫 MOVE LOCK (НОРМАЛЬНЫЙ КОНТРОЛЬ)
  // =========================
- lockMove() {
-  this.moveLocked = true;
+lockMove() {
+ if (!this.panorama) return;
 
-  const links = this.element.querySelectorAll("a, button");
+ this.adapter.setControls(this.panorama, false);
+}
 
-  links.forEach(el => {
-   el.style.pointerEvents = "none";
-   el.style.opacity = "0.3";
-  });
- }
+unlockMove() {
+ if (!this.panorama) return;
 
- unlockMove() {
-  this.moveLocked = false;
-
-  const links = this.element.querySelectorAll("a, button");
-
-  links.forEach(el => {
-   el.style.pointerEvents = "auto";
-   el.style.opacity = "1";
-  });
- }
+ this.adapter.setControls(this.panorama, true);
+}
 
  // =========================
  // POV
