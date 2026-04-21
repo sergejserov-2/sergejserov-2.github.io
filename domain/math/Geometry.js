@@ -5,24 +5,23 @@ export class Geometry {
   static distance(a, b) {
     const R = 6371;
 
-    const dLat = Geometry.toRad(b.lat - a.lat);
-    const dLng = Geometry.toRad(b.lng - a.lng);
+    const dLat = this.toRad(b.lat - a.lat);
+    const dLng = this.toRad(b.lng - a.lng);
 
-    const lat1 = Geometry.toRad(a.lat);
-    const lat2 = Geometry.toRad(b.lat);
+    const lat1 = this.toRad(a.lat);
+    const lat2 = this.toRad(b.lat);
 
     const x =
       Math.sin(dLat / 2) ** 2 +
-      Math.sin(dLng / 2) ** 2 *
       Math.cos(lat1) *
-      Math.cos(lat2);
+      Math.cos(lat2) *
+      Math.sin(dLng / 2) ** 2;
 
     return 2 * R * Math.asin(Math.sqrt(x));
   }
 
   // =========================
   // RANDOM POINT IN POLYGON
-  // (TEMP DOMAIN UTILITY — will move later)
   // =========================
   static getRandomPointInPolygon(polygon) {
     const lats = polygon.map(p => p.lat);
@@ -43,7 +42,7 @@ export class Geometry {
         lng: minLng + Math.random() * (maxLng - minLng)
       };
 
-      if (Geometry.isPointInPolygon(point, polygon)) {
+      if (this.isPointInPolygon(point, polygon)) {
         return point;
       }
     }
