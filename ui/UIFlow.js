@@ -66,54 +66,54 @@ export class UIFlow {
    this.mapWrapperUI.unlock();
   });
 
-this.gameFlow.on("roundResultShown", ({ state }) => {
+  // =========================
+  // ROUND RESULT
+  // =========================
+  this.gameFlow.on("roundResultShown", ({ state }) => {
 
- const rounds = state.rounds || [];
- const round = rounds[rounds.length - 1];
- if (!round) return;
+   const rounds = state.rounds || [];
+   const round = rounds[rounds.length - 1];
+   if (!round) return;
 
- this.mapOverviewUI.render(round);
+   this.mapOverviewUI.render(round);
 
- const vm = this.uiBuilder.formatRoundVM(state);
+   const vm = this.uiBuilder.formatRoundVM(state);
 
- this.screenManager.show("roundResult");
- this.staticUI.showRoundResult(vm);
+   this.screenManager.show("roundResult");
+   this.staticUI.showRoundResult(vm);
 
- const duration = 7500;
+   const duration = 7500;
 
-    requestAnimationFrame(() => {
-      this.mapOverviewUI.forceResize?.();
-    });
+   requestAnimationFrame(() => {
+    this.mapOverviewUI.forceResize?.();
+   });
 
- // 🔥 ТОЛЬКО UI-LAYER CONTROL
- this.staticUI.startRoundDelay(duration, () => {
-  this.gameFlow.nextRound();
- });
-});
+   this.staticUI.startRoundDelay(duration, () => {
+    this.gameFlow.nextRound();
+   });
+  });
 
+  // =========================
+  // GAME END
+  // =========================
+  this.gameFlow.on("gameEnded", (vm) => {
+   this.screenManager.show("gameResult");
 
-  
-this.gameFlow.on("gameEnded", (vm) => {
-  this.screenManager.show("gameResult");
-
-  this.staticUI.showGameResult(
+   this.staticUI.showGameResult(
     this.uiBuilder.formatGameResultVM(vm)
-  );
+   );
 
-  // 🔥 MAP RENDER (ВАЖНО)
-  const rounds = vm.rounds || [];
-  const last = rounds[rounds.length - 1];
+   const rounds = vm.rounds || [];
+   const last = rounds[rounds.length - 1];
 
-  if (last && this.mapOverviewUI) {
+   if (last && this.mapOverviewUI) {
     this.mapOverviewUI.clear();
-
-    // показать ВСЕ раунды (или хотя бы последний)
     this.mapOverviewUI.render(last);
 
     requestAnimationFrame(() => {
-      this.mapOverviewUI.forceResize?.();
+     this.mapOverviewUI.forceResize?.();
     });
-  }
-});
+   }
+  });
  }
 }
