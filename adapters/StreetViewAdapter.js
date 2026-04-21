@@ -39,6 +39,15 @@ export class StreetViewAdapter {
   }, 1000);
  }
 
+setControls(panorama, enabled) {
+ if (!panorama) return;
+
+ panorama.setOptions({
+  panControl: enabled,
+  linksControl: enabled
+ });
+}
+ 
  async getStreetViewMeta({ lat, lng }) {
   return new Promise(resolve => {
    this.svService.getPanorama(
