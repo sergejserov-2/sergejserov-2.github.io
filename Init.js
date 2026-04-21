@@ -110,8 +110,8 @@ export async function init() {
  // =========================
  const services = {
   timer: new TimerService(),
-  moves: new MovesService(),
-  rounds: new RoundsService()
+  moves: new MoveService(),
+  rounds: new RoundService()
  };
 
  // =========================
