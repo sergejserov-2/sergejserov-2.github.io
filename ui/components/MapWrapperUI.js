@@ -14,25 +14,39 @@ export class MapWrapperUI {
   this.lastGuessPoint = null;
  }
 
- init() {
+init() {
   if (!this.element) return;
 
-  this.map = this.adapter.createMap(this.element, { zoom: 2 });
+  // 🔥 обязательно дать size ready
+  const rect = this.element.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) {
+    console.warn("Map container not ready");
+  }
 
-  this.map.addListener("click", (e) => {
-   if (this.isLocked) return;
-
-   const point = {
-    lat: e.latLng.lat(),
-    lng: e.latLng.lng()
-   };
-
-   this.lastGuessPoint = point;
-   this.placeGuessMarker(point);
+  this.map = this.adapter.createMap(this.element, {
+    zoom: 2,
+    center: { lat: 20, lng: 0 } // 🔥 ОБЯЗАТЕЛЬНО
   });
 
+  this.map.addListener("click", (e) => {
+    if (this.isLocked) return;
+
+    const point = {
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng()
+    };
+
+    this.lastGuessPoint = point;
+    this.placeGuessMarker(point);
+  });
+
+  // 🔥 force resize fix
+  setTimeout(() => {
+    google.maps.event.trigger(this.map, "resize");
+  }, 50);
+
   this.initResize();
- }
+}
 
  // =========================
  // INPUT
