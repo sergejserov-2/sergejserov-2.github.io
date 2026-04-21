@@ -23,7 +23,7 @@ export class MapOverviewUI {
  // =========================
  // RENDER
  // =========================
- render(round) {
+render(round) {
   if (!this.map || !round) return;
 
   this.clear();
@@ -33,45 +33,48 @@ export class MapOverviewUI {
 
   if (!actual) return;
 
-  const playerColor = this.uiBuilder.getPlayerColor("p1");
+  const playerColor = this.uiBuilder.getPlayerColor(
+    guess?.playerId || "p1"
+  );
+
   const actualColor = this.uiBuilder.getActualColor();
 
   // =========================
-  // ACTUAL (ВАЖНЕЕ + БОЛЬШЕ)
+  // ACTUAL
   // =========================
   const actualMarker = this.adapter.createMarker(this.map, actual, {
-   color: actualColor,
-   isActual: true
+    color: actualColor,
+    isActual: true
   });
 
   this.markers.push(actualMarker);
 
   // =========================
-  // GUESS (меньше)
+  // GUESS
   // =========================
   if (guess) {
-   const guessMarker = this.adapter.createMarker(this.map, guess, {
-    color: playerColor,
-    isActual: false
-   });
+    const guessMarker = this.adapter.createMarker(this.map, guess, {
+      color: playerColor,
+      isActual: false
+    });
 
-   this.markers.push(guessMarker);
+    this.markers.push(guessMarker);
 
-   const segments = this.adapter.createGradientPolyline(
-    this.map,
-    [guess, actual],
-    playerColor,
-    actualColor,
-    14
-   );
+    const segments = this.adapter.createGradientPolyline(
+      this.map,
+      [guess, actual],
+      playerColor,
+      actualColor,
+      14
+    );
 
-   this.lines.push(...segments);
+    this.lines.push(...segments);
+
+    this.fitToPoints([guess, actual]);
+  } else {
+    this.fitToPoints([actual, actual]);
   }
-
-  this.fitToPoints(
-   guess ? [guess, actual] : [actual, actual]
-  );
- }
+}
 
  // =========================
  // CAMERA
