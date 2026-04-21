@@ -78,7 +78,7 @@ export class MapWrapperUI {
    return;
   }
 
-  const path = this.area.polygonPoints;
+  const path = this.area.polygon;
 
   this.polygon = this.adapter.createPolygon(this.map, path, {
    strokeColor: "#4ea1ff",
