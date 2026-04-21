@@ -1,11 +1,11 @@
 export class Game {
- constructor({ gameState, scoring, players = ["p1"] }) {
-  this.state = gameState;
+ constructor({ gameState, scoring, players, config }) {
+  this.gameState = gameState;
   this.scoring = scoring;
   this.players = players;
- }
+  this.config = config;
 
- startGame() {
+  startGame() {
   this.state.start();
  }
 
