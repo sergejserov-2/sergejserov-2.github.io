@@ -14,23 +14,25 @@ export class MapAdapter {
  // =========================
  // MARKER (FIXED + SHADOW ONLY)
  // =========================
- createMarker(map, { lat, lng }, options = {}) {
+createMarker(map, { lat, lng }, options = {}) {
   const {
-   color = "#ff4d4d",
-   size = 20,
-   isActual = false
+    color = "#ff4d4d",
+    size = 20,
+    isActual = false
   } = options;
 
-  // actual визуально важнее
-  const finalSize = isActual ? size * 1.35 : size;
+  const baseSize = isActual ? size * 1.35 : size;
 
-  // базовая геометрия
-  const radius = finalSize * 0.28;
-  const stroke = Math.max(2, finalSize * 0.08);
+  // =========================
+  // RADII (ВАЖНО: 2 КРУГА)
+  // =========================
+  const innerRadius = baseSize * 0.28;   // заливка
+  const outerRadius = baseSize * 0.42;   // обводка (кольцо)
 
-  // padding чтобы НИЧЕГО не обрезалось
-  const pad = stroke * 2 + 2;
-  const viewBox = finalSize + pad * 2;
+  const strokeWidth = Math.max(2, baseSize * 0.08);
+
+  const pad = strokeWidth * 2;
+  const viewBox = baseSize + pad * 2;
 
   const cx = viewBox / 2;
   const cy = viewBox / 2;
@@ -41,35 +43,38 @@ export class MapAdapter {
      height="${viewBox}"
      viewBox="0 0 ${viewBox} ${viewBox}">
 
-  <!-- ТЕНЬ (ТОЛЬКО ТЕНЬ, без glow) -->
-  <circle
-    cx="${cx}"
-    cy="${cy + 1.8}"
-    r="${radius}"
-    fill="rgba(0,0,0,0.28)" />
-
-  <!-- ОСНОВНОЕ ТЕЛО -->
+  <!-- ВНЕШНЯЯ ОБВОДКА (КОЛЬЦО) -->
   <circle
     cx="${cx}"
     cy="${cy}"
-    r="${radius}"
+    r="${outerRadius}"
+    fill="none"
+    stroke="${color}"
+    stroke-width="${strokeWidth}"
+    opacity="0.9"
+  />
+
+  <!-- ВНУТРЕННИЙ КРУГ (ЗАЛИВКА) -->
+  <circle
+    cx="${cx}"
+    cy="${cy}"
+    r="${innerRadius}"
     fill="${color}"
-    stroke="rgba(0,0,0,0.25)"
-    stroke-width="${stroke}" />
+  />
 
 </svg>`;
 
   return new google.maps.Marker({
-   position: { lat, lng },
-   map,
-   icon: {
-    url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
-
-    // важно: НЕ обрезаем
-    scaledSize: new google.maps.Size(viewBox, viewBox),
-
-    anchor: new google.maps.Point(viewBox / 2, viewBox / 2)
-   },
+    position: { lat, lng },
+    map,
+    icon: {
+      url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+      scaledSize: new google.maps.Size(viewBox, viewBox),
+      anchor: new google.maps.Point(viewBox / 2, viewBox / 2)
+    },
+    optimized: false
+  });
+}
 
    optimized: false
   });
