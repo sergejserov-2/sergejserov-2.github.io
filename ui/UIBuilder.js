@@ -11,10 +11,6 @@ export class UIBuilder {
   this.actualColor = "#9aa0a6";
  }
 
- // =========================
- // CONFIG
- // =========================
-
  setConfig(config) {
   this.config = config || {};
  }
@@ -46,9 +42,8 @@ export class UIBuilder {
  }
 
  // =========================
- // COLORS
+ // COLORS (ВОЗВРАТ)
  // =========================
-
  getPlayerColor(id = "p1") {
   return this.playerColors[id] || "#ff4d4d";
  }
@@ -58,9 +53,8 @@ export class UIBuilder {
  }
 
  // =========================
- // HUD DATA ONLY
+ // HUD
  // =========================
-
  formatGameVM(state) {
   const rounds = state.rounds || [];
 
@@ -71,7 +65,6 @@ export class UIBuilder {
   return {
    round: rounds.length,
    roundLimit: this.getRoundLimit(),
-
    totalScore,
 
    time: this.getTimeLimit(),
@@ -83,9 +76,8 @@ export class UIBuilder {
  }
 
  // =========================
- // ROUND RESULT DATA ONLY
+ // ROUND RESULT
  // =========================
-
  formatRoundVM(state) {
   const rounds = state.rounds || [];
   const round = rounds[rounds.length - 1];
@@ -110,37 +102,35 @@ export class UIBuilder {
  }
 
  // =========================
- // GAME RESULT DATA ONLY
+ // GAME RESULT
  // =========================
-
-formatGameResultVM(state) {
+ formatGameResultVM(state) {
   const rounds = state.rounds || [];
 
   const totalScore = rounds.reduce((s, r) => {
-    return s + (r.guess?.score || 0);
+   return s + (r.guess?.score || 0);
   }, 0);
 
-  const roundsCount = this.getRoundLimit();
-  const maxScore = roundsCount * 5000;
+  const maxScore = this.getRoundLimit() * 5000;
 
   return {
-    totalScore,
-    maxScore,
-    progress: maxScore ? totalScore / maxScore : 0,
+   totalScore,
+   maxScore,
+   progress: maxScore ? totalScore / maxScore : 0,
 
-    rounds: rounds.map((r, i) => ({
-      index: i,
-      score: r.guess?.score || 0,
-      distance: r.guess?.distance || 0,
-      guess: r.guess,
-      actual: r.actualLocation
-    })),
+   rounds: rounds.map((r, i) => ({
+    index: i,
+    score: r.guess?.score || 0,
+    distance: r.guess?.distance || 0,
+    guess: r.guess,
+    actual: r.actualLocation
+   })),
 
-    text: {
-      title: "Игра завершена",
-      scoreLine: `Счёт: ${totalScore} / ${maxScore}`,
-      roundsLine: `Раундов: ${rounds.length}`
-    }
+   text: {
+    title: "Игра завершена",
+    scoreLine: `Счёт: ${totalScore} / ${maxScore}`,
+    roundsLine: `Раундов: ${rounds.length}`
+   }
   };
-}
+ }
 }
