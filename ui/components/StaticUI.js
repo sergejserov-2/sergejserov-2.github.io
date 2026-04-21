@@ -15,7 +15,7 @@ export class StaticUI {
  }
 
  // =========================
- // HUD (STATIC STATE)
+ // HUD
  // =========================
 
  updateHUD(vm = {}) {
@@ -29,51 +29,32 @@ export class StaticUI {
     `Счёт: ${vm.totalScore}`;
   }
 
-  // TIME visibility (НЕ обновляем значение тут)
   const timeWrap = this.timeEl?.parentElement;
-
   if (timeWrap) {
    timeWrap.style.display = vm.showTime ? "block" : "none";
   }
 
-  if (this.timeEl && vm.showTime && vm.time != null) {
-   this.timeEl.textContent = `Время: ${vm.time}`;
-  }
-
-  // MOVES visibility
   const movesWrap = this.movesEl?.parentElement;
-
   if (movesWrap) {
    movesWrap.style.display = vm.showMoves ? "block" : "none";
   }
 
-  if (this.movesEl && vm.showMoves && vm.moves != null) {
-   this.movesEl.textContent = `Ходы: ${vm.moves}`;
-  }
+  // 🔥 ВАЖНО: НЕ ПЕРЕТИРАЕМ ТАЙМЕР ВО ВРЕМЯ TICK
  }
-
- // =========================
- // TIMER (DYNAMIC TICK)
- // =========================
 
  updateTimer(value) {
   if (!this.timeEl) return;
   this.timeEl.textContent = `Время: ${value}`;
  }
 
- // =========================
- // MOVES (DYNAMIC FALLBACK)
- // =========================
-
  updateMoves(value) {
   if (!this.movesEl) return;
-
   this.movesEl.textContent =
    value === -1 ? "∞" : `Ходы: ${value}`;
  }
 
  // =========================
- // ROUND RESULT SCREEN
+ // ROUND RESULT
  // =========================
 
  showRoundResult(model = {}) {
@@ -99,10 +80,6 @@ export class StaticUI {
     `${Math.min(Math.max(progress, 0), 1) * 100}%`;
   }
  }
-
- // =========================
- // GAME RESULT SCREEN
- // =========================
 
  showGameResult(model = {}) {
   const root = document.querySelector(".guess-overview");
@@ -130,7 +107,7 @@ export class StaticUI {
  }
 
  // =========================
- // ROUND TIMER BAR (VISUAL ONLY)
+ // TIMER BAR
  // =========================
 
  startRoundTimer(duration, onFinish) {
