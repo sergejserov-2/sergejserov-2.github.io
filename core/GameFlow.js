@@ -113,6 +113,7 @@ export class GameFlow {
     this.game.finishGuess(playerId);
 
     this.game.commitRound();
+    this.finishRound("guess");
 
     this.emit("roundEnded", this.game.getState());
     this.emit("stateUpdated", this.game.getState());
