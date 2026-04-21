@@ -166,8 +166,9 @@ streetViewUI.onReady = () => {
  gameFlow.streetViewResady();
 };
  
-
-
+gameFlow.on("streetViewSetLocation", (location) => {
+  streetViewUI.setLocation(location);
+});
  
  streetViewUI.init({ lat: 0, lng: 0 });
  mapWrapperUI.init();
