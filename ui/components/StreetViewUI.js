@@ -7,21 +7,6 @@ export class StreetViewUI {
 
  init(position = { lat: 0, lng: 0 }) {
   if (!this.element) return;
-
-  this.panorama = this.adapter.createStreetView(
-    this.element,
-    position
-  );
-
-  if (!this.panorama) return;
-
-  let resolved = false;
-
-  const resolveOnce = () => {
-    if (resolved) return;
-    resolved = true;
-    this.onReady?.();
-  };
  }
  
 setLocation(pos) {
