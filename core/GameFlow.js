@@ -89,17 +89,19 @@ export class GameFlow {
  // =========================
  // MOVES теперь отдельным событием
  // =========================
- registerMove() {
-  if (this.locked) return;
+registerMove() {
+ if (this.locked) return;
 
-  const ok = this.moves.consume();
+ const ok = this.moves.consume();
 
-  this.emit("movesUpdated", this.moves.getRemaining());
+ this.emit("movesUpdated", this.moves.getRemaining());
 
-  if (!ok) {
-   this.finishRound("moves");
-  }
+ if (!ok || this.moves.isLocked()) {
+  this.emit("movesLocked");
+  return;
  }
+}
+ 
 
  finishRound(reason = "manual") {
   this.timer.clear();
