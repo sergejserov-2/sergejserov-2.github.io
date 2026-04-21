@@ -132,21 +132,16 @@ body {
 .guess-overview {
  position: absolute;
  inset: 0;
- display: flex;
+ display: none;
  justify-content: center;
  align-items: center;
- opacity: 0;
- visibility: hidden;
- pointer-events: none;
  transition: 0.2s ease;
  background: rgba(0, 0, 0, 0.6);
  backdrop-filter: blur(10px);
 }
 
 .guess-overview.active {
- opacity: 1;
- visibility: visible;
- pointer-events: auto;
+ display: flex;
 }
 
 /* panel */
