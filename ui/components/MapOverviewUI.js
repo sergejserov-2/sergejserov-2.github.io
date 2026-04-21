@@ -26,27 +26,24 @@ export class MapOverviewUI {
  }
 
  // =========================
- // RENDER (FIXED FOR GameFlow STATE)
+ // RENDER (FIXED ✅)
  // =========================
 
- render(payload) {
+ render(round) {
   if (!this.map) return;
+  if (!round) return;
 
-  const state = payload?.state ?? payload;
+  const guess = round.guess;
+  const actual = round.actualLocation;
 
-  const rounds = state?.rounds;
-  if (!rounds || rounds.length === 0) return;
-
-  const round = rounds[rounds.length - 1];
-
-  const guess = round?.guess;
-  const actual = round?.actualLocation;
-
-  if (!guess || !actual) return;
+  if (!guess || !actual) {
+   console.warn("Overview skip render", { guess, actual });
+   return;
+  }
 
   this.clear();
 
-  const playerId = "p1";
+  const playerId = guess.playerId || "p1";
 
   const playerColor = this.uiBuilder.getPlayerColor(playerId);
   const actualColor = this.uiBuilder.getActualColor();
@@ -92,10 +89,12 @@ export class MapOverviewUI {
  // =========================
 
  fitToPoints(points) {
-  if (!this.map || !points || points.length < 2) return;
+  if (!this.map  !points  points.length < 2) return;
 
   const a = points[0];
   const b = points[1];
+
+  if (!a || !b) return;
 
   const center = {
    lat: (a.lat + b.lat) / 2,
@@ -133,6 +132,8 @@ export class MapOverviewUI {
  // =========================
 
  addPlayerResult({ guess, actual, playerId }) {
+  if (!this.map || !guess || !actual) return;
+
   const playerColor = this.uiBuilder.getPlayerColor(playerId);
   const actualColor = this.uiBuilder.getActualColor();
 
