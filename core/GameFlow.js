@@ -24,6 +24,10 @@ export class GameFlow {
   list.forEach(cb => cb(data));
  }
 
+ // =========================
+ // GAME
+ // =========================
+
  async startGame() {
   this.game.startGame();
   this.emit("gameStarted", this.game.getState());
@@ -71,6 +75,27 @@ export class GameFlow {
   this._resolveStreetViewReady = null;
  }
 
+ // =========================
+ // MOVES (ШАГИ)
+ // =========================
+ registerMove() {
+  if (this.locked) return;
+
+  const canMove = this.moves.consume();
+
+  this.emit("movesUpdated", this.moves.getRemaining());
+
+  if (!canMove) {
+   this.locked = true;
+   this.emit("inputLocked");
+   this.emit("movesExhausted");
+  }
+ }
+
+ // =========================
+ // GUESS
+ // =========================
+
  finishGuess(point, playerId = "p1") {
   if (this.locked) return;
 
@@ -94,11 +119,11 @@ export class GameFlow {
   this.finishRound("guess");
  }
 
- finishRound(reason = "manual") {
-  if (this.locked && reason === "guess") {
-   // защита от двойного вызова
-  }
+ // =========================
+ // ROUND END
+ // =========================
 
+ finishRound(reason = "manual") {
   this.timer.clear();
   this.locked = true;
 
