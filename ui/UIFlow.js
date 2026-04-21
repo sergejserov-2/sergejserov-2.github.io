@@ -67,32 +67,33 @@ export class UIFlow {
   });
 
   this.gameFlow.on("roundResultShown", ({ state }) => {
+ const rounds = state.rounds || [];
+ const round = rounds[rounds.length - 1];
+ if (!round) return;
 
-   const rounds = state.rounds || [];
-   const round = rounds[rounds.length - 1];
-   if (!round) return;
+ this.mapOverviewUI.render(round);
 
-   this.mapOverviewUI.render(round);
+ const vm = this.uiBuilder.formatRoundVM(state);
 
-   const vm = this.uiBuilder.formatRoundVM(state);
+ this.screenManager.show("roundResult");
+ this.staticUI.showRoundResult(vm);
 
-   this.screenManager.show("roundResult");
-   this.staticUI.showRoundResult(vm);
+ const duration = 7500;
 
-   const duration = 7500;
+ // 🔥 ВАЖНО: ждём 2 кадра рендера UI
+ requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
 
-   // 🔥 сначала layout + resize
-   requestAnimationFrame(() => {
-    this.mapOverviewUI.forceResize?.();
+   this.mapOverviewUI.forceResize?.();
+
+   // 🔥 СТАРТ ТАЙМЕРА ТОЛЬКО ПОСЛЕ layout
+   this.staticUI.startRoundTimer(duration, () => {
+    this.gameFlow.nextRound();
    });
 
-   // 🔥 старт таймера ПОСЛЕ показа UI
-   setTimeout(() => {
-    this.staticUI.startRoundTimer(duration, () => {
-     this.gameFlow.nextRound();
-    });
-   }, 50);
   });
+ });
+});
 
   this.gameFlow.on("gameEnded", (vm) => {
    this.screenManager.show("gameResult");
