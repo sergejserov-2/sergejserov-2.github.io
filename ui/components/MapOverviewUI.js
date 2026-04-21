@@ -39,7 +39,7 @@ export class MapOverviewUI {
 
   const round = rounds[rounds.length - 1];
 
-  const guess = round?.guess?.guess;
+  const guess = round?.guess;
   const actual = round?.actualLocation;
 
   if (!guess || !actual) return;
