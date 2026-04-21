@@ -99,7 +99,7 @@ export async function init() {
  });
 
  const generator = new LocationGenerator({
-  streetAdapter: new StreetViewAdapter()
+  streetAdapter
  });
 
  const gameFlow = new GameFlow({
@@ -162,6 +162,13 @@ export async function init() {
  // 9. INIT UI STATE
  // =========================
 
+streetViewUI.onReady = () => {
+ gameFlow.streetViewResady();
+};
+ 
+
+
+ 
  streetViewUI.init({ lat: 0, lng: 0 });
  mapWrapperUI.init();
  mapOverviewUI.init();
