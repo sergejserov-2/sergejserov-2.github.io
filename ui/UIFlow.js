@@ -71,7 +71,7 @@ export class UIFlow {
    const round = state.rounds?.[state.rounds.length - 1];
    if (!round) return;
 
-   this.mapOverviewUI.render(round);
+   this.roundOverviewUI.render(round);
 
    this.screenManager.show("roundResult");
 
@@ -82,7 +82,7 @@ export class UIFlow {
    const duration = 7500;
 
    requestAnimationFrame(() => {
-    this.mapOverviewUI.forceResize?.();
+    this.roundOverviewUI.forceResize();
    });
 
    this.staticUI.startRoundDelay(duration, () => {
@@ -94,27 +94,20 @@ export class UIFlow {
   // GAME END
   // =========================
           this.gameFlow.on("gameEnded", (vm) => {
-            this.screenManager.show("gameResult");
-          
-            this.staticUI.showGameResult(
-              this.uiBuilder.formatGameResultVM(vm)
-            );
-          
+           
             const rounds = vm.rounds || [];
             const last = rounds[rounds.length - 1];
             if (!last) return;
-          
-            // 🔥 ВАЖНО: сначала дать DOM “встать”
+
+            this.gameOverviewUI.render(last);
+            this.screenManager.show("gameResult");
+           
+            this.staticUI.showGameResult(
+              this.uiBuilder.formatGameResultVM(vm)
+            );
+                    
             requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-          
-                // 1. resize (сначала!)
-                this.mapOverviewUI.forceResize?.();
-          
-                // 2. потом render
-                this.mapOverviewUI.render(last);
-          
-              });
+                this.gameOverviewUI.forceResize();          
             });
           });
  }
