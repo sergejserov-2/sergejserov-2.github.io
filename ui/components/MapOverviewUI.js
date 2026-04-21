@@ -37,15 +37,21 @@ export class MapOverviewUI {
   const actualColor = this.uiBuilder.getActualColor();
 
   const actualMarker = this.adapter.createMarker(this.map, actual, {
-   color: actualColor
+    color: actualColor,
+    size: 22,
+    scale: 1.35
   });
 
   this.markers.push(actualMarker);
 
   if (guess) {
-   const guessMarker = this.adapter.createMarker(this.map, guess, {
-    color: playerColor
-   });
+    const guessMarker = this.adapter.createMarker(this.map, guess, {
+      color: playerColor,
+      size: 22,
+      scale: 1
+    });
+
+
 
    this.markers.push(guessMarker);
 
