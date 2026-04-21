@@ -57,4 +57,8 @@ export class Game {
  isGameEnded() {
   return this.gameState.getState().status === "ended";
  }
+
+ reset() {
+  this.gameState.reset();
+}
 }
