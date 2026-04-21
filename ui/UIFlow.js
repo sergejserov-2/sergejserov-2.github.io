@@ -91,23 +91,25 @@ export class UIFlow {
   // =========================
   // GAME END
   // =========================
-  this.gameFlow.on("gameEnded", (vm) => {
-
-   const rounds = vm.rounds || [];
-   const last = rounds[rounds.length - 1];
-
-   this.screenManager.show("gameResult");
-
-   this.staticUI.showGameResult(
-    this.uiBuilder.formatGameResultVM(vm)
-   );
-
-   if (last) {
-    requestAnimationFrame(() => {
-     this.mapOverviewUI.render(last);
-     this.mapOverviewUI.forceResize?.();
-    });
-   }
-  });
+   this.gameFlow.on("gameEnded", (vm) => {
+     this.screenManager.show("gameResult");
+   
+     this.staticUI.showGameResult(
+       this.uiBuilder.formatGameResultVM(vm)
+     );
+   
+     const rounds = vm.rounds || [];
+     const last = rounds[rounds.length - 1];
+   
+     if (last) {
+       // 🔥 двойной RAF = гарантированный layout
+       requestAnimationFrame(() => {
+         requestAnimationFrame(() => {
+           this.mapOverviewUI.render(last);
+           this.mapOverviewUI.forceResize?.();
+         });
+       });
+     }
+   });
  }
 }
