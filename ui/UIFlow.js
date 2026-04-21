@@ -105,7 +105,7 @@ export class UIFlow {
    this.screenManager.show("roundResult");
    this.staticUI.showRoundResult(vm);
 
-   const duration = 10000;
+   const duration = 7500;
 
    // 🔥 FIX: Google Maps resize fix after layout change
    requestAnimationFrame(() => {
