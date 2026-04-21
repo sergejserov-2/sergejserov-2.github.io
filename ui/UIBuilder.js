@@ -12,7 +12,7 @@ export class UIBuilder {
  }
 
  // =========================
- // CONFIG BIND (SAFE UPDATE)
+ // CONFIG
  // =========================
  setConfig(config) {
   this.config = config || {};
@@ -23,9 +23,8 @@ export class UIBuilder {
  }
 
  // =========================
- // NORMALIZED RULES
+ // RULES
  // =========================
-
  getRoundLimit() {
   return this.getConfig()?.rules?.rounds ?? 0;
  }
@@ -55,7 +54,6 @@ export class UIBuilder {
  // =========================
  // COLORS
  // =========================
-
  getPlayerColor(id = "p1") {
   return this.playerColors[id] || "#ff4d4d";
  }
@@ -67,34 +65,30 @@ export class UIBuilder {
  // =========================
  // GAME HUD
  // =========================
-
  formatGameVM(state) {
-  const totalScore = state.rounds.reduce((sum, r) => {
+  const rounds = state.rounds || [];
+
+  const totalScore = rounds.reduce((sum, r) => {
    const g = r.guesses?.[0];
    return sum + (g?.score || 0);
   }, 0);
 
-  const currentRound = (state.currentRoundIndex ?? 0);
   const totalRounds = this.getRoundLimit();
+
+  // 🔥 ключевой фикс
+  const currentRound = (state.currentRoundIndex ?? 0) + 1;
 
   return {
    status: state.status,
 
-   // =========================
-   // ROUNDS (FIX 1/0 BUG HERE)
-   // =========================
    currentRoundIndex: state.currentRoundIndex,
+
+   // ✅ теперь с 1
    roundText: `Раунд: ${currentRound} / ${totalRounds}`,
 
-   // =========================
-   // SCORE
-   // =========================
    totalScore,
    totalText: `Счёт: ${totalScore}`,
 
-   // =========================
-   // RULES HUD
-   // =========================
    timeText: this.isTimeEnabled()
     ? `${this.getTimeLimit()}s`
     : "∞",
@@ -114,26 +108,28 @@ export class UIBuilder {
  // =========================
  // ROUND RESULT
  // =========================
-
  formatRoundVM(state) {
   const rounds = state.rounds || [];
+
+  // 🔥 последний завершённый раунд
   const index = Math.max(0, state.currentRoundIndex - 1);
+
   const round = rounds[index];
   const guess = round?.guesses?.[0];
+
   return {
-    index: round?.index ?? index,
-    distance: guess?.distance ?? 0,
-    score: guess?.score ?? 0,
-    progress: Math.min((guess?.score ?? 0) / 5000, 1),
-    guess: guess?.guess,
-    actual: round?.actualLocation
+   index: round?.index ?? index,
+   distance: guess?.distance ?? 0,
+   score: guess?.score ?? 0,
+   progress: Math.min((guess?.score ?? 0) / 5000, 1),
+   guess: guess?.guess,
+   actual: round?.actualLocation
   };
-}
+ }
 
  // =========================
  // GAME RESULT
  // =========================
-
  formatGameResultVM(state) {
   const rounds = state.rounds || [];
 
