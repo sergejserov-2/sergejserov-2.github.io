@@ -107,12 +107,9 @@ export class UIFlow {
 
    const duration = 7500;
 
-   // 🔥 FIX: Google Maps resize fix after layout change
-   requestAnimationFrame(() => {
     setTimeout(() => {
      this.mapOverviewUI.forceResize?.();
-    }, 80);
-   });
+    }, 150);
 
    this.staticUI.startRoundTimer(duration, () => {
     this.gameFlow.nextRound();
