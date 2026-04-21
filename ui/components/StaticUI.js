@@ -29,7 +29,7 @@ export class StaticUI {
     `Счёт: ${vm.totalScore}`;
   }
 
-  // TIME
+  // TIME (ТОЛЬКО ПРИ СТАРТЕ РАУНДА)
   const timeWrap = this.timeEl?.parentElement;
 
   if (timeWrap) {
@@ -116,6 +116,9 @@ export class StaticUI {
   if (bar) {
    bar.style.width = "100%";
   }
+
+  // 🔥 ВАЖНО: сброс таймера в конце игры
+  this.stopRoundTimer();
  }
 
  // =========================
@@ -126,6 +129,9 @@ export class StaticUI {
   this.stopRoundTimer();
 
   if (!this.timerEl) return;
+
+  // 🔥 фикс: всегда стартуем с 1
+  this.timerEl.style.transform = "scaleX(1)";
 
   const start = Date.now();
 
@@ -144,9 +150,12 @@ export class StaticUI {
    }
   };
 
-  this.timerEl.style.transform = "scaleX(1)";
   animate();
  }
+
+ // =========================
+ // STOP TIMER
+ // =========================
 
  stopRoundTimer() {
   if (this.timerFrame) {
