@@ -160,7 +160,7 @@ export class MapAdapter {
   const g = Math.round(a.g + (b.g - a.g) * t);
   const bl = Math.round(a.b + (b.b - a.b) * t);
 
-  return rgb(${r},${g},${bl});
+  return `rgb(${r},${g},${bl})`;
  }
 
  _hexToRgb(hex) {
