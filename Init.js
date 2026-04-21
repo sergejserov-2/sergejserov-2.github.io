@@ -51,179 +51,183 @@ function waitForGoogleMaps() {
 // INIT
 // =========================
 export async function init() {
- console.log("INIT START");
+  console.log("INIT START");
 
- await waitForGoogleMaps();
+  await waitForGoogleMaps();
 
- // =========================
- // CONFIG
- // =========================
- const config = getConfig();
+  // =========================
+  // CONFIG
+  // =========================
+  const config = getConfig();
 
- // =========================
- // DOM
- // =========================
- const hud = document.querySelector(".hud");
- const mapEl = document.querySelector(".map");
- const streetEl = document.querySelector(".streetview");
- const screensEl = document.querySelector(".screens");
- const roundOverviewUI = document.querySelector(
-   ".round-result .overview-map"
- );
- const gameOverviewUI = document.querySelector(
-   ".game-result .overview-map"
- );
- const guessBtn = document.querySelector("#makeGuess");
+  // =========================
+  // DOM
+  // =========================
+  const hud = document.querySelector(".hud");
+  const mapEl = document.querySelector(".map");
+  const streetEl = document.querySelector(".streetview");
+  const screensEl = document.querySelector(".screens");
 
- // 👉 POLYGON BUTTON
- const polygonBtn = document.querySelector("#togglePolygon");
+  const roundOverviewMapEl = document.querySelector(
+    ".round-result .overview-map"
+  );
 
- // =========================
- // DOMAIN
- // =========================
- const area = AreaRegistry.get(config.area || "europe");
- const difficulty = new Difficulty();
- const scoring = new Scoring({ difficulty });
+  const gameOverviewMapEl = document.querySelector(
+    ".game-result .overview-map"
+  );
 
- // =========================
- // SERVICES
- // =========================
- const services = {
-  timer: new TimerService(),
-  moves: new MovesService(),
-  rounds: new RoundsService()
- };
+  const guessBtn = document.querySelector("#makeGuess");
+  const polygonBtn = document.querySelector(".polygon-button");
 
- // =========================
- // CORE
- // =========================
- const gameState = new GameState();
+  // =========================
+  // DOMAIN
+  // =========================
+  const area = AreaRegistry.get(config.area || "europe");
+  const difficulty = new Difficulty();
+  const scoring = new Scoring({ difficulty });
 
- const game = new Game({
-  gameState,
-  scoring,
-  players: ["p1"],
-  config
- });
+  // =========================
+  // SERVICES
+  // =========================
+  const services = {
+    timer: new TimerService(),
+    moves: new MovesService(),
+    rounds: new RoundsService()
+  };
 
- const generator = new LocationGenerator({
-  streetAdapter: new StreetViewAdapter()
- });
+  // =========================
+  // CORE
+  // =========================
+  const gameState = new GameState();
 
- const gameFlow = new GameFlow({
-  game,
-  generator,
-  area,
-  services
- });
+  const game = new Game({
+    gameState,
+    scoring,
+    players: ["p1"],
+    config
+  });
 
- // =========================
- // UI BUILDER
- // =========================
- const uiBuilder = new UIBuilder();
+  const generator = new LocationGenerator({
+    streetAdapter: new StreetViewAdapter()
+  });
 
- if (uiBuilder.setConfig) {
+  const gameFlow = new GameFlow({
+    game,
+    generator,
+    area,
+    services
+  });
+
+  // =========================
+  // UI BUILDER
+  // =========================
+  const uiBuilder = new UIBuilder();
   uiBuilder.setConfig(config);
- }
 
- // =========================
- // UI COMPONENTS
- // =========================
- const mapWrapperUI = new MapWrapperUI({
-  adapter: new MapAdapter(),
-  element: mapEl,
-  uiBuilder
- });
+  // =========================
+  // UI COMPONENTS
+  // =========================
 
- const roundOverviewUI = new MapOverviewUI({
-   adapter: new MapAdapter(),
-   element: roundOverviewMapEl,
-   uiBuilder
- });
- 
- const gameOverviewUI = new MapOverviewUI({
-   adapter: new MapAdapter(),
-   element: gameOverviewMapEl,
-   uiBuilder
- });
+  const mapWrapperUI = new MapWrapperUI({
+    adapter: new MapAdapter(),
+    element: mapEl,
+    uiBuilder
+  });
 
- const streetViewUI = new StreetViewUI({
-  adapter: new StreetViewAdapter(),
-  element: streetEl
- });
+  const streetViewUI = new StreetViewUI({
+    adapter: new StreetViewAdapter(),
+    element: streetEl
+  });
 
- const staticUI = new StaticUI({
-  hudElement: hud
- });
+  const staticUI = new StaticUI({
+    hudElement: hud
+  });
 
- const screenManager = new ScreenManager({
-  root: screensEl
- });
+  const screenManager = new ScreenManager({
+    root: screensEl
+  });
 
- // =========================
- // UI FLOW
- // =========================
- new UIFlow({
-  gameFlow,
-  screenManager,
-  staticUI,
-  uiBuilder,
-  streetViewUI,
-  mapWrapperUI,
-  roundOverviewMapEl,
-  gameOverviewMapEl
- });
+  // =========================
+  // OVERVIEW MAPS (ВАЖНО 🔥)
+  // =========================
 
- // =========================
- // INIT UI STATE
- // =========================
+  const roundOverviewUI = new MapOverviewUI({
+    adapter: new MapAdapter(),
+    element: roundOverviewMapEl,
+    uiBuilder
+  });
 
- streetViewUI.onReady = () => {
-  gameFlow.streetViewReady();
- };
+  const gameOverviewUI = new MapOverviewUI({
+    adapter: new MapAdapter(),
+    element: gameOverviewMapEl,
+    uiBuilder
+  });
 
- gameFlow.on("streetViewSetLocation", (location) => {
-  streetViewUI.setLocation(location);
- });
+  roundOverviewUI.init();
+  gameOverviewUI.init();
 
- streetViewUI.init({ lat: 0, lng: 0 });
+  // =========================
+  // UI FLOW
+  // =========================
+  new UIFlow({
+    gameFlow,
+    screenManager,
+    staticUI,
+    uiBuilder,
+    streetViewUI,
+    mapWrapperUI,
+    roundOverviewUI,
+    gameOverviewUI
+  });
 
- mapWrapperUI.init();
-roundOverviewUI.init();
-gameOverviewUI.init();
+  // =========================
+  // STREET VIEW HOOKS
+  // =========================
+  streetViewUI.onReady = () => {
+    gameFlow.streetViewReady();
+  };
 
- // 🔥 POLYGON SETUP (ВАЖНО: после init)
- mapWrapperUI.setArea(area);
- mapWrapperUI.bindPolygonButton(polygonBtn);
+  gameFlow.on("streetViewSetLocation", (location) => {
+    streetViewUI.setLocation(location);
+  });
 
- mapWrapperUI.reset();
+  streetViewUI.init({ lat: 0, lng: 0 });
 
- // =========================
- // INPUT
- // =========================
- mapWrapperUI.bindGuess((point) => {
-  gameFlow.finishGuess(point);
- });
+  // =========================
+  // MAP INIT
+  // =========================
+  mapWrapperUI.init();
+  mapWrapperUI.reset();
 
- mapWrapperUI.bindGuessButton(guessBtn);
+  mapWrapperUI.setArea(area);
+  mapWrapperUI.bindPolygonButton(polygonBtn);
 
- // =========================
- // TWEAKS
- // =========================
- const tweaks = new Tweaks({
-  mapElement: mapEl,
-  streetElement: streetEl,
-  root: screensEl
- });
+  // =========================
+  // INPUT
+  // =========================
+  mapWrapperUI.bindGuess((point) => {
+    gameFlow.finishGuess(point);
+  });
 
- tweaks.apply();
+  mapWrapperUI.bindGuessButton(guessBtn);
 
- // =========================
- // START GAME
- // =========================
- await gameFlow.startGame();
+  // =========================
+  // TWEAKS
+  // =========================
+  const tweaks = new Tweaks({
+    mapElement: mapEl,
+    streetElement: streetEl,
+    root: screensEl
+  });
 
- console.log("INIT OK");
+  tweaks.apply();
+
+  // =========================
+  // START GAME
+  // =========================
+  await gameFlow.startGame();
+
+  console.log("INIT OK");
 }
 
 init();
