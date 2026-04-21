@@ -21,16 +21,10 @@ export class UIFlow {
 
  bind() {
 
-  // =========================
-  // STREET VIEW READY
-  // =========================
   this.streetViewUI.onReady = () => {
    this.gameFlow.streetViewReady();
   };
 
-  // =========================
-  // LOADING
-  // =========================
   this.gameFlow.on("loadingStarted", () => {
    this.screenManager.show("loading");
   });
@@ -39,16 +33,10 @@ export class UIFlow {
    this.screenManager.show("round");
   });
 
-  // =========================
-  // STREET VIEW LOCATION
-  // =========================
   this.gameFlow.on("streetViewSetLocation", (location) => {
    this.streetViewUI.setLocation(location);
   });
 
-  // =========================
-  // ROUND START
-  // =========================
   this.gameFlow.on("roundStarted", (vm) => {
    this.mapWrapperUI.reset();
    this.mapOverviewUI.clear();
@@ -60,23 +48,14 @@ export class UIFlow {
    );
   });
 
-  // =========================
-  // TIMER
-  // =========================
   this.gameFlow.on("timerTick", (t) => {
    this.staticUI.updateTimer(t);
   });
 
-  // =========================
-  // MOVES
-  // =========================
   this.gameFlow.on("movesUpdated", (m) => {
    this.staticUI.updateMoves?.(m);
   });
 
-  // =========================
-  // INPUT LOCK
-  // =========================
   this.gameFlow.on("inputLocked", () => {
    this.staticUI.lockInput?.();
    this.mapWrapperUI.lock();
@@ -87,14 +66,10 @@ export class UIFlow {
    this.mapWrapperUI.unlock();
   });
 
-  // =========================
-  // ROUND RESULT
-  // =========================
   this.gameFlow.on("roundResultShown", ({ state }) => {
 
    const rounds = state.rounds || [];
    const round = rounds[rounds.length - 1];
-
    if (!round) return;
 
    this.mapOverviewUI.render(round);
@@ -106,19 +81,19 @@ export class UIFlow {
 
    const duration = 7500;
 
-   // 🔥 ВАЖНО: сначала даём карте перестроиться
+   // 🔥 сначала layout + resize
    requestAnimationFrame(() => {
     this.mapOverviewUI.forceResize?.();
    });
 
-   this.staticUI.startRoundTimer(duration, () => {
-    this.gameFlow.nextRound();
-   });
+   // 🔥 старт таймера ПОСЛЕ показа UI
+   setTimeout(() => {
+    this.staticUI.startRoundTimer(duration, () => {
+     this.gameFlow.nextRound();
+    });
+   }, 50);
   });
 
-  // =========================
-  // GAME END
-  // =========================
   this.gameFlow.on("gameEnded", (vm) => {
    this.screenManager.show("gameResult");
 
