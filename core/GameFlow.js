@@ -84,6 +84,7 @@ export class GameFlow {
 
     this.game.setGuess(playerId, point);
     this.game.finishGuess(playerId);
+    this.game.commitRound();
 
     this.emit("roundEnded", this.game.getState());
     this.emit("stateUpdated", this.game.getState());
@@ -98,7 +99,6 @@ export class GameFlow {
     this.locked = true;
     this.emit("inputLocked");
 
-    this.game.commitRound();
 
     this.emit("roundEndedReason", reason);
     this.emit("roundEnded", this.game.getState());
