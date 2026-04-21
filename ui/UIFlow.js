@@ -55,7 +55,8 @@ export class UIFlow {
    this.streetViewUI.unlockMove();
    this.roundOverviewUI?.clear();
    this.gameOverviewUI?.clear();
-
+   this.moves.reset(this.game.config.rules.moves);
+   this.emit("movesUpdated", this.moves.getRemaining());
    this.staticUI.stopRoundTimer?.();
 
    this.staticUI.updateHUD(
