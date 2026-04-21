@@ -74,7 +74,7 @@ export class UIBuilder {
    return sum + (g?.score || 0);
   }, 0);
 
-  const currentRound = (state.currentRoundIndex ?? 0) + 1;
+  const currentRound = (state.currentRoundIndex ?? 0);
   const totalRounds = this.getRoundLimit();
 
   return {
