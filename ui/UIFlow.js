@@ -52,7 +52,7 @@ export class UIFlow {
   // =========================
   this.gameFlow.on("roundStarted", (state) => {
    this.mapWrapperUI.reset();
-
+   this.streetViewUI.unlockMove();
    this.roundOverviewUI?.clear();
    this.gameOverviewUI?.clear();
 
@@ -73,6 +73,10 @@ export class UIFlow {
   this.gameFlow.on("movesUpdated", (m) => {
    this.staticUI.updateMoves?.(m);
   });
+
+  this.gameFlow.on("movesLocked", () => {
+ this.streetViewUI.lockMove();
+});
 
   // =========================
   // INPUT
