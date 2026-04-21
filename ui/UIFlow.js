@@ -30,7 +30,11 @@ export class UIFlow {
   this.streetViewUI.onReady = () => {
    this.gameFlow.streetViewReady();
   };
-
+  
+ this.streetViewUI.onMove = () => {
+  this.gameFlow.registerMove();
+ };
+  
   this.gameFlow.on("loadingStarted", () => {
    this.screenManager.show("loading");
   });
