@@ -11,9 +11,6 @@ export class MapOverviewUI {
   this.lines = [];
  }
 
- // =========================
- // INIT
- // =========================
  init() {
   if (!this.element) return;
 
@@ -23,53 +20,52 @@ export class MapOverviewUI {
   });
  }
 
- // =========================
- // RENDER
- // =========================
  render(round) {
   if (!this.map || !round) return;
 
-  const guess = round.guess;
-  const actual = round.actualLocation;
-
-  if (!guess || !actual) return;
-
   this.clear();
 
-  const playerId = guess.playerId || "p1";
+  const actual = round.actualLocation;
+  const guess = round.guess;
 
-  const playerColor = this.uiBuilder.getPlayerColor(playerId);
+  if (!actual) return;
+
+  const playerColor = this.uiBuilder.getPlayerColor("p1");
   const actualColor = this.uiBuilder.getActualColor();
 
-  // markers
-  const guessMarker = this.adapter.createMarker(this.map, guess, {
-   color: playerColor,
-   size: 18
-  });
-
+  // ALWAYS actual
   const actualMarker = this.adapter.createMarker(this.map, actual, {
    color: actualColor,
-   size: 22
+   size: 24
   });
 
-  // line
-  const segments = this.adapter.createGradientPolyline(
-   this.map,
-   [guess, actual],
-   playerColor,
-   actualColor,
-   14
+  this.markers.push(actualMarker);
+
+  // guess only if exists (timeout-safe)
+  if (guess) {
+   const guessMarker = this.adapter.createMarker(this.map, guess, {
+    color: playerColor,
+    size: 18
+   });
+
+   this.markers.push(guessMarker);
+
+   const segments = this.adapter.createGradientPolyline(
+    this.map,
+    [guess, actual],
+    playerColor,
+    actualColor,
+    14
+   );
+
+   this.lines.push(...segments);
+  }
+
+  this.fitToPoints(
+   guess ? [guess, actual] : [actual, actual]
   );
-
-  this.fitToPoints([guess, actual]);
-
-  this.markers.push(guessMarker, actualMarker);
-  this.lines.push(...segments);
  }
 
- // =========================
- // CAMERA
- // =========================
  fitToPoints(points) {
   if (!this.map || !points?.length) return;
 
@@ -97,9 +93,6 @@ export class MapOverviewUI {
   this.map.setZoom(zoom);
  }
 
- // =========================
- // CLEAR
- // =========================
  clear() {
   this.markers.forEach(m => this.adapter.removeMarker(m));
   this.lines.forEach(l => l.setMap(null));
@@ -108,49 +101,9 @@ export class MapOverviewUI {
   this.lines = [];
  }
 
- // =========================
- // FIX FOR GOOGLE MAPS RENDER BUG
- // =========================
-forceResize() {
- if (!this.map) return;
+ forceResize() {
+  if (!this.map) return;
 
- google.maps.event.trigger(this.map, "resize");
-
- // важно: пересетить камеру после resize
- const last = this.lastFitPoints;
- if (last) {
-  this.fitToPoints(last);
- }
-}
-
- // =========================
- // MULTI
- // =========================
- addPlayerResult({ guess, actual, playerId }) {
-  if (!this.map || !guess || !actual) return;
-
-  const playerColor = this.uiBuilder.getPlayerColor(playerId);
-  const actualColor = this.uiBuilder.getActualColor();
-
-  const guessMarker = this.adapter.createMarker(this.map, guess, {
-   color: playerColor,
-   size: 20
-  });
-
-  const actualMarker = this.adapter.createMarker(this.map, actual, {
-   color: actualColor,
-   size: 30
-  });
-
-  const segments = this.adapter.createGradientPolyline(
-   this.map,
-   [guess, actual],
-   playerColor,
-   actualColor,
-   14
-  );
-
-  this.markers.push(guessMarker, actualMarker);
-  this.lines.push(...segments);
+  google.maps.event.trigger(this.map, "resize");
  }
 }
