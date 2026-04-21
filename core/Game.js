@@ -4,8 +4,8 @@ export class Game {
   this.scoring = scoring;
   this.players = players;
   this.config = config;
-
-  startGame() {
+ }
+ startGame() {
   this.state.start();
  }
 
