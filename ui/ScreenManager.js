@@ -14,11 +14,10 @@ export class ScreenManager {
   // SHOW SCREEN
   // =========================
   show(name) {
-    Object.entries(this.views).forEach(([key, el]) => {
+    // скрываем все экраны
+    Object.values(this.views).forEach((el) => {
       if (!el) return;
-
       el.classList.remove("active");
-      el.style.display = "none";
     });
 
     const target = this.views[name];
@@ -28,7 +27,27 @@ export class ScreenManager {
       return;
     }
 
-    target.style.display = "flex";
     target.classList.add("active");
+  }
+
+  // =========================
+  // OPTIONAL HELPERS
+  // =========================
+
+  hide(name) {
+    const el = this.views[name];
+    if (el) el.classList.remove("active");
+  }
+
+  hideAll() {
+    Object.values(this.views).forEach((el) => {
+      if (!el) return;
+      el.classList.remove("active");
+    });
+  }
+
+  getActive() {
+    return Object.entries(this.views)
+      .find(([_, el]) => el?.classList.contains("active"))?.[0] || null;
   }
 }
