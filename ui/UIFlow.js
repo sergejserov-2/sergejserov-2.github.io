@@ -97,8 +97,6 @@ export class UIFlow {
 
    this.mapOverviewUI.render(round);
 
-   this.screenManager.show("roundResult");
-
    this.staticUI.showRoundResult(
     this.uiBuilder.formatRoundVM(vm)
    );
@@ -107,9 +105,17 @@ export class UIFlow {
   // =========================
   // ROUND RESULT SHOWN (UX HOOK)
   // =========================
-  this.gameFlow.on("roundResultShown", () => {
-   // тут можно повесить таймер или кнопку next
-  });
+this.gameFlow.on("roundResultShown", ({ state }) => {
+  this.screenManager.show("roundResult");
+  this.staticUI.showRoundResult(
+    this.uiBuilder.formatRoundVM(state)
+  );
+
+  // 🔥 ВРЕМЯ ПОКАЗА
+  setTimeout(() => {
+    this.gameFlow.nextRound();
+  }, 10000);
+});
 
   // =========================
   // GAME END
