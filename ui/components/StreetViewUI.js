@@ -8,23 +8,27 @@ export class StreetViewUI {
  init(position = { lat: 0, lng: 0 }) {
   if (!this.element) return;
 
-  // 🔥 создаём СРАЗУ
   this.panorama = this.adapter.createStreetView(
-   this.element,
-   position
+    this.element,
+    position
   );
 
-  // 🔥 safe check
-  if (!this.panorama) {
-   console.error("StreetView not created");
-   return;
-  }
+  if (!this.panorama) return;
 
-  // 🔥 ready hook
-  this.panorama.addListener("idle", () => {
-   this.onReady?.();
-  });
- }
+  let resolved = false;
+
+  const resolveOnce = () => {
+    if (resolved) return;
+    resolved = true;
+    this.onReady?.();
+  };
+
+  // 🔥 самый важный сигнал
+  this.panorama.addListener("tilesloaded", resolveOnce);
+
+  // 🔥 fallback (если tilesloaded не сработал)
+  setTimeout(resolveOnce, 3000);
+}
 
  setLocation(pos) {
   if (!this.panorama || !pos) return;
@@ -36,3 +40,9 @@ export class StreetViewUI {
   this.panorama.setPov(pov);
  }
 }
+
+
+
+
+
+
