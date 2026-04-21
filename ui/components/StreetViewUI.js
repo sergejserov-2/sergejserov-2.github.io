@@ -7,6 +7,8 @@ export class StreetViewUI {
 
   this.onReady = null;
   this.onMove = null;
+
+  this.moveLocked = false;
  }
 
  // =========================
@@ -22,23 +24,46 @@ export class StreetViewUI {
 
   if (!this.panorama) return;
 
-  // 🔥 шаги
   this.panorama.addListener("position_changed", () => {
    this.onMove?.();
   });
  }
 
  // =========================
- // LOCATION (🔥 ВАЖНО)
+ // LOCATION
  // =========================
  setLocation(pos) {
   if (!this.panorama || !pos) return;
 
   this.panorama.setPosition(pos);
 
-  // 🔥 ВОТ ГДЕ ДОЛЖЕН БЫТЬ READY
   this.adapter.attachReadySignal(this.panorama, () => {
    this.onReady?.();
+  });
+ }
+
+ // =========================
+ // 🚫 MOVE LOCK (НОРМАЛЬНЫЙ КОНТРОЛЬ)
+ // =========================
+ lockMove() {
+  this.moveLocked = true;
+
+  const links = this.element.querySelectorAll("a, button");
+
+  links.forEach(el => {
+   el.style.pointerEvents = "none";
+   el.style.opacity = "0.3";
+  });
+ }
+
+ unlockMove() {
+  this.moveLocked = false;
+
+  const links = this.element.querySelectorAll("a, button");
+
+  links.forEach(el => {
+   el.style.pointerEvents = "auto";
+   el.style.opacity = "1";
   });
  }
 
