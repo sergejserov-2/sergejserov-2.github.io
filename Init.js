@@ -161,10 +161,10 @@ export async function init() {
 // =========================
  // 9. INIT UI STATE
  // =========================
- mapWrapperUI.init();
- mapOverviewUI.init();
  streetViewUI.init({ lat: 0, lng: 0 });
  screenManager.show("round"); // 🔥 фикс initial screen
+ mapWrapperUI.init();
+ mapOverviewUI.init();
  mapWrapperUI.reset();
 
 
