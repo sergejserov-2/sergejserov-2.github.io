@@ -51,4 +51,11 @@ export class GameState {
    rounds: this.rounds
   };
  }
+
+reset() {
+  this.status = "idle";
+  this.rounds = [];
+  this.currentRoundIndex = 0;
+}
+ 
 }
