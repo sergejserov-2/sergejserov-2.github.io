@@ -107,15 +107,18 @@ export class GameFlow {
   const isLastRound =
    state.rounds.length >= this.game.config.rules.rounds;
 
-  this.emit("roundResultShown", {
-   state,
-   reason
-  });
+  // 🔥 ВАЖНО: даём UI "переключиться" до показа результата
+  setTimeout(() => {
+   this.emit("roundResultShown", {
+    state,
+    reason
+   });
 
-  if (isLastRound) {
-   this.game.endGame();
-   this.emit("gameEnded", state);
-  }
+   if (isLastRound) {
+    this.game.endGame();
+    this.emit("gameEnded", state);
+   }
+  }, 150);
  }
 
  async nextRound() {
