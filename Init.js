@@ -23,184 +23,178 @@ import { UIBuilder } from "./ui/UIBuilder.js";
 import { Tweaks } from "./ui/Tweaks.js";
 
 // =========================
-// CONFIG SOURCE (ЕДИНАЯ ТОЧКА)
+// SERVICES
 // =========================
-function getConfig() {
-  const raw = localStorage.getItem("gameConfig");
+import { TimerService } from "./services/TimerService.js";
+import { MovesService } from "./services/MovesService.js";
+import { RoundsService } from "./services/RoundsService.js";
 
-  if (!raw) {
-    return {
-      mode: "solo",
-      area: "europe",
-      rules: {
-        rounds: 5,
-        time: -1,
-        moves: -1
-      }
-    };
-  }
-
-  return JSON.parse(raw);
-}
+// =========================
+// CONFIG
+// =========================
+import { getConfig } from "./config/getConfig.js";
 
 // =========================
 // GOOGLE MAPS GATE
 // =========================
 function waitForGoogleMaps() {
-  return new Promise(resolve => {
-    const check = () => {
-      if (window.google?.maps) resolve();
-      else setTimeout(check, 50);
-    };
-    check();
-  });
+ return new Promise(resolve => {
+  const check = () => {
+   if (window.google?.maps) resolve();
+   else setTimeout(check, 50);
+  };
+  check();
+ });
 }
 
 // =========================
 // INIT
 // =========================
 export async function init() {
-  console.log("INIT START");
+ console.log("INIT START");
 
-  await waitForGoogleMaps();
+ await waitForGoogleMaps();
 
-  // =========================
-  // CONFIG (CRITICAL)
-  // =========================
-  const config = getConfig();
+ // =========================
+ // 1. CONFIG (SOURCE OF TRUTH)
+ // =========================
+ const config = getConfig();
 
-  // =========================
-  // DOM
-  // =========================
-  const hud = document.querySelector(".hud");
-  const mapEl = document.querySelector(".map");
-  const streetEl = document.querySelector(".streetview");
-  const screensEl = document.querySelector(".screens");
-  const overviewMapEl = document.querySelector(".overview-map");
-  const guessBtn = document.querySelector("#makeGuess");
+ // =========================
+ // 2. DOM
+ // =========================
+ const hud = document.querySelector(".hud");
+ const mapEl = document.querySelector(".map");
+ const streetEl = document.querySelector(".streetview");
+ const screensEl = document.querySelector(".screens");
+ const overviewMapEl = document.querySelector(".overview-map");
+ const guessBtn = document.querySelector("#makeGuess");
 
-  // =========================
-  // ADAPTERS
-  // =========================
-  const mapAdapter = new MapAdapter();
-  const streetAdapter = new StreetViewAdapter();
+ // =========================
+ // 3. DOMAIN
+ // =========================
+ const area = AreaRegistry.get(config.area || "europe");
+ const difficulty = new Difficulty();
+ const scoring = new Scoring({ difficulty });
 
-  // =========================
-  // DOMAIN
-  // =========================
-  const area = AreaRegistry.get(config.area);
-  const difficulty = new Difficulty();
-  const scoring = new Scoring({ difficulty });
+ // =========================
+ // 4. SERVICES (FIXED — НЕ NULL БОЛЬШЕ)
+ // =========================
+ const services = {
+  timer: new TimerService(),
+  moves: new MovesService(),
+  rounds: new RoundsService()
+ };
 
-  // =========================
-  // CORE
-  // =========================
-  const gameState = new GameState();
+ // =========================
+ // 5. CORE
+ // =========================
+ const gameState = new GameState();
 
-  const game = new Game({
-    gameState,
-    scoring,
-    players: ["p1"],
-    config // 🔥 ВАЖНО: фиксируем источник истины
-  });
+ const game = new Game({
+  gameState,
+  scoring,
+  players: ["p1"],
+  config
+ });
 
-  const generator = new LocationGenerator({
-    streetAdapter
-  });
+ const generator = new LocationGenerator({
+  streetAdapter: new StreetViewAdapter()
+ });
 
-  const gameFlow = new GameFlow({
-    game,
-    generator,
-    area,
-    services: {
-      timer: null, // пока есть, но не трогаем UX
-      moves: null,
-      rounds: null
-    }
-  });
+ const gameFlow = new GameFlow({
+  game,
+  generator,
+  area,
+  services
+ });
 
-  // =========================
-  // UI BUILDER
-  // =========================
-  const uiBuilder = new UIBuilder({
-    config // 🔥 HUD теперь знает лимиты
-  });
+ // =========================
+ // 6. UI BUILDER
+ // =========================
+ const uiBuilder = new UIBuilder();
 
-  // =========================
-  // UI
-  // =========================
-  const mapWrapperUI = new MapWrapperUI({
-    adapter: mapAdapter,
-    element: mapEl,
-    uiBuilder
-  });
+ if (uiBuilder.setConfig) {
+  uiBuilder.setConfig(config);
+ }
 
-  const mapOverviewUI = new MapOverviewUI({
-    adapter: mapAdapter,
-    element: overviewMapEl,
-    uiBuilder
-  });
+ // =========================
+ // 7. UI COMPONENTS
+ // =========================
+ const mapWrapperUI = new MapWrapperUI({
+  adapter: new MapAdapter(),
+  element: mapEl,
+  uiBuilder
+ });
 
-  const streetViewUI = new StreetViewUI({
-    adapter: streetAdapter,
-    element: streetEl
-  });
+ const mapOverviewUI = new MapOverviewUI({
+  adapter: new MapAdapter(),
+  element: overviewMapEl,
+  uiBuilder
+ });
 
-  const staticUI = new StaticUI({
-    hudElement: hud
-  });
+ const streetViewUI = new StreetViewUI({
+  adapter: new StreetViewAdapter(),
+  element: streetEl
+ });
 
-  const screenManager = new ScreenManager({
-    root: screensEl
-  });
+ const staticUI = new StaticUI({
+  hudElement: hud
+ });
 
-  // =========================
-  // FLOW (UI BINDS FIRST)
-  // =========================
-  new UIFlow({
-    gameFlow,
-    screenManager,
-    staticUI,
-    uiBuilder,
-    streetViewUI,
-    mapWrapperUI,
-    mapOverviewUI
-  });
-  // =========================
-  // INIT UI (NO GAME YET)
-  // =========================
-  mapWrapperUI.init();
-  mapOverviewUI.init();
-  streetViewUI.init({ lat: 0, lng: 0 });
+ const screenManager = new ScreenManager({
+  root: screensEl
+ });
 
-  mapWrapperUI.reset();
+ // =========================
+ // 8. UI FLOW (BIND EVENTS)
+ // =========================
+ new UIFlow({
+  gameFlow,
+  screenManager,
+  staticUI,
+  uiBuilder,
+  streetViewUI,
+  mapWrapperUI,
+  mapOverviewUI
+ });
+// =========================
+ // 9. INIT UI STATE
+ // =========================
+ mapWrapperUI.init();
+ mapOverviewUI.init();
+ streetViewUI.init({ lat: 0, lng: 0 });
 
-  // =========================
-  // INPUT
-  // =========================
-  mapWrapperUI.bindGuess((point) => {
-    gameFlow.finishGuess(point);
-  });
+ mapWrapperUI.reset();
 
-  mapWrapperUI.bindGuessButton(guessBtn);
+ screenManager.show("round"); // 🔥 фикс initial screen
 
-  // =========================
-  // TWEAKS
-  // =========================
-  const tweaks = new Tweaks({
-    mapElement: mapEl,
-    streetElement: streetEl,
-    root: screensEl
-  });
+ // =========================
+ // 10. INPUT
+ // =========================
+ mapWrapperUI.bindGuess((point) => {
+  gameFlow.finishGuess(point);
+ });
 
-  tweaks.apply();
+ mapWrapperUI.bindGuessButton(guessBtn);
 
-  // =========================
-  // START GAME (LAST STEP)
-  // =========================
-  await gameFlow.startGame();
+ // =========================
+ // 11. TWEAKS
+ // =========================
+ const tweaks = new Tweaks({
+  mapElement: mapEl,
+  streetElement: streetEl,
+  root: screensEl
+ });
 
-  console.log("INIT OK");
+ tweaks.apply();
+
+ // =========================
+ // 12. START GAME
+ // =========================
+ await gameFlow.startGame();
+
+ console.log("INIT OK");
 }
 
 init();
