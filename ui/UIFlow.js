@@ -83,9 +83,10 @@ export class UIFlow {
 
    this.mapOverviewUI.forceResize?.();
 
-   this.staticUI.startRoundDelay(duration, () => {
+   // 🔥 STABLE GAME LAYER delay
+   setTimeout(() => {
     this.gameFlow.nextRound();
-   });
+   }, duration);
   });
 
   this.gameFlow.on("gameEnded", (vm) => {
