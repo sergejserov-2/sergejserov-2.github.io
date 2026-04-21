@@ -17,13 +17,14 @@ export class MapAdapter {
    size = 20
   } = options;
 
-  const radius = size === 30 ? 7 : 6;
+const radius = size * 0.3;
+const outerRadius = radius + 3;
 
-  const svg = `
-  <svg width="${size}" height="${size}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="10" cy="10" r="${radius}" fill="${color}" opacity="0.9"/>
-    <circle cx="10" cy="10" r="${radius + 3}" stroke="${color}" stroke-width="2" fill="none" opacity="0.4"/>
-  </svg>`;
+const svg = `
+<svg width="${size}" height="${size}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="10" cy="10" r="${radius}" fill="${color}" opacity="0.9"/>
+  <circle cx="10" cy="10" r="${outerRadius}" stroke="${color}" stroke-width="2" fill="none" opacity="0.4"/>
+</svg>`;
 
   return new google.maps.Marker({
    position: { lat, lng },
