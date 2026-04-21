@@ -69,38 +69,43 @@ export class UIFlow {
   // =========================
   // ROUND RESULT
   // =========================
-  this.gameFlow.on("roundResultShown", ({ state }) => {
+this.gameFlow.on("roundResultShown", ({ state }) => {
+  const rounds = state.rounds || [];
+  const round = rounds[rounds.length - 1];
+  if (!round) return;
 
-   const rounds = state.rounds || [];
-   const round = rounds[rounds.length - 1];
-   if (!round) return;
+  this.mapOverviewUI.render(round);
 
-   this.mapOverviewUI.render(round);
+  const vm = this.uiBuilder.formatRoundVM(state);
 
-   const vm = this.uiBuilder.formatRoundVM(state);
+  const root = this.screenManager.get("roundResult");
 
-   this.screenManager.show("roundResult");
-   this.staticUI.showRoundResult(vm);
+  this.screenManager.show("roundResult");
 
-   const duration = 7500;
+  this.staticUI.showRoundResult(vm, root);
 
-   requestAnimationFrame(() => {
+  const duration = 7500;
+
+  requestAnimationFrame(() => {
     this.mapOverviewUI.forceResize?.();
-   });
-
-   this.staticUI.startRoundDelay(duration, () => {
-    this.gameFlow.nextRound();
-   });
   });
+
+  this.staticUI.startRoundDelay(duration, () => {
+    this.gameFlow.nextRound();
+  });
+});
 
   // =========================
   // GAME END
   // =========================
 this.gameFlow.on("gameEnded", (vm) => {
+  const root = this.screenManager.get("gameResult");
+
   this.screenManager.show("gameResult");
 
   this.staticUI.showGameResult(
-    this.uiBuilder.formatGameResultVM(vm)
+    this.uiBuilder.formatGameResultVM(vm),
+    root
   );
 
   const rounds = vm.rounds || [];
