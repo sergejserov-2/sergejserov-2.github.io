@@ -11,56 +11,77 @@ export class MapAdapter {
   });
  }
 
-createMarker(map, { lat, lng }, options = {}) {
+ // =========================
+ // MARKER (FIXED + SHADOW ONLY)
+ // =========================
+ createMarker(map, { lat, lng }, options = {}) {
   const {
-    color = "#ff4d4d",
-    size = 20,
-    isActual = false
+   color = "#ff4d4d",
+   size = 20,
+   isActual = false
   } = options;
 
-  // actual чуть больше
-  const finalSize = isActual ? size * 1.4 : size;
+  // actual визуально важнее
+  const finalSize = isActual ? size * 1.35 : size;
 
+  // базовая геометрия
   const radius = finalSize * 0.28;
-  const stroke = finalSize * 0.12;
+  const stroke = Math.max(2, finalSize * 0.08);
 
-  const pad = stroke * 2;
+  // padding чтобы НИЧЕГО не обрезалось
+  const pad = stroke * 2 + 2;
   const viewBox = finalSize + pad * 2;
 
-  const c = viewBox / 2;
+  const cx = viewBox / 2;
+  const cy = viewBox / 2;
 
   const svg = `
-<svg width="${viewBox}" height="${viewBox}" viewBox="0 0 ${viewBox} ${viewBox}" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="${viewBox}"
+     height="${viewBox}"
+     viewBox="0 0 ${viewBox} ${viewBox}">
 
-  <!-- shadow (ТОЛЬКО ТЕНЬ) -->
-  <circle cx="${c}" cy="${c + 1.5}" r="${radius}"
-    fill="rgba(0,0,0,0.25)"/>
+  <!-- ТЕНЬ (ТОЛЬКО ТЕНЬ, без glow) -->
+  <circle
+    cx="${cx}"
+    cy="${cy + 1.8}"
+    r="${radius}"
+    fill="rgba(0,0,0,0.28)" />
 
-  <!-- border -->
-  <circle cx="${c}" cy="${c}" r="${radius}"
-    fill="${color}" opacity="0.95"
+  <!-- ОСНОВНОЕ ТЕЛО -->
+  <circle
+    cx="${cx}"
+    cy="${cy}"
+    r="${radius}"
+    fill="${color}"
     stroke="rgba(0,0,0,0.25)"
-    stroke-width="${stroke}"/>
+    stroke-width="${stroke}" />
 
 </svg>`;
 
   return new google.maps.Marker({
-    position: { lat, lng },
-    map,
-    icon: {
-      url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+   position: { lat, lng },
+   map,
+   icon: {
+    url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
 
-      scaledSize: new google.maps.Size(viewBox, viewBox),
-      anchor: new google.maps.Point(viewBox / 2, viewBox / 2)
-    },
-    optimized: false
+    // важно: НЕ обрезаем
+    scaledSize: new google.maps.Size(viewBox, viewBox),
+
+    anchor: new google.maps.Point(viewBox / 2, viewBox / 2)
+   },
+
+   optimized: false
   });
-}
+ }
 
  removeMarker(marker) {
   marker?.setMap(null);
  }
 
+ // =========================
+ // POLYLINE
+ // =========================
  createPolyline(map, path, options = {}) {
   const { color = "#ff4d4d" } = options;
 
@@ -75,9 +96,8 @@ createMarker(map, { lat, lng }, options = {}) {
  }
 
  // =========================
- // 🌈 GRADIENT LINE
+ // GRADIENT LINE
  // =========================
-
  createGradientPolyline(map, path, fromColor, toColor, steps = 12) {
   const segments = [];
 
@@ -106,28 +126,25 @@ createMarker(map, { lat, lng }, options = {}) {
  }
 
  createPolygon(map, path, options = {}) {
- const {
-  strokeColor = "#4ea1ff",
-  fillColor = "#4ea1ff"
- } = options;
+  const {
+   strokeColor = "#4ea1ff",
+   fillColor = "#4ea1ff"
+  } = options;
 
- return new google.maps.Polygon({
-  paths: path,
-  strokeColor,
-  strokeOpacity: 0.8,
-  strokeWeight: 2,
-  fillColor,
-  fillOpacity: 0.15,
-  map
- });
-}
-
- 
+  return new google.maps.Polygon({
+   paths: path,
+   strokeColor,
+   strokeOpacity: 0.8,
+   strokeWeight: 2,
+   fillColor,
+   fillOpacity: 0.15,
+   map
+  });
+ }
 
  // =========================
  // HELPERS
  // =========================
-
  _interpolate(a, b, t) {
   return {
    lat: a.lat + (b.lat - a.lat) * t,
@@ -143,7 +160,7 @@ createMarker(map, { lat, lng }, options = {}) {
   const g = Math.round(a.g + (b.g - a.g) * t);
   const bl = Math.round(a.b + (b.b - a.b) * t);
 
-  return `rgb(${r},${g},${bl})`;
+  return rgb(${r},${g},${bl});
  }
 
  _hexToRgb(hex) {
@@ -151,8 +168,4 @@ createMarker(map, { lat, lng }, options = {}) {
 
   return {
    r: parseInt(h.slice(0, 2), 16),
-   g: parseInt(h.slice(2, 4), 16),
-   b: parseInt(h.slice(4, 6), 16)
-  };
- }
-}
+   g: parseInt(h.slice(2,
