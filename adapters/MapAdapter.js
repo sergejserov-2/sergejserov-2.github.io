@@ -76,10 +76,6 @@ createMarker(map, { lat, lng }, options = {}) {
   });
 }
 
-   optimized: false
-  });
- }
-
  removeMarker(marker) {
   marker?.setMap(null);
  }
