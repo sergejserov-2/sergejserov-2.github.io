@@ -6,7 +6,8 @@ export class UIFlow {
   uiBuilder,
   streetViewUI,
   mapWrapperUI,
-  mapOverviewUI
+  roundOverviewUI,
+  gameOverviewUI
  }) {
   this.gameFlow = gameFlow;
   this.screenManager = screenManager;
@@ -14,7 +15,8 @@ export class UIFlow {
   this.uiBuilder = uiBuilder;
   this.streetViewUI = streetViewUI;
   this.mapWrapperUI = mapWrapperUI;
-  this.mapOverviewUI = mapOverviewUI;
+  this.roundOverviewUI = roundOverviewUI;
+  this.gameOverviewUI = gameOverviewUI;
 
   this.bind();
  }
