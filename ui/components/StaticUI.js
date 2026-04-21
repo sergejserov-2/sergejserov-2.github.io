@@ -110,41 +110,43 @@ export class StaticUI {
  // TIMER BAR
  // =========================
 
- startRoundTimer(duration, onFinish) {
-  this.stopRoundTimer();
+startRoundTimer(duration, onFinish) {
+ this.stopRoundTimer();
 
-  if (!this.timerEl) return;
+ if (!this.timerEl) return;
 
-  this.timerEl.style.transform = "scaleX(1)";
+ // 🔥 СБРОС СРАЗУ (важно)
+ this.timerEl.style.transition = "none";
+ this.timerEl.style.transform = "scaleX(1)";
 
-  const start = Date.now();
+ const start = performance.now();
 
-  const animate = () => {
-   const elapsed = Date.now() - start;
-   const progress = Math.max(0, 1 - elapsed / duration);
+ const animate = (now) => {
+  const elapsed = now - start;
+  const progress = Math.max(0, 1 - elapsed / duration);
 
-   this.timerEl.style.transform =
-    `scaleX(${progress})`;
+  this.timerEl.style.transform = `scaleX(${progress})`;
 
-   if (progress > 0) {
-    this.timerFrame = requestAnimationFrame(animate);
-   } else {
-    this.stopRoundTimer();
-    onFinish?.();
-   }
-  };
+  if (progress > 0) {
+   this.timerFrame = requestAnimationFrame(animate);
+  } else {
+   this.stopRoundTimer();
+   onFinish?.();
+  }
+ };
 
-  animate();
+ this.timerFrame = requestAnimationFrame(animate);
+}
+
+stopRoundTimer() {
+ if (this.timerFrame) {
+  cancelAnimationFrame(this.timerFrame);
+  this.timerFrame = null;
  }
 
- stopRoundTimer() {
-  if (this.timerFrame) {
-   cancelAnimationFrame(this.timerFrame);
-   this.timerFrame = null;
-  }
-
-  if (this.timerEl) {
-   this.timerEl.style.transform = "scaleX(0)";
-  }
+ if (this.timerEl) {
+  this.timerEl.style.transition = "none";
+  this.timerEl.style.transform = "scaleX(0)";
  }
+}
 }
