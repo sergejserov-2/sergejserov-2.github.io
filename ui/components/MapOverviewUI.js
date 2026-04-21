@@ -111,17 +111,17 @@ export class MapOverviewUI {
  // =========================
  // FIX FOR GOOGLE MAPS RENDER BUG
  // =========================
- forceResize() {
-  if (!this.map) return;
+forceResize() {
+ if (!this.map) return;
 
-  google.maps.event.trigger(this.map, "resize");
+ google.maps.event.trigger(this.map, "resize");
 
-  // повторный центр после resize (ВАЖНО)
-  const last = this._lastPoints;
-  if (last?.length === 2) {
-   this.fitToPoints(last);
-  }
+ // важно: пересетить камеру после resize
+ const last = this.lastFitPoints;
+ if (last) {
+  this.fitToPoints(last);
  }
+}
 
  // =========================
  // MULTI
