@@ -20,6 +20,9 @@ export class MapOverviewUI {
   });
  }
 
+ // =========================
+ // RENDER
+ // =========================
  render(round) {
   if (!this.map || !round) return;
 
@@ -33,19 +36,25 @@ export class MapOverviewUI {
   const playerColor = this.uiBuilder.getPlayerColor("p1");
   const actualColor = this.uiBuilder.getActualColor();
 
-  // ALWAYS actual
+  // =========================
+  // ACTUAL (ВАЖНЕЕ + БОЛЬШЕ)
+  // =========================
   const actualMarker = this.adapter.createMarker(this.map, actual, {
    color: actualColor,
-   size: 24
+   size: 30,
+   isActual: true
   });
 
   this.markers.push(actualMarker);
 
-  // guess only if exists (timeout-safe)
+  // =========================
+  // GUESS (меньше)
+  // =========================
   if (guess) {
    const guessMarker = this.adapter.createMarker(this.map, guess, {
     color: playerColor,
-    size: 18
+    size: 18,
+    isActual: false
    });
 
    this.markers.push(guessMarker);
@@ -66,6 +75,9 @@ export class MapOverviewUI {
   );
  }
 
+ // =========================
+ // CAMERA
+ // =========================
  fitToPoints(points) {
   if (!this.map || !points?.length) return;
 
@@ -93,6 +105,9 @@ export class MapOverviewUI {
   this.map.setZoom(zoom);
  }
 
+ // =========================
+ // CLEAR
+ // =========================
  clear() {
   this.markers.forEach(m => this.adapter.removeMarker(m));
   this.lines.forEach(l => l.setMap(null));
@@ -101,6 +116,9 @@ export class MapOverviewUI {
   this.lines = [];
  }
 
+ // =========================
+ // GOOGLE MAPS FIX
+ // =========================
  forceResize() {
   if (!this.map) return;
 
