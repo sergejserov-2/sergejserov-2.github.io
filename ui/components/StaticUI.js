@@ -90,7 +90,7 @@ startRoundTimer(duration, onFinish) {
     const elapsed = now - startTime;
 
     const progress = Math.max(0, 1 - elapsed / duration);
-    this.timerEl.style.transform = scaleX(${progress});
+    this.timerEl.style.transform = `scaleX(${progress})`;
 
     if (progress > 0) {
       this.timerFrame = requestAnimationFrame(animate);
