@@ -4,7 +4,7 @@ export class GameState {
   this.rounds = [];
  }
 
- start() {
+ startGame() {
   this.status = "active";
   this.rounds = [];
  }
