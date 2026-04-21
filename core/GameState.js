@@ -24,7 +24,12 @@ export class GameState {
   const round = this.getCurrentRound();
   if (!round) return;
 
-  round.guess = result;
+  round.guess = {
+   playerId: result.playerId,
+   guess: result.guess,
+   distance: result.distance,
+   score: result.score
+  };
  }
 
  endGame() {
