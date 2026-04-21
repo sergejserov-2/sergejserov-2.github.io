@@ -92,7 +92,8 @@ export class UIFlow {
   // =========================
   this.gameFlow.on("roundEnded", (vm) => {
 
-   const round = vm?.rounds?.[vm.currentRoundIndex - 1];
+   const rounds = vm?.rounds || [];
+   const round = rounds[rounds.length - 1];
    if (!round) return;
 
    this.mapOverviewUI.render(round);
