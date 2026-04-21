@@ -97,27 +97,26 @@ export class GameFlow {
  }
 
  finishRound(reason = "manual") {
- this.timer.clear();
- this.locked = true;
+  this.timer.clear();
+  this.locked = true;
 
- this.emit("inputLocked");
+  this.emit("inputLocked");
 
- const state = this.game.getState();
+  const state = this.game.getState();
 
- const isLastRound =
-  state.rounds.length >= this.game.config.rules.rounds;
+  const isLastRound =
+   state.rounds.length >= this.game.config.rules.rounds;
 
- // ❌ убираем setTimeout здесь вообще
- this.emit("roundResultShown", {
-  state,
-  reason
- });
+  this.emit("roundResultShown", {
+   state,
+   reason
+  });
 
- if (isLastRound) {
-  this.game.endGame();
-  this.emit("gameEnded", state);
+  if (isLastRound) {
+   this.game.endGame();
+   this.emit("gameEnded", state);
+  }
  }
-}
 
  async nextRound() {
   const state = this.game.getState();
