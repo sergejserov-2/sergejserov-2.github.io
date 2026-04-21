@@ -49,20 +49,18 @@ lockMove() {
  if (!this.panorama) return;
  this.panorama.setOptions({
   linksControl: false,
-  panControl: false,
   clickToGo: false
  });
- this.element.style.pointerEvents = "none";
+ this.moveLocked = true;
 }
 
 unlockMove() {
  if (!this.panorama) return;
  this.panorama.setOptions({
   linksControl: true,
-  panControl: true,
   clickToGo: true
  });
- this.element.style.pointerEvents = "auto";
+ this.moveLocked = false;
 }
 
  // =========================
