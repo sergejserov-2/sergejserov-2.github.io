@@ -18,11 +18,19 @@ body {
  height: 100vh;
 }
 
-/* world */
+/* =========================
+   WORLD
+========================= */
+
 .game-scene {
  position: absolute;
  inset: 0;
  z-index: var(--z-world);
+ display: none;
+}
+
+.game-scene.active {
+ display: block;
 }
 
 .streetview {
@@ -31,7 +39,10 @@ body {
  z-index: var(--z-world);
 }
 
-/* hud */
+/* =========================
+   HUD
+========================= */
+
 .hud-wrapper {
  position: absolute;
  top: 10px;
@@ -49,11 +60,13 @@ body {
  gap: 6px;
  color: #fff;
  font-size: 14px;
-
  pointer-events: none;
 }
 
-/* map */
+/* =========================
+   MAP
+========================= */
+
 .map-wrapper {
  position: absolute;
  bottom: 10px;
@@ -73,7 +86,7 @@ body {
  overflow: hidden;
 }
 
-/* map controls */
+/* controls */
 .resize-handle,
 .guess-button {
  position: absolute;
@@ -104,7 +117,10 @@ body {
  background: #3b8ee6;
 }
 
-/* screens */
+/* =========================
+   SCREENS (CORE FIX AREA)
+========================= */
+
 .screens {
  position: absolute;
  inset: 0;
@@ -112,53 +128,74 @@ body {
  pointer-events: none;
 }
 
+/* =========================
+   LOADING SCREEN
+========================= */
+
 .loading-screen {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(8px);
-  z-index: 9999;
-  text-align: center;
-}
-.loading-screen.active {
-  display: flex;
+ position: fixed;
+ inset: 0;
+
+ display: none;
+ align-items: center;
+ justify-content: center;
+
+ color: #fff;
+ background: rgba(0, 0, 0, 0.55);
+ backdrop-filter: blur(8px);
+
+ text-align: center;
 }
 
-/* overlay */
+.loading-screen.active {
+ display: flex;
+ pointer-events: auto;
+}
+
+/* =========================
+   OVERLAYS (RESULTS)
+========================= */
+
 .guess-overview {
  position: absolute;
  inset: 0;
+
  display: none;
  justify-content: center;
  align-items: center;
- transition: 0.2s ease;
+
  background: rgba(0, 0, 0, 0.6);
  backdrop-filter: blur(10px);
+
+ pointer-events: none;
 }
 
 .guess-overview.active {
  display: flex;
+ pointer-events: auto;
 }
 
-/* panel */
+/* =========================
+   RESULT PANEL
+========================= */
+
 .score-view {
  position: relative;
  width: 950px;
  max-width: 92vw;
+
  background: #161a22;
  padding: 20px;
  border-radius: 10px;
+
  display: flex;
  flex-direction: column;
  gap: 20px;
+
  color: #fff;
 }
 
-/* result map */
+/* overview map */
 .overview-map {
  width: 100%;
  height: 650px;
@@ -180,7 +217,6 @@ body {
 .score-progress {
  width: 0%;
  height: 100%;
-
  background: #4ea1ff;
  transition: 0.4s ease;
 }
@@ -218,16 +254,21 @@ body {
  background: #3b8ee6;
 }
 
-/* Round Timer */
+/* =========================
+   TIMER BAR
+========================= */
 
 .round-timer {
  position: absolute;
  left: 20px;
  right: 20px;
  bottom: 0;
+
  height: 3px;
  background: white;
+
  transform-origin: left;
  transform: scaleX(0);
+
  pointer-events: none;
 }
