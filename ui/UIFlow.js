@@ -88,7 +88,7 @@ export class UIFlow {
   });
 
   // =========================
-  // ROUND RESULT (MAIN FIX 🔥)
+  // ROUND RESULT
   // =========================
   this.gameFlow.on("roundResultShown", ({ state }) => {
 
@@ -97,7 +97,7 @@ export class UIFlow {
 
    if (!round) return;
 
-   // 🔥 теперь гарантированно есть guess + actual
+   // render
    this.mapOverviewUI.render(round);
 
    const vm = this.uiBuilder.formatRoundVM(state);
@@ -106,6 +106,13 @@ export class UIFlow {
    this.staticUI.showRoundResult(vm);
 
    const duration = 10000;
+
+   // 🔥 FIX: Google Maps resize fix after layout change
+   requestAnimationFrame(() => {
+    setTimeout(() => {
+     this.mapOverviewUI.forceResize?.();
+    }, 80);
+   });
 
    this.staticUI.startRoundTimer(duration, () => {
     this.gameFlow.nextRound();
