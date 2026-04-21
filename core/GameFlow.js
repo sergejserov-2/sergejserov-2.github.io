@@ -6,12 +6,11 @@ export class GameFlow {
 
     this.timer = services.timer;
     this.moves = services.moves;
-    this.rounds = services.rounds; // только config (totalRounds)
+    this.rounds = services.rounds; // только totalRounds
 
     this.listeners = {};
     this.locked = false;
 
-    // StreetView sync
     this._resolveStreetViewReady = null;
   }
 
@@ -96,25 +95,38 @@ export class GameFlow {
   // USER ACTION
   // =========================
   finishGuess(point, playerId = "p1") {
-  if (this.locked) return;
+    if (this.locked) return;
 
-  const canMove = this.moves.consume();
-  this.emit("movesUpdated", this.moves.getRemaining());
+    const canMove = this.moves.consume();
+    this.emit("movesUpdated", this.moves.getRemaining());
 
-  if (!canMove) {
-    this.finishRound("moves");
-    return;
+    if (!canMove) {
+      this.finishRound("moves");
+      return;
+    }
+
+    this.locked = true;
+    this.emit("inputLocked");
+
+    // =========================
+    // 1. SET GUESS
+    // =========================
+    this.game.setGuess(playerId, point);
+
+    // =========================
+    // 2. CALCULATE SCORE
+    // =========================
+    const result = this.game.finishGuess(playerId);
+
+    this.emit("guessResolved", result);
+
+    // =========================
+    // 3. FINISH ROUND
+    // =========================
+    this.finishRound("guess");
+
+    this.emit("stateUpdated", this.game.getState());
   }
-
-  this.locked = true;
-  this.emit("inputLocked");
-
-  this.game.setGuess(playerId, point);
-
-  this.finishRound("guess");
-
-  this.emit("stateUpdated", this.game.getState());
-}
 
   // =========================
   // FINISH ROUND
@@ -125,13 +137,23 @@ export class GameFlow {
     this.locked = true;
     this.emit("inputLocked");
 
+    const stateBefore = this.game.getState();
+
+    // =========================
+    // COMMIT ROUND (ЕДИНСТВЕННОЕ МЕСТО)
+    // =========================
+    this.game.commitRound();
+
+    const stateAfter = this.game.getState();
+
+    this.emit("roundEnded", stateAfter);
     this.emit("roundEndedReason", reason);
-    this.emit("roundEnded", this.game.getState());
 
-    const state = this.game.getState();
-
+    // =========================
+    // CHECK END GAME
+    // =========================
     const isLastRound = this.rounds.isFinished(
-      state.currentRoundIndex
+      stateAfter.currentRoundIndex
     );
 
     if (isLastRound) {
@@ -140,7 +162,7 @@ export class GameFlow {
     }
 
     this.emit("roundResultShown", {
-      state,
+      state: stateAfter,
       reason
     });
   }
@@ -156,7 +178,6 @@ export class GameFlow {
 
     await this.startRound();
   }
-
   // =========================
   // END GAME
   // =========================
