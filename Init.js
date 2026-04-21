@@ -142,7 +142,9 @@ export async function init() {
   hudElement: hud
  });
 
-
+ const screenManager = new ScreenManager({
+  root: screensEl
+ });
 
  // =========================
  // 8. UI FLOW (BIND EVENTS)
