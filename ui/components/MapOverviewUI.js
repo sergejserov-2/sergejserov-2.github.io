@@ -20,10 +20,7 @@ export class MapOverviewUI {
   });
  }
 
- // =========================
- // RENDER
- // =========================
-render(round) {
+ render(round) {
   if (!this.map || !round) return;
 
   this.clear();
@@ -34,58 +31,43 @@ render(round) {
   if (!actual) return;
 
   const playerColor = this.uiBuilder.getPlayerColor(
-    guess?.playerId || "p1"
+   guess?.playerId || "p1"
   );
 
   const actualColor = this.uiBuilder.getActualColor();
 
-  // =========================
-  // ACTUAL
-  // =========================
   const actualMarker = this.adapter.createMarker(this.map, actual, {
-    color: actualColor,
-    isActual: true
+   color: actualColor
   });
 
   this.markers.push(actualMarker);
 
-  // =========================
-  // GUESS
-  // =========================
   if (guess) {
-    const guessMarker = this.adapter.createMarker(this.map, guess, {
-      color: playerColor,
-      isActual: false
-    });
+   const guessMarker = this.adapter.createMarker(this.map, guess, {
+    color: playerColor
+   });
 
-    this.markers.push(guessMarker);
+   this.markers.push(guessMarker);
 
-    const segments = this.adapter.createGradientPolyline(
-      this.map,
-      [guess, actual],
-      playerColor,
-      actualColor,
-      14
-    );
+   const segments = this.adapter.createGradientPolyline(
+    this.map,
+    [guess, actual],
+    playerColor,
+    actualColor,
+    14
+   );
 
-    this.lines.push(...segments);
+   this.lines.push(...segments);
 
-    this.fitToPoints([guess, actual]);
+   this.fitToPoints([guess, actual]);
   } else {
-    this.fitToPoints([actual, actual]);
+   this.fitToPoints([actual, actual]);
   }
-}
+ }
 
- // =========================
- // CAMERA
- // =========================
  fitToPoints(points) {
-  if (!this.map || !points?.length) return;
-
   const a = points[0];
   const b = points[1];
-
-  if (!a || !b) return;
 
   const center = {
    lat: (a.lat + b.lat) / 2,
@@ -95,7 +77,6 @@ render(round) {
   const distance = Geometry.distance(a, b);
 
   let zoom = 5;
-
   if (distance < 10) zoom = 7;
   else if (distance < 50) zoom = 6;
   else if (distance < 200) zoom = 5;
@@ -106,23 +87,15 @@ render(round) {
   this.map.setZoom(zoom);
  }
 
- // =========================
- // CLEAR
- // =========================
  clear() {
   this.markers.forEach(m => this.adapter.removeMarker(m));
   this.lines.forEach(l => l.setMap(null));
-
   this.markers = [];
   this.lines = [];
  }
 
- // =========================
- // GOOGLE MAPS FIX
- // =========================
  forceResize() {
   if (!this.map) return;
-
   google.maps.event.trigger(this.map, "resize");
  }
 }
