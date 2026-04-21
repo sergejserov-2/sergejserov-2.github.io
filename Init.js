@@ -67,7 +67,12 @@ export async function init() {
  const mapEl = document.querySelector(".map");
  const streetEl = document.querySelector(".streetview");
  const screensEl = document.querySelector(".screens");
- const overviewMapEl = document.querySelector(".overview-map");
+ const roundOverviewMapEl = document.querySelector(
+   ".round-result .overview-map"
+ );
+ const gameOverviewMapEl = document.querySelector(
+   ".game-result .overview-map"
+ );
  const guessBtn = document.querySelector("#makeGuess");
 
  // 👉 POLYGON BUTTON
@@ -130,10 +135,16 @@ export async function init() {
   uiBuilder
  });
 
- const mapOverviewUI = new MapOverviewUI({
-  adapter: new MapAdapter(),
-  element: overviewMapEl,
-  uiBuilder
+ const roundOverviewUI = new MapOverviewUI({
+   adapter: new MapAdapter(),
+   element: roundOverviewMapEl,
+   uiBuilder
+ });
+ 
+ const gameOverviewUI = new MapOverviewUI({
+   adapter: new MapAdapter(),
+   element: gameOverviewMapEl,
+   uiBuilder
  });
 
  const streetViewUI = new StreetViewUI({
