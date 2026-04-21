@@ -1,6 +1,8 @@
 export class UIBuilder {
 
- constructor() {
+ constructor(config) {
+  this.config = config;
+
   this.playerColors = {
    p1: "#ff4d4d",
    p2: "#4da6ff",
@@ -10,6 +12,34 @@ export class UIBuilder {
   this.actualColor = "#9aa0a6";
  }
 
+ // =========================
+ // CONFIG HELPERS
+ // =========================
+
+ getRoundLimit() {
+  return this.config?.rules?.rounds ?? 0;
+ }
+
+ getTimeLimit() {
+  return this.config?.rules?.time ?? -1;
+ }
+
+ getMovesLimit() {
+  return this.config?.rules?.moves ?? -1;
+ }
+
+ isTimeEnabled() {
+  return this.getTimeLimit() !== -1;
+ }
+
+ isMovesEnabled() {
+  return this.getMovesLimit() !== -1;
+ }
+
+ // =========================
+ // COLORS
+ // =========================
+
  getPlayerColor(id = "p1") {
   return this.playerColors[id] || "#ff4d4d";
  }
@@ -18,21 +48,53 @@ export class UIBuilder {
   return this.actualColor;
  }
 
+ // =========================
+ // GAME HUD
+ // =========================
+
  formatGameVM(state) {
   const totalScore = state.rounds.reduce((sum, r) => {
    const g = r.guesses?.[0];
    return sum + (g?.score || 0);
   }, 0);
 
+  const currentRound = state.currentRoundIndex + 1;
+  const totalRounds = this.getRoundLimit();
+
   return {
    status: state.status,
+
+   // раунды
    currentRoundIndex: state.currentRoundIndex,
+   roundText: `Раунд: ${currentRound} / ${totalRounds}`,
+
+   // счёт
    totalScore,
-   roundText: `Раунд: <b>${state.currentRoundIndex + 1}</b>`,
-   totalText: `Счёт: <b>${totalScore}</b>`,
-   progress: 0
+   totalText: `Счёт: ${totalScore}`,
+
+   // =========================
+   // RULES DISPLAY (NEW)
+   // =========================
+
+   timeText: this.isTimeEnabled()
+    ? `${this.getTimeLimit()}s`
+    : "∞",
+
+   movesText: this.isMovesEnabled()
+    ? `${this.getMovesLimit()}`
+    : "∞",
+
+   limits: {
+    rounds: totalRounds,
+    time: this.getTimeLimit(),
+    moves: this.getMovesLimit()
+   }
   };
  }
+
+ // =========================
+ // ROUND RESULT
+ // =========================
 
  formatRoundVM(state) {
   const round = state.rounds[state.currentRoundIndex];
@@ -47,6 +109,10 @@ export class UIBuilder {
    actual: round?.actualLocation
   };
  }
+
+ // =========================
+ // GAME RESULT
+ // =========================
 
  formatGameResultVM(state) {
   return {
