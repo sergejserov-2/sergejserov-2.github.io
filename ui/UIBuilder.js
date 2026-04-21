@@ -41,9 +41,6 @@ export class UIBuilder {
   return typeof m === "number" && m > 0;
  }
 
- // =========================
- // COLORS
- // =========================
  getPlayerColor(id = "p1") {
   return this.playerColors[id] || "#ff4d4d";
  }
@@ -67,9 +64,6 @@ export class UIBuilder {
    roundLimit: this.getRoundLimit(),
    totalScore,
 
-   time: this.getTimeLimit(),
-   moves: this.getMovesLimit(),
-
    showTime: this.isTimeEnabled(),
    showMoves: this.isMovesEnabled()
   };
@@ -81,10 +75,10 @@ export class UIBuilder {
  formatRoundVM(state) {
   const rounds = state.rounds || [];
   const round = rounds[rounds.length - 1];
+
   const guess = round?.guess;
 
   return {
-   index: rounds.length - 1,
    distance: guess?.distance ?? 0,
    score: guess?.score ?? 0,
    progress: Math.min((guess?.score ?? 0) / 5000, 1),
@@ -102,7 +96,7 @@ export class UIBuilder {
  }
 
  // =========================
- // GAME RESULT (UNIFIED)
+ // GAME RESULT (ВАЖНО: ИДЕНТИЧНО ROUND)
  // =========================
  formatGameResultVM(state) {
   const rounds = state.rounds || [];
@@ -111,20 +105,21 @@ export class UIBuilder {
    return s + (r.guess?.score || 0);
   }, 0);
 
-  const maxScore = rounds.length * 5000;
+  const maxScore = this.getRoundLimit() * 5000;
 
   return {
-   distance: null,
+   distance: 0,
    score: totalScore,
    progress: maxScore ? totalScore / maxScore : 0,
 
+   guess: null,
+   actual: rounds.length ? rounds[rounds.length - 1].actualLocation : null,
+
    text: {
     title: "Игра завершена",
-    scoreLine: `Общий счёт: ${totalScore}`,
+    scoreLine: `Общий счёт: ${totalScore} / ${maxScore}`,
     roundsLine: `Раундов: ${rounds.length}`
-   },
-
-   lastRound: rounds[rounds.length - 1] || null
+   }
   };
  }
 }
