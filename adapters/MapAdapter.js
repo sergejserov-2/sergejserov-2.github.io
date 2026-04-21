@@ -11,32 +11,58 @@ export class MapAdapter {
   });
  }
 
- createMarker(map, { lat, lng }, options = {}) {
-  const {
-   color = "#ff4d4d",
-   size = 20
-  } = options;
+createMarker(map, { lat, lng }, options = {}) {
+ const {
+  color = "#ff4d4d",
+  size = 20
+ } = options;
 
-const radius = size * 0.3;
-const outerRadius = radius + 3;
+ const radius = size * 0.3;
+ const outerRadius = radius + 3;
 
-const svg = `
-<svg width="${size}" height="${size}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="10" cy="10" r="${radius}" fill="${color}" opacity="0.9"/>
-  <circle cx="10" cy="10" r="${outerRadius}" stroke="${color}" stroke-width="2" fill="none" opacity="0.4"/>
+ const svg = `
+<svg width="100%" height="100%" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+  
+  <!-- shadow -->
+  <circle 
+    cx="10" 
+    cy="11" 
+    r="${radius}" 
+    fill="rgba(0,0,0,0.25)" 
+  />
+
+  <!-- outer ring -->
+  <circle 
+    cx="10" 
+    cy="10" 
+    r="${outerRadius}" 
+    stroke="${color}" 
+    stroke-width="2" 
+    fill="none" 
+    opacity="0.35"
+  />
+
+  <!-- main dot -->
+  <circle 
+    cx="10" 
+    cy="10" 
+    r="${radius}" 
+    fill="${color}" 
+    opacity="0.95"
+  />
+
 </svg>`;
 
-  return new google.maps.Marker({
-   position: { lat, lng },
-   map,
-   icon: {
-    url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
-    scaledSize: new google.maps.Size(size, size),
-    anchor: new google.maps.Point(size / 2, size / 2)
-   },
-   optimized: false
-  });
- }
+ return new google.maps.Marker({
+  position: { lat, lng },
+  map,
+  icon: {
+   url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+   anchor: new google.maps.Point(size / 2, size / 2)
+  },
+  optimized: false
+ });
+}
 
  removeMarker(marker) {
   marker?.setMap(null);
