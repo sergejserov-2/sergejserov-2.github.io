@@ -9,9 +9,8 @@ export class StaticUI {
   this.timeEl = hudElement.querySelector(".time-left b");
   this.movesEl = hudElement.querySelector(".moves-left b");
 
-  this.timerEl = document.querySelector(".round-timer-bar");
-
   this.timerFrame = null;
+  this.timerEl = null; // 🔥 больше не кешируем DOM навсегда
  }
 
  // =========================
@@ -38,9 +37,11 @@ export class StaticUI {
   if (movesWrap) {
    movesWrap.style.display = vm.showMoves ? "block" : "none";
   }
-
-  // 🔥 ВАЖНО: НЕ ПЕРЕТИРАЕМ ТАЙМЕР ВО ВРЕМЯ TICK
  }
+
+ // =========================
+ // TIMER TEXT
+ // =========================
 
  updateTimer(value) {
   if (!this.timeEl) return;
@@ -81,6 +82,10 @@ export class StaticUI {
   }
  }
 
+ // =========================
+ // GAME RESULT
+ // =========================
+
  showGameResult(model = {}) {
   const root = document.querySelector(".guess-overview");
   if (!root) return;
@@ -110,43 +115,48 @@ export class StaticUI {
  // TIMER BAR
  // =========================
 
-startRoundTimer(duration, onFinish) {
- this.stopRoundTimer();
+ getTimerEl() {
+  return document.querySelector(".round-timer-bar");
+ }
 
- if (!this.timerEl) return;
+ startRoundTimer(duration, onFinish) {
+  this.stopRoundTimer();
 
- // 🔥 СБРОС СРАЗУ (важно)
- this.timerEl.style.transition = "none";
- this.timerEl.style.transform = "scaleX(1)";
+  const el = this.getTimerEl();
+  if (!el) return;
 
- const start = performance.now();
+  this.timerEl = el;
 
- const animate = (now) => {
-  const elapsed = now - start;
-  const progress = Math.max(0, 1 - elapsed / duration);
+  el.style.transition = "none";
+  el.style.transform = "scaleX(1)";
 
-  this.timerEl.style.transform = `scaleX(${progress})`;
+  const start = performance.now();
 
-  if (progress > 0) {
-   this.timerFrame = requestAnimationFrame(animate);
-  } else {
-   this.stopRoundTimer();
-   onFinish?.();
+  const animate = (now) => {
+   const progress = Math.max(0, 1 - (now - start) / duration);
+
+   el.style.transform = `scaleX(${progress})`;
+
+   if (progress > 0) {
+    this.timerFrame = requestAnimationFrame(animate);
+   } else {
+    this.stopRoundTimer();
+    onFinish?.();
+   }
+  };
+
+  this.timerFrame = requestAnimationFrame(animate);
+ }
+
+ stopRoundTimer() {
+  if (this.timerFrame) {
+   cancelAnimationFrame(this.timerFrame);
+   this.timerFrame = null;
   }
- };
 
- this.timerFrame = requestAnimationFrame(animate);
-}
-
-stopRoundTimer() {
- if (this.timerFrame) {
-  cancelAnimationFrame(this.timerFrame);
-  this.timerFrame = null;
+  if (this.timerEl) {
+   this.timerEl.style.transition = "none";
+   this.timerEl.style.transform = "scaleX(0)";
+  }
  }
-
- if (this.timerEl) {
-  this.timerEl.style.transition = "none";
-  this.timerEl.style.transform = "scaleX(0)";
- }
-}
 }
