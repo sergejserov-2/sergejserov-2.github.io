@@ -97,7 +97,6 @@ export class UIFlow {
 
    if (!round) return;
 
-   // render
    this.mapOverviewUI.render(round);
 
    const vm = this.uiBuilder.formatRoundVM(state);
@@ -107,9 +106,10 @@ export class UIFlow {
 
    const duration = 7500;
 
-    setTimeout(() => {
-     this.mapOverviewUI.forceResize?.();
-    }, 150);
+   // 🔥 ВАЖНО: сначала даём карте перестроиться
+   requestAnimationFrame(() => {
+    this.mapOverviewUI.forceResize?.();
+   });
 
    this.staticUI.startRoundTimer(duration, () => {
     this.gameFlow.nextRound();
