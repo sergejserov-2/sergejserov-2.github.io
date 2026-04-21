@@ -8,17 +8,22 @@ export class StreetViewUI {
  init(position = { lat: 0, lng: 0 }) {
   if (!this.element) return;
 
-  requestAnimationFrame(() => {
-   this.panorama = this.adapter.createStreetView(
-    this.element,
-    position
-   );
-  });
+  // 🔥 создаём СРАЗУ
+  this.panorama = this.adapter.createStreetView(
+   this.element,
+   position
+  );
 
-this.panorama.addListener("idle", () => {
- this.onReady?.();
-});
-  
+  // 🔥 safe check
+  if (!this.panorama) {
+   console.error("StreetView not created");
+   return;
+  }
+
+  // 🔥 ready hook
+  this.panorama.addListener("idle", () => {
+   this.onReady?.();
+  });
  }
 
  setLocation(pos) {
