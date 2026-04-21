@@ -47,9 +47,6 @@ function waitForGoogleMaps() {
  });
 }
 
-// =========================
-// INIT
-// =========================
 export async function init() {
   console.log("INIT START");
 
@@ -89,11 +86,14 @@ export async function init() {
   // =========================
   // SERVICES
   // =========================
-  const services = {
-    timer: new TimerService(),
-    moves: new MovesService(),
-    rounds: new RoundsService()
-  };
+  const movesService = new MovesService();
+  const timerService = new TimerService();
+  const roundsService = new RoundsService();
+
+  // =========================
+  // STREET ADAPTER (ЕДИНЫЙ)
+  // =========================
+  const streetAdapter = new StreetViewAdapter();
 
   // =========================
   // CORE
@@ -108,14 +108,17 @@ export async function init() {
   });
 
   const generator = new LocationGenerator({
-    streetAdapter: new StreetViewAdapter()
+    streetAdapter
   });
 
   const gameFlow = new GameFlow({
     game,
     generator,
     area,
-    services
+    services: {
+      timer: timerService,
+      moves: movesService
+    }
   });
 
   // =========================
@@ -127,7 +130,6 @@ export async function init() {
   // =========================
   // UI COMPONENTS
   // =========================
-
   const mapWrapperUI = new MapWrapperUI({
     adapter: new MapAdapter(),
     element: mapEl,
@@ -135,7 +137,7 @@ export async function init() {
   });
 
   const streetViewUI = new StreetViewUI({
-    adapter: new StreetViewAdapter(),
+    adapter: streetAdapter,
     element: streetEl
   });
 
@@ -148,9 +150,8 @@ export async function init() {
   });
 
   // =========================
-  // OVERVIEW MAPS (ВАЖНО 🔥)
+  // OVERVIEW MAPS
   // =========================
-
   const roundOverviewUI = new MapOverviewUI({
     adapter: new MapAdapter(),
     element: roundOverviewMapEl,
@@ -181,7 +182,7 @@ export async function init() {
   });
 
   // =========================
-  // STREET VIEW HOOKS
+  // STREET VIEW READY
   // =========================
   streetViewUI.onReady = () => {
     gameFlow.streetViewReady();
@@ -192,6 +193,17 @@ export async function init() {
   });
 
   streetViewUI.init({ lat: 0, lng: 0 });
+
+  // =========================
+  // MOVE TRACKING (🔥 ВОТ ОНО)
+  // =========================
+  const panorama = streetViewUI.panorama;
+
+  streetAdapter.initMoveTracking(panorama);
+
+  streetAdapter.onMove(() => {
+    gameFlow.registerMove();
+  });
 
   // =========================
   // MAP INIT
@@ -210,7 +222,6 @@ export async function init() {
   });
 
   mapWrapperUI.bindGuessButton(guessBtn);
-
   // =========================
   // TWEAKS
   // =========================
@@ -223,11 +234,9 @@ export async function init() {
   tweaks.apply();
 
   // =========================
-  // START GAME
+  // START
   // =========================
   await gameFlow.startGame();
 
   console.log("INIT OK");
 }
-
-init();
