@@ -23,10 +23,16 @@ init() {
     console.warn("Map container not ready");
   }
 
-  this.map = this.adapter.createMap(this.element, {
-    zoom: 2,
-    center: { lat: 20, lng: 0 } // 🔥 ОБЯЗАТЕЛЬНО
-  });
+this.map = this.adapter.createMap(this.element, {
+  zoom: 2,
+  center: { lat: 20, lng: 0 },
+  disableDefaultUI: true,
+  zoomControl: false,
+  fullscreenControl: false,
+  streetViewControl: false,
+  mapTypeControl: false,
+  gestureHandling: "greedy" // можно двигать без UI
+});
 
   this.map.addListener("click", (e) => {
     if (this.isLocked) return;
