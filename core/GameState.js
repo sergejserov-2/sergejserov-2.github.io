@@ -24,9 +24,18 @@ export class GameState {
   const round = this.getCurrentRound();
   if (!round) return;
 
+  const g = result.guess;
+
+  if (!g  g.lat == null  g.lng == null) {
+   console.warn("Invalid guess in GameState", result);
+   return;
+  }
+
+  // ✅ ПЛОСКАЯ СТРУКТУРА
   round.guess = {
    playerId: result.playerId,
-   guess: result.guess,
+   lat: g.lat,
+   lng: g.lng,
    distance: result.distance,
    score: result.score
   };
