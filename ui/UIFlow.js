@@ -1,125 +1,113 @@
-export class UIBuilder {
- constructor(config = {}) {
-  this.config = config;
+export class UIFlow {
+ constructor({
+  gameFlow,
+  screenManager,
+  staticUI,
+  uiBuilder,
+  streetViewUI,
+  mapWrapperUI,
+  mapOverviewUI
+ }) {
+  this.gameFlow = gameFlow;
+  this.screenManager = screenManager;
+  this.staticUI = staticUI;
+  this.uiBuilder = uiBuilder;
+  this.streetViewUI = streetViewUI;
+  this.mapWrapperUI = mapWrapperUI;
+  this.mapOverviewUI = mapOverviewUI;
 
-  this.playerColors = {
-   p1: "#ff4d4d",
-   p2: "#4da6ff",
-   p3: "#7CFC00"
+  this.bind();
+ }
+
+ bind() {
+
+  this.streetViewUI.onReady = () => {
+   this.gameFlow.streetViewReady();
   };
 
-  this.actualColor = "#9aa0a6";
- }
+  this.gameFlow.on("loadingStarted", () => {
+   this.screenManager.show("loading");
+  });
 
- setConfig(config) {
-  this.config = config || {};
- }
+  this.gameFlow.on("loadingFinished", () => {
+   this.screenManager.show("round");
+  });
 
- getConfig() {
-  return this.config || {};
- }
+  this.gameFlow.on("streetViewSetLocation", (loc) => {
+   this.streetViewUI.setLocation(loc);
+  });
 
- getRoundLimit() {
-  return this.getConfig()?.rules?.rounds ?? 0;
- }
+  this.gameFlow.on("roundStarted", (vm) => {
+   this.mapWrapperUI.reset();
+   this.mapOverviewUI.clear();
 
- getTimeLimit() {
-  return this.getConfig()?.rules?.time ?? null;
- }
+   this.staticUI.stopRoundTimer?.();
 
- getMovesLimit() {
-  return this.getConfig()?.rules?.moves ?? null;
- }
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatGameVM(vm)
+   );
+  });
 
- isTimeEnabled() {
-  const t = this.getTimeLimit();
-  return typeof t === "number" && t > 0;
- }
+  this.gameFlow.on("timerTick", t => this.staticUI.updateTimer(t));
+  this.gameFlow.on("movesUpdated", m => this.staticUI.updateMoves(m));
 
- isMovesEnabled() {
-  const m = this.getMovesLimit();
-  return typeof m === "number" && m > 0;
- }
+  this.gameFlow.on("inputLocked", () => {
+   this.staticUI.lockInput?.();
+   this.mapWrapperUI.lock();
+  });
 
- getPlayerColor(id = "p1") {
-  return this.playerColors[id] || "#ff4d4d";
- }
+  this.gameFlow.on("inputUnlocked", () => {
+   this.staticUI.unlockInput?.();
+   this.mapWrapperUI.unlock();
+  });
 
- getActualColor() {
-  return this.actualColor;
- }
+  // =========================
+  // ROUND RESULT
+  // =========================
+  this.gameFlow.on("roundResultShown", ({ state }) => {
 
- // =========================
- // HUD
- // =========================
- formatGameVM(state) {
-  const rounds = state.rounds || [];
+   const round = state.rounds?.[state.rounds.length - 1];
+   if (!round) return;
 
-  const totalScore = rounds.reduce((sum, r) => {
-   return sum + (r.guess?.score || 0);
-  }, 0);
+   this.mapOverviewUI.render(round);
 
-  return {
-   round: rounds.length,
-   roundLimit: this.getRoundLimit(),
-   totalScore,
+   this.screenManager.show("roundResult");
 
-   showTime: this.isTimeEnabled(),
-   showMoves: this.isMovesEnabled()
-  };
- }
+   this.staticUI.showRoundResult(
+    this.uiBuilder.formatRoundVM(state)
+   );
 
- // =========================
- // ROUND RESULT
- // =========================
- formatRoundVM(state) {
-  const rounds = state.rounds || [];
-  const round = rounds[rounds.length - 1];
+   const duration = 7500;
 
-  const guess = round?.guess;
+   requestAnimationFrame(() => {
+    this.mapOverviewUI.forceResize?.();
+   });
 
-  return {
-   distance: guess?.distance ?? 0,
-   score: guess?.score ?? 0,
-   progress: Math.min((guess?.score ?? 0) / 5000, 1),
+   this.staticUI.startRoundDelay(duration, () => {
+    this.gameFlow.nextRound();
+   });
+  });
 
-   guess: guess
-    ? {
-       playerId: guess.playerId,
-       lat: guess.lat,
-       lng: guess.lng
-      }
-    : null,
+  // =========================
+  // GAME END
+  // =========================
+  this.gameFlow.on("gameEnded", (vm) => {
 
-   actual: round?.actualLocation || null
-  };
- }
+   const rounds = vm.rounds || [];
+   const last = rounds[rounds.length - 1];
 
- // =========================
- // GAME RESULT (ВАЖНО: ИДЕНТИЧНО ROUND)
- // =========================
- formatGameResultVM(state) {
-  const rounds = state.rounds || [];
+   this.screenManager.show("gameResult");
 
-  const totalScore = rounds.reduce((s, r) => {
-   return s + (r.guess?.score || 0);
-  }, 0);
+   this.staticUI.showGameResult(
+    this.uiBuilder.formatGameResultVM(vm)
+   );
 
-  const maxScore = this.getRoundLimit() * 5000;
-
-  return {
-   distance: 0,
-   score: totalScore,
-   progress: maxScore ? totalScore / maxScore : 0,
-
-   guess: null,
-   actual: rounds.length ? rounds[rounds.length - 1].actualLocation : null,
-
-   text: {
-    title: "Игра завершена",
-    scoreLine: `Общий счёт: ${totalScore} / ${maxScore}`,
-    roundsLine: `Раундов: ${rounds.length}`
+   if (last) {
+    requestAnimationFrame(() => {
+     this.mapOverviewUI.render(last);
+     this.mapOverviewUI.forceResize?.();
+    });
    }
-  };
+  });
  }
 }
