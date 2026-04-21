@@ -97,29 +97,27 @@ export class GameFlow {
  }
 
  finishRound(reason = "manual") {
-  this.timer.clear();
-  this.locked = true;
+ this.timer.clear();
+ this.locked = true;
 
-  this.emit("inputLocked");
+ this.emit("inputLocked");
 
-  const state = this.game.getState();
+ const state = this.game.getState();
 
-  const isLastRound =
-   state.rounds.length >= this.game.config.rules.rounds;
+ const isLastRound =
+  state.rounds.length >= this.game.config.rules.rounds;
 
-  // 🔥 ВАЖНО: даём UI "переключиться" до показа результата
-  setTimeout(() => {
-   this.emit("roundResultShown", {
-    state,
-    reason
-   });
+ // ❌ убираем setTimeout здесь вообще
+ this.emit("roundResultShown", {
+  state,
+  reason
+ });
 
-   if (isLastRound) {
-    this.game.endGame();
-    this.emit("gameEnded", state);
-   }
-  }, 150);
+ if (isLastRound) {
+  this.game.endGame();
+  this.emit("gameEnded", state);
  }
+}
 
  async nextRound() {
   const state = this.game.getState();
