@@ -7,7 +7,6 @@ export class MapOverviewUI {
   this.element = element;
 
   this.map = null;
-
   this.markers = [];
   this.lines = [];
  }
@@ -15,7 +14,6 @@ export class MapOverviewUI {
  // =========================
  // INIT
  // =========================
-
  init() {
   if (!this.element) return;
 
@@ -26,20 +24,15 @@ export class MapOverviewUI {
  }
 
  // =========================
- // RENDER (FIXED ✅)
+ // RENDER
  // =========================
-
  render(round) {
-  if (!this.map) return;
-  if (!round) return;
+  if (!this.map || !round) return;
 
   const guess = round.guess;
   const actual = round.actualLocation;
 
-  if (!guess || !actual) {
-   console.warn("Overview skip render", { guess, actual });
-   return;
-  }
+  if (!guess || !actual) return;
 
   this.clear();
 
@@ -48,10 +41,7 @@ export class MapOverviewUI {
   const playerColor = this.uiBuilder.getPlayerColor(playerId);
   const actualColor = this.uiBuilder.getActualColor();
 
-  // =========================
-  // MARKERS
-  // =========================
-
+  // markers
   const guessMarker = this.adapter.createMarker(this.map, guess, {
    color: playerColor,
    size: 18
@@ -59,13 +49,10 @@ export class MapOverviewUI {
 
   const actualMarker = this.adapter.createMarker(this.map, actual, {
    color: actualColor,
-   size: 24
+   size: 22
   });
 
-  // =========================
-  // GRADIENT LINE
-  // =========================
-
+  // line
   const segments = this.adapter.createGradientPolyline(
    this.map,
    [guess, actual],
@@ -74,10 +61,6 @@ export class MapOverviewUI {
    14
   );
 
-  // =========================
-  // CAMERA
-  // =========================
-
   this.fitToPoints([guess, actual]);
 
   this.markers.push(guessMarker, actualMarker);
@@ -85,11 +68,10 @@ export class MapOverviewUI {
  }
 
  // =========================
- // CAMERA LOGIC
+ // CAMERA
  // =========================
-
  fitToPoints(points) {
-  if (!this.map || !points || points.length < 2) return;
+  if (!this.map || !points?.length) return;
 
   const a = points[0];
   const b = points[1];
@@ -118,7 +100,6 @@ export class MapOverviewUI {
  // =========================
  // CLEAR
  // =========================
-
  clear() {
   this.markers.forEach(m => this.adapter.removeMarker(m));
   this.lines.forEach(l => l.setMap(null));
@@ -128,9 +109,23 @@ export class MapOverviewUI {
  }
 
  // =========================
- // MULTIPLAYER SUPPORT
+ // FIX FOR GOOGLE MAPS RENDER BUG
  // =========================
+ forceResize() {
+  if (!this.map) return;
 
+  google.maps.event.trigger(this.map, "resize");
+
+  // повторный центр после resize (ВАЖНО)
+  const last = this._lastPoints;
+  if (last?.length === 2) {
+   this.fitToPoints(last);
+  }
+ }
+
+ // =========================
+ // MULTI
+ // =========================
  addPlayerResult({ guess, actual, playerId }) {
   if (!this.map || !guess || !actual) return;
 
