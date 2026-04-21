@@ -6,6 +6,9 @@ export class Game {
   this.config = config;
  }
 
+ // =========================
+ // GAME LIFECYCLE
+ // =========================
  startGame() {
   this.gameState.startGame();
  }
@@ -14,22 +17,36 @@ export class Game {
   this.gameState.startRound(location);
  }
 
+ endGame() {
+  this.gameState.endGame();
+ }
+
+ // =========================
+ // CORE ACTION
+ // =========================
  setGuess(playerId, point) {
   const round = this.gameState.getCurrentRound();
-  if (!round) return;
+  if (!round) return null;
 
-  const result = this.scoring.calculate(
-   round.actualLocation,
-   {
-    lat: point.lat,
-    lng: point.lng
-   },
-   { area: round.area }
-  );
+  // 🔥 ВАЖНО: нормализация входа (частый источник 0/0)
+  const guess = {
+   lat: point?.lat,
+   lng: point?.lng
+  };
 
+  const actual = round.actualLocation;
+
+  if (!actual  guess.lat == null  guess.lng == null) {
+   console.warn("Invalid scoring input", { actual, guess });
+   return null;
+  }
+
+  const result = this.scoring.calculate(actual, guess);
+
+  // 🔥 ЕДИНСТВЕННАЯ запись результата
   this.gameState.setRoundResult({
    playerId,
-   guess: point,
+   guess,
    distance: result.distance,
    score: result.score
   });
@@ -37,20 +54,15 @@ export class Game {
   return result;
  }
 
- finishGuess() {
-  // теперь ничего не ищем, всё уже записано
- }
-
- commitRound() {
-  // больше не нужен (оставляем пустым для совместимости)
- }
-
- endGame() {
-  this.gameState.endGame();
- }
-
+ // =========================
+ // ACCESS
+ // =========================
  getState() {
   return this.gameState.getState();
+ }
+
+ getCurrentRound() {
+  return this.gameState.getCurrentRound();
  }
 
  isGameEnded() {
