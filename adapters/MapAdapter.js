@@ -17,24 +17,28 @@ createMarker(map, { lat, lng }, options = {}) {
   size = 20
  } = options;
 
+ // 🔥 увеличиваем внутреннее пространство
+ const vbSize = 40;
+ const center = vbSize / 2;
+
  const radius = size * 0.3;
  const outerRadius = radius + 3;
 
  const svg = `
-<svg width="100%" height="100%" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-  
+<svg width="100%" height="100%" viewBox="0 0 ${vbSize} ${vbSize}" xmlns="http://www.w3.org/2000/svg">
+
   <!-- shadow -->
   <circle 
-    cx="10" 
-    cy="11" 
+    cx="${center}" 
+    cy="${center + 1}" 
     r="${radius}" 
     fill="rgba(0,0,0,0.25)" 
   />
 
   <!-- outer ring -->
   <circle 
-    cx="10" 
-    cy="10" 
+    cx="${center}" 
+    cy="${center}" 
     r="${outerRadius}" 
     stroke="${color}" 
     stroke-width="2" 
@@ -44,8 +48,8 @@ createMarker(map, { lat, lng }, options = {}) {
 
   <!-- main dot -->
   <circle 
-    cx="10" 
-    cy="10" 
+    cx="${center}" 
+    cy="${center}" 
     r="${radius}" 
     fill="${color}" 
     opacity="0.95"
@@ -58,6 +62,7 @@ createMarker(map, { lat, lng }, options = {}) {
   map,
   icon: {
    url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+   scaledSize: new google.maps.Size(size, size),
    anchor: new google.maps.Point(size / 2, size / 2)
   },
   optimized: false
