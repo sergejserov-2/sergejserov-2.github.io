@@ -4,11 +4,22 @@ export class GameState {
   this.rounds = [];
  }
 
+ // =========================
+ // GAME LIFECYCLE
+ // =========================
  startGame() {
   this.status = "active";
   this.rounds = [];
  }
 
+ endGame() {
+  this.status = "ended";
+ }
+
+ 
+ // =========================
+ // ROUND
+ // =========================
  startRound(actualLocation) {
   this.rounds.push({
    index: this.rounds.length,
@@ -21,19 +32,20 @@ export class GameState {
   return this.rounds[this.rounds.length - 1];
  }
 
+ // =========================
+ // GUESS
+ // =========================
  setGuess(playerId, point) {
   const round = this.getCurrentRound();
   if (!round) return;
 
-  const guess = {
+  round.guesses.push({
    playerId,
    guess: { lat: point.lat, lng: point.lng },
    distance: 0,
    score: 0,
    isFinished: false
-  };
-
-  round.guesses.push(guess);
+  });
  }
 
  finishGuess(playerId, result) {
@@ -49,14 +61,17 @@ export class GameState {
   return result;
  }
 
+ // =========================
+ // COMMIT
+ // =========================
  commitRound() {
-  // теперь только фиксация (без индексов)
+  // intentionally empty
+  // rounds already persisted
  }
 
- endGame() {
-  this.status = "ended";
- }
-
+ // =========================
+ // STATE
+ // =========================
  getState() {
   return {
    status: this.status,
