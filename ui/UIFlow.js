@@ -36,7 +36,7 @@ export class UIFlow {
   });
 
   this.gameFlow.on("loadingFinished", () => {
-   this.screenManager.hide("loading");
+   this.screenManager.show("round");
   });
 
   // =========================
@@ -50,9 +50,6 @@ export class UIFlow {
   // ROUND START
   // =========================
   this.gameFlow.on("roundStarted", (vm) => {
-
-   this.screenManager.show("round");
-
    this.mapWrapperUI.reset();
    this.mapOverviewUI.clear();
 
