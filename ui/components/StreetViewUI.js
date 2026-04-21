@@ -23,17 +23,23 @@ export class StreetViewUI {
     this.onReady?.();
   };
 
-  // 🔥 самый важный сигнал
-  this.panorama.addListener("tilesloaded", resolveOnce);
-
-  // 🔥 fallback (если tilesloaded не сработал)
-  setTimeout(resolveOnce, 3000);
-}
-
- setLocation(pos) {
+setLocation(pos) {
   if (!this.panorama || !pos) return;
+  let resolved = false;
+  const resolveOnce = () => {
+    if (resolved) return;
+    resolved = true;
+    this.onReady?.();
+  };
+
+  const listener = this.panorama.addListener("position_changed", () => {
+    resolveOnce();
+    google.maps.event.removeListener(listener);
+  });
+
   this.panorama.setPosition(pos);
- }
+  setTimeout(resolveOnce, 2000);
+}
 
  setPov(pov) {
   if (!this.panorama || !pov) return;
