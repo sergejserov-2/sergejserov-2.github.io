@@ -26,56 +26,46 @@ export class StaticUI {
   }
 
   const timeWrap = this.timeEl?.parentElement;
-  if (timeWrap) {
-   timeWrap.style.display = vm.showTime ? "block" : "none";
-  }
+  if (timeWrap) timeWrap.style.display = vm.showTime ? "block" : "none";
 
   const movesWrap = this.movesEl?.parentElement;
-  if (movesWrap) {
-   movesWrap.style.display = vm.showMoves ? "block" : "none";
-  }
+  if (movesWrap) movesWrap.style.display = vm.showMoves ? "block" : "none";
  }
 
- updateTimer(value) {
-  if (!this.timeEl) return;
-  this.timeEl.textContent = `Время: ${value}`;
+ updateTimer(v) {
+  if (this.timeEl) this.timeEl.textContent = `Время: ${v}`;
  }
 
- updateMoves(value) {
-  if (!this.movesEl) return;
-  this.movesEl.textContent =
-   value === -1 ? "∞" : `Ходы: ${value}`;
+ updateMoves(v) {
+  if (this.movesEl) this.movesEl.textContent =
+   v === -1 ? "∞" : `Ходы: ${v}`;
  }
 
  // =========================
- // ROUND RESULT TEXTS (НЕ МЕНЯЛИ)
+ // ROUND RESULT (UNCHANGED)
  // =========================
  showRoundResult(model = {}) {
   const root = document.querySelector(".guess-overview");
   if (!root) return;
 
-  const distance = model.distance ?? 0;
-  const score = model.score ?? 0;
-  const progress = model.progress ?? 0;
-
   const text = root.querySelector(".score-text");
+  const bar = root.querySelector(".score-progress");
 
   if (text) {
    text.innerHTML = `
-    <p>Ваша точка на расстоянии ${distance.toFixed(1)} км от загаданной</p>
-    <p>Ваш счёт — ${score}</p>
+    <p>Ваша точка на расстоянии ${model.distance.toFixed(1)} км от загаданной</p>
+    <p>Ваш счёт — ${model.score}</p>
    `;
   }
 
-  const bar = root.querySelector(".score-progress");
   if (bar) {
    bar.style.width =
-    `${Math.min(Math.max(progress, 0), 1) * 100}%`;
+    `${Math.min(Math.max(model.progress, 0), 1) * 100}%`;
   }
  }
 
  // =========================
- // GAME RESULT TEXTS (НЕ ТРОГАЛИ)
+ // GAME RESULT (ROUND UX + EXTRA LINES)
  // =========================
  showGameResult(model = {}) {
   const root = document.querySelector(".guess-overview");
@@ -86,20 +76,23 @@ export class StaticUI {
 
   if (text) {
    text.innerHTML = `
-    <p>${model.text?.title ?? "Игра завершена"}</p>
-    <p>${model.text?.scoreLine ?? ""}</p>
-    <p>${model.text?.roundsLine ?? ""}</p>
+    <p>${model.text?.title}</p>
+    <p>${model.text?.scoreLine}</p>
+    <p>${model.text?.roundsLine}</p>
    `;
   }
 
   if (bar) {
-   const p = Math.min(Math.max(model.progress ?? 0, 0), 1);
+   const p = Math.min(Math.max(model.progress, 0), 1);
    bar.style.width = `${p * 100}%`;
   }
 
   this.stopRoundDelay();
  }
 
+ // =========================
+ // DELAY BAR
+ // =========================
  startRoundDelay(duration, onFinish) {
   this.stopRoundDelay();
 
@@ -111,12 +104,10 @@ export class StaticUI {
   const start = performance.now();
 
   const animate = (now) => {
-   const elapsed = now - start;
-   const progress = Math.max(0, 1 - elapsed / duration);
+   const t = Math.max(0, 1 - (now - start) / duration);
+   this.delayBar.style.transform = `scaleX(${t})`;
 
-   this.delayBar.style.transform = `scaleX(${progress})`;
-
-   if (progress > 0) {
+   if (t > 0) {
     this.delayFrame = requestAnimationFrame(animate);
    } else {
     this.stopRoundDelay();
@@ -128,10 +119,8 @@ export class StaticUI {
  }
 
  stopRoundDelay() {
-  if (this.delayFrame) {
-   cancelAnimationFrame(this.delayFrame);
-   this.delayFrame = null;
-  }
+  if (this.delayFrame) cancelAnimationFrame(this.delayFrame);
+  this.delayFrame = null;
 
   if (this.delayBar) {
    this.delayBar.style.transform = "scaleX(0)";
