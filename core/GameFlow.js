@@ -6,12 +6,12 @@ export class GameFlow {
 
     this.timer = services.timer;
     this.moves = services.moves;
-    this.rounds = services.rounds;
+    this.rounds = services.rounds; // только config (totalRounds)
 
     this.listeners = {};
     this.locked = false;
 
-    // 🔥 loading sync
+    // StreetView sync
     this._resolveStreetViewReady = null;
   }
 
@@ -51,14 +51,15 @@ export class GameFlow {
     this.emit("inputLocked");
     this.emit("loadingStarted");
 
-    // 🔥 генерация локации
     const location = await this.generator.generate(this.area);
 
     this.game.startRound(location);
+
     this.emit("streetViewSetLocation", location);
+
     await this.waitForStreetViewReady();
 
-        this.emit("loadingFinished");
+    this.emit("loadingFinished");
 
     this.timer.start(
       this.game.config.rules.time,
@@ -71,7 +72,6 @@ export class GameFlow {
     this.locked = false;
 
     this.emit("inputUnlocked");
-
     this.emit("roundStarted", this.game.getState());
     this.emit("stateUpdated", this.game.getState());
   }
@@ -113,6 +113,7 @@ export class GameFlow {
     this.game.finishGuess(playerId);
 
     this.game.commitRound();
+
     this.finishRound("guess");
 
     this.emit("roundEnded", this.game.getState());
@@ -131,13 +132,19 @@ export class GameFlow {
     this.emit("roundEndedReason", reason);
     this.emit("roundEnded", this.game.getState());
 
-    if (this.rounds.isFinished()) {
+    const state = this.game.getState();
+
+    const isLastRound = this.rounds.isFinished(
+      state.currentRoundIndex
+    );
+
+    if (isLastRound) {
       this.endGame();
       return;
     }
 
     this.emit("roundResultShown", {
-      state: this.game.getState(),
+      state,
       reason
     });
   }
@@ -146,8 +153,6 @@ export class GameFlow {
   // NEXT ROUND
   // =========================
   async nextRound() {
-    this.rounds.next();
-
     if (this.game.isGameEnded()) {
       this.endGame();
       return;
