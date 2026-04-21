@@ -15,7 +15,7 @@ export class StaticUI {
  }
 
  // =========================
- // HUD RENDER (TEXT LAYER)
+ // HUD (STATIC STATE)
  // =========================
 
  updateHUD(vm = {}) {
@@ -29,33 +29,40 @@ export class StaticUI {
     `Счёт: ${vm.totalScore}`;
   }
 
-  // TIME (ТОЛЬКО ПРИ СТАРТЕ РАУНДА)
+  // TIME visibility (НЕ обновляем значение тут)
   const timeWrap = this.timeEl?.parentElement;
 
   if (timeWrap) {
    timeWrap.style.display = vm.showTime ? "block" : "none";
   }
 
-  if (this.timeEl && vm.showTime) {
-   this.timeEl.textContent =
-    `Время: ${vm.time}`;
+  if (this.timeEl && vm.showTime && vm.time != null) {
+   this.timeEl.textContent = `Время: ${vm.time}`;
   }
 
-  // MOVES
+  // MOVES visibility
   const movesWrap = this.movesEl?.parentElement;
 
   if (movesWrap) {
    movesWrap.style.display = vm.showMoves ? "block" : "none";
   }
 
-  if (this.movesEl && vm.showMoves) {
-   this.movesEl.textContent =
-    `Ходы: ${vm.moves}`;
+  if (this.movesEl && vm.showMoves && vm.moves != null) {
+   this.movesEl.textContent = `Ходы: ${vm.moves}`;
   }
  }
 
  // =========================
- // MOVES (fallback)
+ // TIMER (DYNAMIC TICK)
+ // =========================
+
+ updateTimer(value) {
+  if (!this.timeEl) return;
+  this.timeEl.textContent = `Время: ${value}`;
+ }
+
+ // =========================
+ // MOVES (DYNAMIC FALLBACK)
  // =========================
 
  updateMoves(value) {
@@ -66,7 +73,7 @@ export class StaticUI {
  }
 
  // =========================
- // ROUND RESULT
+ // ROUND RESULT SCREEN
  // =========================
 
  showRoundResult(model = {}) {
@@ -78,6 +85,7 @@ export class StaticUI {
   const progress = model.progress ?? 0;
 
   const text = root.querySelector(".score-text");
+
   if (text) {
    text.innerHTML = `
     <p>Ваша точка на расстоянии ${distance.toFixed(1)} км от загаданной</p>
@@ -93,7 +101,7 @@ export class StaticUI {
  }
 
  // =========================
- // GAME RESULT
+ // GAME RESULT SCREEN
  // =========================
 
  showGameResult(model = {}) {
@@ -105,6 +113,7 @@ export class StaticUI {
    : 0;
 
   const text = root.querySelector(".score-text");
+
   if (text) {
    text.innerHTML = `
     <p>Игра завершена</p>
@@ -117,12 +126,11 @@ export class StaticUI {
    bar.style.width = "100%";
   }
 
-  // 🔥 ВАЖНО: сброс таймера в конце игры
   this.stopRoundTimer();
  }
 
  // =========================
- // ROUND TIMER (UX ONLY)
+ // ROUND TIMER BAR (VISUAL ONLY)
  // =========================
 
  startRoundTimer(duration, onFinish) {
@@ -130,7 +138,6 @@ export class StaticUI {
 
   if (!this.timerEl) return;
 
-  // 🔥 фикс: всегда стартуем с 1
   this.timerEl.style.transform = "scaleX(1)";
 
   const start = Date.now();
@@ -152,10 +159,6 @@ export class StaticUI {
 
   animate();
  }
-
- // =========================
- // STOP TIMER
- // =========================
 
  stopRoundTimer() {
   if (this.timerFrame) {
