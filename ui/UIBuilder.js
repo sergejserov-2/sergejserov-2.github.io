@@ -57,17 +57,17 @@ export class UIBuilder {
   return {
    status: state.status,
 
-   roundText: Раунд: ${currentRound} / ${totalRounds},
+   roundText: `Раунд: ${currentRound} / ${totalRounds}`,
 
    totalScore,
-   totalText: Счёт: ${totalScore},
+   totalText: `Счёт: ${totalScore}`,
 
    timeText: this.isTimeEnabled()
-    ? ${this.getTimeLimit()}s
+    ? `${this.getTimeLimit()}s`
     : "∞",
 
    movesText: this.isMovesEnabled()
-    ? ${this.getMovesLimit()}
+    ? `${this.getMovesLimit()}`
     : "∞"
   };
  }
