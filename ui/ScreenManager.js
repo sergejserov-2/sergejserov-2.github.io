@@ -31,19 +31,3 @@ export class ScreenManager {
     target.style.display = "flex";
     target.classList.add("active");
   }
-
-  // =========================
-  // LOADING HELPERS (важно)
-  // =========================
-  showLoading() {
-    this.show("loading");
-  }
-
-  hideLoading() {
-    const el = this.views.loading;
-    if (!el) return;
-
-    el.classList.remove("active");
-    el.style.display = "none";
-  }
-}
