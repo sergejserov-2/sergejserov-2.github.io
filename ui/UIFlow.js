@@ -6,6 +6,8 @@ export class UIFlow {
   uiBuilder,
   streetViewUI,
   mapWrapperUI,
+
+  // 🔥 НОВОЕ
   roundOverviewUI,
   gameOverviewUI
  }) {
@@ -15,6 +17,8 @@ export class UIFlow {
   this.uiBuilder = uiBuilder;
   this.streetViewUI = streetViewUI;
   this.mapWrapperUI = mapWrapperUI;
+
+  // 🔥 фикс
   this.roundOverviewUI = roundOverviewUI;
   this.gameOverviewUI = gameOverviewUI;
 
@@ -35,13 +39,19 @@ export class UIFlow {
    this.screenManager.show("round");
   });
 
-  this.gameFlow.on("streetViewSetLocation", (loc) => {
-   this.streetViewUI.setLocation(loc);
+  this.gameFlow.on("streetViewSetLocation", (location) => {
+   this.streetViewUI.setLocation(location);
   });
 
+  // =========================
+  // ROUND START
+  // =========================
   this.gameFlow.on("roundStarted", (vm) => {
    this.mapWrapperUI.reset();
-   this.mapOverviewUI.clear();
+
+   // 🔥 ВАЖНО
+   this.roundOverviewUI?.clear();
+   this.gameOverviewUI?.clear();
 
    this.staticUI.stopRoundTimer?.();
 
@@ -50,9 +60,20 @@ export class UIFlow {
    );
   });
 
-  this.gameFlow.on("timerTick", t => this.staticUI.updateTimer(t));
-  this.gameFlow.on("movesUpdated", m => this.staticUI.updateMoves(m));
+  // =========================
+  // TIMER / MOVES
+  // =========================
+  this.gameFlow.on("timerTick", (t) => {
+   this.staticUI.updateTimer(t);
+  });
 
+  this.gameFlow.on("movesUpdated", (m) => {
+   this.staticUI.updateMoves?.(m);
+  });
+
+  // =========================
+  // INPUT
+  // =========================
   this.gameFlow.on("inputLocked", () => {
    this.staticUI.lockInput?.();
    this.mapWrapperUI.lock();
@@ -68,21 +89,22 @@ export class UIFlow {
   // =========================
   this.gameFlow.on("roundResultShown", ({ state }) => {
 
-   const round = state.rounds?.[state.rounds.length - 1];
+   const rounds = state.rounds || [];
+   const round = rounds[rounds.length - 1];
    if (!round) return;
 
+   // 🔥 ТЕПЕРЬ ПРАВИЛЬНО
    this.roundOverviewUI.render(round);
 
-   this.screenManager.show("roundResult");
+   const vm = this.uiBuilder.formatRoundVM(state);
 
-   this.staticUI.showRoundResult(
-    this.uiBuilder.formatRoundVM(state)
-   );
+   this.screenManager.show("roundResult");
+   this.staticUI.showRoundResult(vm);
 
    const duration = 7500;
 
    requestAnimationFrame(() => {
-    this.roundOverviewUI.forceResize();
+    this.roundOverviewUI.forceResize?.();
    });
 
    this.staticUI.startRoundDelay(duration, () => {
@@ -93,22 +115,24 @@ export class UIFlow {
   // =========================
   // GAME END
   // =========================
-          this.gameFlow.on("gameEnded", (vm) => {
-           
-            const rounds = vm.rounds || [];
-            const last = rounds[rounds.length - 1];
-            if (!last) return;
+  this.gameFlow.on("gameEnded", (state) => {
 
-            this.gameOverviewUI.render(last);
-            this.screenManager.show("gameResult");
-           
-            this.staticUI.showGameResult(
-              this.uiBuilder.formatGameResultVM(vm)
-            );
-                    
-            requestAnimationFrame(() => {
-                this.gameOverviewUI.forceResize();          
-            });
-          });
+   this.screenManager.show("gameResult");
+
+   const vm = this.uiBuilder.formatGameResultVM(state);
+
+   this.staticUI.showGameResult(vm);
+
+   const rounds = state.rounds || [];
+   const last = rounds[rounds.length - 1];
+
+   if (last) {
+    requestAnimationFrame(() => {
+     // 🔥 ДРУГАЯ КАРТА
+     this.gameOverviewUI.render(last);
+     this.gameOverviewUI.forceResize?.();
+    });
+   }
+  });
  }
 }
