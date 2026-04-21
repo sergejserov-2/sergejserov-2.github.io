@@ -6,9 +6,6 @@ export class Game {
   this.config = config;
  }
 
- // =========================
- // GAME LIFECYCLE
- // =========================
  startGame() {
   this.gameState.startGame();
  }
@@ -17,49 +14,43 @@ export class Game {
   this.gameState.startRound(location);
  }
 
+ setGuess(playerId, point) {
+  const round = this.gameState.getCurrentRound();
+  if (!round) return;
+
+  const result = this.scoring.calculate(
+   round.actualLocation,
+   {
+    lat: point.lat,
+    lng: point.lng
+   },
+   { area: round.area }
+  );
+
+  this.gameState.setRoundResult({
+   playerId,
+   guess: point,
+   distance: result.distance,
+   score: result.score
+  });
+
+  return result;
+ }
+
+ finishGuess() {
+  // теперь ничего не ищем, всё уже записано
+ }
+
  commitRound() {
-  this.gameState.commitRound();
+  // больше не нужен (оставляем пустым для совместимости)
  }
 
  endGame() {
   this.gameState.endGame();
  }
 
- // =========================
- // GUESSES
- // =========================
- setGuess(playerId, point) {
-  // всегда просто добавляем/перезаписываем через GameState
-  this.gameState.setGuess(playerId, point);
- }
-
- finishGuess(playerId = "p1") {
-  const round = this.gameState.getCurrentRound();
-  if (!round) return;
-
-  const guess = round.guesses.find(g => g.playerId === playerId);
-  if (!guess || guess.isFinished) return;
-
-  const result = this.scoring.calculate(
-   round.actualLocation,
-   guess.guess,
-   { area: round.area }
-  );
-
-  this.gameState.finishGuess(playerId, result);
-
-  return result;
- }
-
- // =========================
- // STATE ACCESS
- // =========================
  getState() {
   return this.gameState.getState();
- }
-
- getCurrentRound() {
-  return this.gameState.getCurrentRound();
  }
 
  isGameEnded() {
