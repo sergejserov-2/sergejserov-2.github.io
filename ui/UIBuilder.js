@@ -98,28 +98,28 @@ export class UIBuilder {
  // =========================
  // GAME RESULT (ВАЖНО: ИДЕНТИЧНО ROUND)
  // =========================
- formatGameResultVM(state) {
-  const rounds = state.rounds || [];
+formatGameResultVM(state) {
+ const rounds = state.rounds || [];
 
-  const totalScore = rounds.reduce((s, r) => {
-   return s + (r.guess?.score || 0);
-  }, 0);
+ const totalScore = rounds.reduce((s, r) => {
+  return s + (r.guess?.score || 0);
+ }, 0);
 
-  const maxScore = this.getRoundLimit() * 5000;
+ const roundsCount = rounds.length; // 🔥 фикс
+ const maxScore = roundsCount * 5000;
 
-  return {
-   distance: 0,
-   score: totalScore,
-   progress: maxScore ? totalScore / maxScore : 0,
+ return {
+  totalScore,
+  maxScore,
+  progress: maxScore ? totalScore / maxScore : 0,
 
-   guess: null,
-   actual: rounds.length ? rounds[rounds.length - 1].actualLocation : null,
-
-   text: {
-    title: "Игра завершена",
-    scoreLine: `Общий счёт: ${totalScore} / ${maxScore}`,
-    roundsLine: `Раундов: ${rounds.length}`
-   }
-  };
- }
+  rounds: rounds.map((r, i) => ({
+   index: i,
+   score: r.guess?.score || 0,
+   distance: r.guess?.distance || 0,
+   guess: r.guess,
+   actual: r.actualLocation
+  }))
+ };
+}
 }
