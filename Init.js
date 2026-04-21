@@ -142,9 +142,7 @@ export async function init() {
   hudElement: hud
  });
 
- const screenManager = new ScreenManager({
-  root: screensEl
- });
+
 
  // =========================
  // 8. UI FLOW (BIND EVENTS)
@@ -164,10 +162,10 @@ export async function init() {
  mapWrapperUI.init();
  mapOverviewUI.init();
  streetViewUI.init({ lat: 0, lng: 0 });
-
+ screenManager.show("round"); // 🔥 фикс initial screen
  mapWrapperUI.reset();
 
- screenManager.show("round"); // 🔥 фикс initial screen
+
 
  // =========================
  // 10. INPUT
