@@ -11,21 +11,6 @@ import { AreaRegistry } from "./domain/AreaRegistry.js";
 import { MapAdapter } from "./adapters/MapAdapter.js";
 import { StreetViewAdapter } from "./adapters/StreetViewAdapter.js";
 
-// =========================
-// SERVICES
-// =========================
-import { TimerService } from "./services/TimerService.js";
-import { MoveService } from "./services/MoveService.js";
-import { RoundService } from "./services/RoundService.js";
-
-// =========================
-// CONFIG PIPELINE (NEW)
-// =========================
-import { getConfig } from "./config/getConfig.js";
-
-// =========================
-// UI
-// =========================
 import { MapWrapperUI } from "./ui/components/MapWrapperUI.js";
 import { MapOverviewUI } from "./ui/components/MapOverviewUI.js";
 import { StreetViewUI } from "./ui/components/StreetViewUI.js";
@@ -38,7 +23,19 @@ import { UIBuilder } from "./ui/UIBuilder.js";
 import { Tweaks } from "./ui/Tweaks.js";
 
 // =========================
-// GOOGLE MAPS
+// SERVICES
+// =========================
+import { TimerService } from "./services/TimerService.js";
+import { MovesService } from "./services/MovesService.js";
+import { RoundsService } from "./services/RoundsService.js";
+
+// =========================
+// CONFIG
+// =========================
+import { getConfig } from "./core/getConfig.js";
+
+// =========================
+// GOOGLE MAPS GATE
 // =========================
 function waitForGoogleMaps() {
  return new Promise(resolve => {
@@ -59,11 +56,9 @@ export async function init() {
  await waitForGoogleMaps();
 
  // =========================
- // CONFIG (NEW SOURCE OF TRUTH)
+ // CONFIG (CRITICAL)
  // =========================
  const config = getConfig();
-
- console.log("CONFIG LOADED:", config);
 
  // =========================
  // DOM
@@ -84,7 +79,7 @@ export async function init() {
  // =========================
  // DOMAIN
  // =========================
- const area = AreaRegistry.get(config.area);
+ const area = AreaRegistry.get(config.area || "europe");
 
  const difficulty = new Difficulty();
  const scoring = new Scoring({ difficulty });
@@ -97,8 +92,8 @@ export async function init() {
  const game = new Game({
   gameState,
   scoring,
-  players: config.players,
-  config
+  players: ["p1"],
+  config // 🔥 FIX: теперь Game знает config
  });
 
  const generator = new LocationGenerator({
@@ -106,16 +101,16 @@ export async function init() {
  });
 
  // =========================
- // SERVICES
+ // SERVICES (CRITICAL FIX)
  // =========================
  const services = {
   timer: new TimerService(),
-  moves: new MoveService(),
-  rounds: new RoundService()
+  moves: new MovesService(),
+  rounds: new RoundsService()
  };
 
  // =========================
- // FLOW
+ // GAME FLOW
  // =========================
  const gameFlow = new GameFlow({
   game,
@@ -125,9 +120,12 @@ export async function init() {
  });
 
  // =========================
- // UI BUILDER (NOW KNOWS CONFIG)
+ // UI BUILDER
  // =========================
- const uiBuilder = new UIBuilder(config);
+ const uiBuilder = new UIBuilder();
+
+ // прокидываем config в UI (HUD теперь знает лимиты)
+ uiBuilder.setConfig?.(config);
 
  // =========================
  // UI
@@ -156,7 +154,6 @@ export async function init() {
  const screenManager = new ScreenManager({
   root: screensEl
  });
-
  // =========================
  // UI FLOW
  // =========================
