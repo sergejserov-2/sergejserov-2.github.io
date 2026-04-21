@@ -11,9 +11,6 @@ export class UIBuilder {
   this.actualColor = "#9aa0a6";
  }
 
- // =========================
- // CONFIG
- // =========================
  setConfig(config) {
   this.config = config || {};
  }
@@ -22,9 +19,6 @@ export class UIBuilder {
   return this.config || {};
  }
 
- // =========================
- // RULES
- // =========================
  getRoundLimit() {
   return this.getConfig()?.rules?.rounds ?? 0;
  }
@@ -47,24 +41,6 @@ export class UIBuilder {
   return typeof m === "number" && m > 0;
  }
 
- formatInfinite(value) {
-  return value == null || value <= 0 ? "∞" : value;
- }
-
- // =========================
- // COLORS
- // =========================
- getPlayerColor(id = "p1") {
-  return this.playerColors[id] || "#ff4d4d";
- }
-
- getActualColor() {
-  return this.actualColor;
- }
-
- // =========================
- // GAME HUD
- // =========================
  formatGameVM(state) {
   const rounds = state.rounds || [];
 
@@ -73,17 +49,12 @@ export class UIBuilder {
    return sum + (g?.score || 0);
   }, 0);
 
+  const currentRound = rounds.length + 1;
   const totalRounds = this.getRoundLimit();
-
-  // 🔥 ключевой фикс
-  const currentRound = (state.currentRoundIndex ?? 0) + 1;
 
   return {
    status: state.status,
 
-   currentRoundIndex: state.currentRoundIndex,
-
-   // ✅ теперь с 1
    roundText: `Раунд: ${currentRound} / ${totalRounds}`,
 
    totalScore,
@@ -95,30 +66,18 @@ export class UIBuilder {
 
    movesText: this.isMovesEnabled()
     ? `${this.getMovesLimit()}`
-    : "∞",
-
-   limits: {
-    rounds: totalRounds,
-    time: this.getTimeLimit(),
-    moves: this.getMovesLimit()
-   }
+    : "∞"
   };
  }
 
- // =========================
- // ROUND RESULT
- // =========================
  formatRoundVM(state) {
   const rounds = state.rounds || [];
 
-  // 🔥 последний завершённый раунд
-  const index = Math.max(0, state.currentRoundIndex - 1);
-
-  const round = rounds[index];
+  const round = rounds[rounds.length - 1];
   const guess = round?.guesses?.[0];
 
   return {
-   index: round?.index ?? index,
+   index: round?.index ?? 0,
    distance: guess?.distance ?? 0,
    score: guess?.score ?? 0,
    progress: Math.min((guess?.score ?? 0) / 5000, 1),
@@ -127,9 +86,6 @@ export class UIBuilder {
   };
  }
 
- // =========================
- // GAME RESULT
- // =========================
  formatGameResultVM(state) {
   const rounds = state.rounds || [];
 
