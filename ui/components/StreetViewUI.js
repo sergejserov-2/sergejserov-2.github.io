@@ -22,24 +22,24 @@ export class StreetViewUI {
 
   if (!this.panorama) return;
 
-  // 🔥 move listener — сразу после создания
+  // 🔥 шаги
   this.panorama.addListener("position_changed", () => {
    this.onMove?.();
-  });
-
-  // 🔥 ready сигнал — один раз
-  this.adapter.attachReadySignal(this.panorama, () => {
-   this.onReady?.();
   });
  }
 
  // =========================
- // LOCATION
+ // LOCATION (🔥 ВАЖНО)
  // =========================
  setLocation(pos) {
   if (!this.panorama || !pos) return;
 
   this.panorama.setPosition(pos);
+
+  // 🔥 ВОТ ГДЕ ДОЛЖЕН БЫТЬ READY
+  this.adapter.attachReadySignal(this.panorama, () => {
+   this.onReady?.();
+  });
  }
 
  // =========================
