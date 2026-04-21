@@ -42,8 +42,8 @@ export class UIFlow {
   // =========================
   // SET STREET VIEW LOCATION 🔥
   // =========================
-  this.gameFlow.on("streetViewSetLocation", (loc) => {
-   this.streetViewUI.setLocation(loc);
+  this.gameFlow.on("streetViewSetLocation", (location) => {
+   this.streetViewUI.setLocation(location);
   });
 
   // =========================
