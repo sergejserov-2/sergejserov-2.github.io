@@ -78,28 +78,31 @@ export class StaticUI {
  // =========================
  // ROUND END TIMER (UX ONLY)
  // =========================
- startRoundTimer(duration, startTime) {
+startRoundTimer(duration, onFinish) {
   this.stopRoundTimer();
 
   if (!this.timerEl) return;
 
-  this.timerEl.style.transform = "scaleX(1)";
+  const startTime = Date.now();
 
   const animate = () => {
-   const now = Date.now();
-   const elapsed = now - startTime;
+    const now = Date.now();
+    const elapsed = now - startTime;
 
-   const progress = Math.max(0, 1 - elapsed / duration);
+    const progress = Math.max(0, 1 - elapsed / duration);
+    this.timerEl.style.transform = scaleX(${progress});
 
-   this.timerEl.style.transform = `scaleX(${progress})`;
-
-   if (progress > 0) {
-    this.timerFrame = requestAnimationFrame(animate);
-   }
+    if (progress > 0) {
+      this.timerFrame = requestAnimationFrame(animate);
+    } else {
+      this.stopRoundTimer();
+      onFinish?.(); // 🔥 главный момент
+    }
   };
 
+  this.timerEl.style.transform = "scaleX(1)";
   animate();
- }
+}
 
  stopRoundTimer() {
   if (this.timerFrame) {
