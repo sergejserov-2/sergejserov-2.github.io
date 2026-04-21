@@ -83,7 +83,7 @@ export class UIFlow {
 
    this.mapOverviewUI.forceResize?.();
 
-   this.staticUI.startRoundTimer(duration, () => {
+   this.staticUI.startRoundDelay(duration, () => {
     this.gameFlow.nextRound();
    });
   });
