@@ -58,6 +58,8 @@ export class GameFlow {
     this.emit("streetViewSetLocation", location);
     await this.waitForStreetViewReady();
 
+        this.emit("loadingFinished");
+
     this.timer.start(
       this.game.config.rules.time,
       () => this.finishRound("timeout"),
@@ -68,7 +70,6 @@ export class GameFlow {
 
     this.locked = false;
 
-    this.emit("loadingFinished");
     this.emit("inputUnlocked");
 
     this.emit("roundStarted", this.game.getState());
