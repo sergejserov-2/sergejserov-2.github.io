@@ -47,14 +47,22 @@ export class StreetViewUI {
  // =========================
 lockMove() {
  if (!this.panorama) return;
-
- this.adapter.setControls(this.panorama, false);
+ this.panorama.setOptions({
+  linksControl: false,
+  panControl: false,
+  clickToGo: false
+ });
+ this.element.style.pointerEvents = "none";
 }
 
 unlockMove() {
  if (!this.panorama) return;
-
- this.adapter.setControls(this.panorama, true);
+ this.panorama.setOptions({
+  linksControl: true,
+  panControl: true,
+  clickToGo: true
+ });
+ this.element.style.pointerEvents = "auto";
 }
 
  // =========================
