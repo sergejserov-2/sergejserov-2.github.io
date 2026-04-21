@@ -22,7 +22,7 @@ export class UIFlow {
  bind() {
 
   // =========================
-  // STREET VIEW READY SYNC 🔥
+  // STREET VIEW READY
   // =========================
   this.streetViewUI.onReady = () => {
    this.gameFlow.streetViewReady();
@@ -40,7 +40,7 @@ export class UIFlow {
   });
 
   // =========================
-  // SET STREET VIEW LOCATION 🔥
+  // STREET VIEW LOCATION
   // =========================
   this.gameFlow.on("streetViewSetLocation", (location) => {
    this.streetViewUI.setLocation(location);
@@ -88,36 +88,29 @@ export class UIFlow {
   });
 
   // =========================
-  // ROUND END
+  // ROUND RESULT (MAIN FIX 🔥)
   // =========================
-  this.gameFlow.on("roundEnded", (vm) => {
+  this.gameFlow.on("roundResultShown", ({ state }) => {
 
-   const rounds = vm?.rounds || [];
+   const rounds = state.rounds || [];
    const round = rounds[rounds.length - 1];
+
    if (!round) return;
 
+   // 🔥 теперь гарантированно есть guess + actual
    this.mapOverviewUI.render(round);
 
-   this.staticUI.showRoundResult(
-    this.uiBuilder.formatRoundVM(vm)
-   );
-  });
+   const vm = this.uiBuilder.formatRoundVM(state);
 
-  // =========================
-  // ROUND RESULT SHOWN (UX HOOK)
-  // =========================
-this.gameFlow.on("roundResultShown", ({ state }) => {
-  const vm = this.uiBuilder.formatRoundVM(state);
+   this.screenManager.show("roundResult");
+   this.staticUI.showRoundResult(vm);
 
-  this.screenManager.show("roundResult");
-  this.staticUI.showRoundResult(vm);
+   const duration = 10000;
 
-  const duration = 10000;
-
-  this.staticUI.startRoundTimer(duration, () => {
+   this.staticUI.startRoundTimer(duration, () => {
     this.gameFlow.nextRound();
+   });
   });
-});
 
   // =========================
   // GAME END
