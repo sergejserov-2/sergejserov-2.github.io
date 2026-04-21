@@ -79,30 +79,30 @@ export class StaticUI {
   }
  }
 
- showGameResult(model = {}) {
+showGameResult(model = {}) {
   const root = document.querySelector(".guess-overview");
   if (!root) return;
 
-  const roundsCount = Array.isArray(model.rounds)
-   ? model.rounds.length
-   : 0;
-
   const text = root.querySelector(".score-text");
+  const bar = root.querySelector(".score-progress");
 
+  // TEXT (как round result)
   if (text) {
-   text.innerHTML = `
-    <p>Игра завершена</p>
-    <p>Раундов: ${roundsCount}</p>
-   `;
+    text.innerHTML = `
+      <p>${model.text?.title ?? "Игра завершена"}</p>
+      <p>${model.text?.scoreLine ?? ""}</p>
+      <p>${model.text?.roundsLine ?? ""}</p>
+    `;
   }
 
-  const bar = root.querySelector(".score-progress");
+  // PROGRESS BAR
   if (bar) {
-   bar.style.width = "100%";
+    const p = Math.min(Math.max(model.progress ?? 0, 0), 1);
+    bar.style.width = ${p * 100}%;
   }
 
   this.stopRoundDelay();
- }
+}
 
  // =========================
  // UX DELAY BAR (END OF ROUND)
