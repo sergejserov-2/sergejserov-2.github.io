@@ -162,7 +162,7 @@ export async function init() {
  // 9. INIT UI STATE
  // =========================
 
- screenManager.init();
+ screenManager.init("loading");
  streetViewUI.init({ lat: 0, lng: 0 });
  mapWrapperUI.init();
  mapOverviewUI.init();
