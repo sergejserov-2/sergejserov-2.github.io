@@ -41,7 +41,7 @@ export class MapOverviewUI {
   // =========================
   const actualMarker = this.adapter.createMarker(this.map, actual, {
    color: actualColor,
-   size: 30,
+   size: 24,
    isActual: true
   });
 
