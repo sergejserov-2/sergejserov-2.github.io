@@ -22,7 +22,8 @@ export class StreetViewUI {
     resolved = true;
     this.onReady?.();
   };
-
+ }
+ 
 setLocation(pos) {
   if (!this.panorama || !pos) return;
   let resolved = false;
