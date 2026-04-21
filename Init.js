@@ -32,7 +32,7 @@ import { RoundsService } from "./services/RoundsService.js";
 // =========================
 // CONFIG
 // =========================
-import { getConfig } from "./core/getConfig.js";
+import { getConfig } from "./config/getConfig.js";
 
 // =========================
 // GOOGLE MAPS GATE
