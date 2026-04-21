@@ -64,7 +64,7 @@ export class UIFlow {
   // TIMER
   // =========================
   this.gameFlow.on("timerTick", (t) => {
-   this.staticUI.updateTimer?.(t);
+   this.staticUI.updateTimer(t);
   });
 
   // =========================
