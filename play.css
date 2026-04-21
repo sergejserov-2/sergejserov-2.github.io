@@ -102,17 +102,12 @@ body {
  position: absolute;
  left: 10px;
  bottom: 10px;
-
  padding: 8px 10px;
  border-radius: 8px;
-
  background: rgba(255,255,255,0.08);
  color: #fff;
-
  cursor: pointer;
  user-select: none;
-
- font-size: 12px;
  transition: 0.2s ease;
 }
 
