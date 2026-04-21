@@ -1,6 +1,5 @@
 export class UIBuilder {
-
- constructor(config) {
+ constructor(config = {}) {
   this.config = config;
 
   this.playerColors = {
@@ -13,27 +12,44 @@ export class UIBuilder {
  }
 
  // =========================
- // CONFIG HELPERS
+ // CONFIG BIND (SAFE UPDATE)
+ // =========================
+ setConfig(config) {
+  this.config = config || {};
+ }
+
+ getConfig() {
+  return this.config || {};
+ }
+
+ // =========================
+ // NORMALIZED RULES
  // =========================
 
  getRoundLimit() {
-  return this.config?.rules?.rounds ?? 0;
+  return this.getConfig()?.rules?.rounds ?? 0;
  }
 
  getTimeLimit() {
-  return this.config?.rules?.time ?? -1;
+  return this.getConfig()?.rules?.time ?? null;
  }
 
  getMovesLimit() {
-  return this.config?.rules?.moves ?? -1;
+  return this.getConfig()?.rules?.moves ?? null;
  }
 
  isTimeEnabled() {
-  return this.getTimeLimit() !== -1;
+  const t = this.getTimeLimit();
+  return typeof t === "number" && t > 0;
  }
 
  isMovesEnabled() {
-  return this.getMovesLimit() !== -1;
+  const m = this.getMovesLimit();
+  return typeof m === "number" && m > 0;
+ }
+
+ formatInfinite(value) {
+  return value == null || value <= 0 ? "∞" : value;
  }
 
  // =========================
@@ -58,24 +74,27 @@ export class UIBuilder {
    return sum + (g?.score || 0);
   }, 0);
 
-  const currentRound = state.currentRoundIndex + 1;
+  const currentRound = (state.currentRoundIndex ?? 0) + 1;
   const totalRounds = this.getRoundLimit();
 
   return {
    status: state.status,
 
-   // раунды
+   // =========================
+   // ROUNDS (FIX 1/0 BUG HERE)
+   // =========================
    currentRoundIndex: state.currentRoundIndex,
    roundText: `Раунд: ${currentRound} / ${totalRounds}`,
 
-   // счёт
+   // =========================
+   // SCORE
+   // =========================
    totalScore,
    totalText: `Счёт: ${totalScore}`,
 
    // =========================
-   // RULES DISPLAY (NEW)
+   // RULES HUD
    // =========================
-
    timeText: this.isTimeEnabled()
     ? `${this.getTimeLimit()}s`
     : "∞",
@@ -97,7 +116,7 @@ export class UIBuilder {
  // =========================
 
  formatRoundVM(state) {
-  const round = state.rounds[state.currentRoundIndex];
+  const round = state.rounds?.[state.currentRoundIndex];
   const guess = round?.guesses?.[0];
 
   return {
@@ -115,16 +134,19 @@ export class UIBuilder {
  // =========================
 
  formatGameResultVM(state) {
+  const rounds = state.rounds || [];
+
   return {
-   totalScore: state.rounds.reduce((s, r) => {
+   totalScore: rounds.reduce((s, r) => {
     const g = r.guesses?.[0];
     return s + (g?.score || 0);
    }, 0),
 
-   roundsCount: state.rounds.length,
+   roundsCount: this.getRoundLimit(),
 
-   rounds: state.rounds.map(r => {
+   rounds: rounds.map(r => {
     const g = r.guesses?.[0];
+
     return {
      index: r.index,
      distance: g?.distance ?? 0,
