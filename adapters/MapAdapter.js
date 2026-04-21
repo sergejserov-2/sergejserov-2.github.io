@@ -12,61 +12,49 @@ export class MapAdapter {
  }
 
 createMarker(map, { lat, lng }, options = {}) {
- const {
-  color = "#ff4d4d",
-  size = 20
- } = options;
+  const {
+    color = "#ff4d4d",
+    size = 20,
+    isActual = false
+  } = options;
 
- // 🔥 увеличиваем внутреннее пространство
- const vbSize = 40;
- const center = vbSize / 2;
+  // actual чуть больше
+  const finalSize = isActual ? size * 1.4 : size;
 
- const radius = size * 0.3;
- const outerRadius = radius + 3;
+  const radius = finalSize * 0.28;
+  const stroke = finalSize * 0.12;
 
- const svg = `
-<svg width="100%" height="100%" viewBox="0 0 ${vbSize} ${vbSize}" xmlns="http://www.w3.org/2000/svg">
+  const pad = stroke * 2;
+  const viewBox = finalSize + pad * 2;
 
-  <!-- shadow -->
-  <circle 
-    cx="${center}" 
-    cy="${center + 1}" 
-    r="${radius}" 
-    fill="rgba(0,0,0,0.25)" 
-  />
+  const c = viewBox / 2;
 
-  <!-- outer ring -->
-  <circle 
-    cx="${center}" 
-    cy="${center}" 
-    r="${outerRadius}" 
-    stroke="${color}" 
-    stroke-width="2" 
-    fill="none" 
-    opacity="0.35"
-  />
+  const svg = `
+<svg width="${viewBox}" height="${viewBox}" viewBox="0 0 ${viewBox} ${viewBox}" xmlns="http://www.w3.org/2000/svg">
 
-  <!-- main dot -->
-  <circle 
-    cx="${center}" 
-    cy="${center}" 
-    r="${radius}" 
-    fill="${color}" 
-    opacity="0.95"
-  />
+  <!-- shadow (ТОЛЬКО ТЕНЬ) -->
+  <circle cx="${c}" cy="${c + 1.5}" r="${radius}"
+    fill="rgba(0,0,0,0.25)"/>
+
+  <!-- border -->
+  <circle cx="${c}" cy="${c}" r="${radius}"
+    fill="${color}" opacity="0.95"
+    stroke="rgba(0,0,0,0.25)"
+    stroke-width="${stroke}"/>
 
 </svg>`;
 
- return new google.maps.Marker({
-  position: { lat, lng },
-  map,
-  icon: {
-   url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
-   scaledSize: new google.maps.Size(size, size),
-   anchor: new google.maps.Point(size / 2, size / 2)
-  },
-  optimized: false
- });
+  return new google.maps.Marker({
+    position: { lat, lng },
+    map,
+    icon: {
+      url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+
+      scaledSize: new google.maps.Size(viewBox, viewBox),
+      anchor: new google.maps.Point(viewBox / 2, viewBox / 2)
+    },
+    optimized: false
+  });
 }
 
  removeMarker(marker) {
