@@ -1,4 +1,3 @@
-
 export class GameFlow {
  constructor({ game, generator, area, services, mode = "solo" }) {
   this.game = game;
@@ -18,6 +17,9 @@ export class GameFlow {
   this.roundLocked = false;
   this.finishedPlayers = new Set();
 
+  // 🔥 отдельный таймер раунда (reuse сервиса)
+  this.roundTimer = services.timer;
+
   this._resolveStreetViewReady = null;
  }
 
@@ -33,7 +35,7 @@ export class GameFlow {
  }
 
  // =========================
- // APPLY EXTERNAL STATE (future multiplayer sync)
+ // APPLY EXTERNAL STATE
  // =========================
  applyState(state) {
   this.game.gameState.status = state.status;
@@ -105,19 +107,18 @@ export class GameFlow {
  }
 
  // =========================
- // GUESS (MULTIPLAYER CORE CHANGE)
+ // GUESS
  // =========================
  finishGuess(point, playerId = "p1") {
   if (this.locked || this.roundLocked) return;
 
   const result = this.game.setGuess(playerId, point);
-
   if (!result) return;
 
   this.emit("guessResolved", result);
 
   // =========================
-  // SOLO MODE (старое поведение)
+  // SOLO MODE
   // =========================
   if (this.mode === "solo") {
    this.locked = true;
@@ -127,7 +128,7 @@ export class GameFlow {
   }
 
   // =========================
-  // DUEL MODE (новое поведение)
+  // DUEL MODE
   // =========================
   this.finishedPlayers.add(playerId);
 
@@ -136,19 +137,35 @@ export class GameFlow {
    state: this.game.getState()
   });
 
+  // 🔒 блокируем только текущего игрока
   this.locked = true;
-  this.roundLocked = true;
 
-  // 🔥 игрок уходит в waiting screen
   this.emit("inputLocked");
   this.emit("roundWaiting", {
    playerId,
    state: this.game.getState()
   });
 
-  // ⚠️ важно:
-  // НЕ завершаем раунд сразу
-  // ждём остальных игроков или таймера сервера (будет позже)
+  // =========================
+  // ВСЕ ИГРОКИ ЗАКОНЧИЛИ
+  // =========================
+  if (this.finishedPlayers.size >= this.game.players.length) {
+   this.finishRound("allPlayersFinished");
+   return;
+  }
+
+  // =========================
+  // 🔥 СТАРТ 10 СЕК ТАЙМЕРА
+  // =========================
+  if (!this.roundLocked) {
+   this.roundLocked = true;
+
+   this.roundTimer.start(
+    10,
+    () => this.finishRound("duelTimeout"),
+    (t) => this.emit("roundTimerTick", t)
+   );
+  }
  }
 
  // =========================
@@ -167,11 +184,13 @@ export class GameFlow {
   }
  }
 
- // =========================
- // ROUND END (solo + future sync point)
+// =========================
+ // ROUND END
  // =========================
  finishRound(reason = "manual") {
   this.timer.clear();
+  this.roundTimer.clear();
+
   this.locked = true;
 
   this.emit("inputLocked");
@@ -181,9 +200,8 @@ export class GameFlow {
   const isLast =
    state.rounds.length >= this.game.config.rules.rounds;
 
-  this.emit("r
-
-oundResultShown", { state, reason });
+  // ✅ ФИКС БАГА
+  this.emit("roundResultShown", { state, reason });
 
   if (isLast) {
    this.game.endGame();
@@ -193,7 +211,7 @@ oundResultShown", { state, reason });
  }
 
  // =========================
- // EXTERNAL SYNC (DUEL CORE HOOK)
+ // EXTERNAL SYNC
  // =========================
  syncRoundComplete() {
   if (!this.roundLocked) return;
