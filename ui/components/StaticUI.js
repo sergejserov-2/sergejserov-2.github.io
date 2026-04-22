@@ -55,18 +55,6 @@ export class StaticUI {
 
   this.renderPlayerBars(container, guesses);
 
-  // текст больше вторичен — но оставим для дебага
-  if (text) {
-   text.innerHTML = guesses.map(g => {
-    return `
-     <p>
-      Игрок: <b>${g.playerId}</b> — 
-      Точка на расстоянии ${g.distance.toFixed(1)} км — 
-      ${g.score} / 5000
-     </p>
-    `;
-   }).join("");
-  }
  }
 
  // =========================
@@ -139,8 +127,8 @@ export class StaticUI {
       font-size: 13px;
       color: white;
     ">
-      <span>${p.playerId}</span>
-      <span>${distance !== null ? distance.toFixed(1) + " km" : ""}</span>
+      <span>Игрок: ${p.playerId}</span>
+      <span>На расстоянии ${distance !== null ? distance.toFixed(1) + " км" : ""}</span>
       <span>${score} / ${MAX_SCORE}</span>
     </div>
 
