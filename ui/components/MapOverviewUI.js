@@ -8,14 +8,9 @@ export class MapOverviewUI {
 
   this.map = null;
   this.markers = [];
-  this.line = null;
-
   this._resizeObserver = null;
  }
 
- // =========================
- // INIT
- // =========================
  init() {
   if (!this.element) return;
 
@@ -25,14 +20,14 @@ export class MapOverviewUI {
   });
 
   this._resizeObserver = new ResizeObserver(() => {
-   this.forceResize();
+   this.map?.resize?.();
   });
 
   this._resizeObserver.observe(this.element);
  }
 
  // =========================
- // RENDER (FIXED FLOW)
+ // MAIN FLOW (FIXED CINEMATIC)
  // =========================
  async render(round) {
   if (!this.map || !round) return;
@@ -51,111 +46,60 @@ export class MapOverviewUI {
   const actualColor = this.uiBuilder.getActualColor();
 
   // =========================
-  // NO GUESS CASE
+  // NO GUESS
   // =========================
   if (!guess) {
-   const m = this.adapter.createMarker(this.map, actual, {
+   this.adapter.createMarker(this.map, actual, {
     color: actualColor,
     scale: 1.35
    });
 
-   this.markers.push(m);
-
    this.adapter.setCenter(this.map, actual);
    this.adapter.setZoom(this.map, 4);
-
    return;
   }
 
   // =========================
   // GUESS MARKER FIRST
   // =========================
-  const guessMarker = this.adapter.createMarker(this.map, guess, {
-   color: playerColor,
-   scale: 1
-  });
-
-  this.markers.push(guessMarker);
-
-  // =========================
-  // FIT CAMERA
-  // =========================
-  this.fitToPoints([guess, actual]);
+  this.markers.push(
+   this.adapter.createMarker(this.map, guess, {
+    color: playerColor,
+    scale: 1
+   })
+  );
 
   // =========================
-  // LINE ANIMATION (WAIT)
+  // LINE + CAMERA SYNC
   // =========================
   await this.adapter.createGradientPolyline(
    this.map,
    [guess, actual],
    playerColor,
-   actualColor
+   actualColor,
+   (t) => {
+    this.adapter.updateCameraProgress(
+     this.map,
+     guess,
+     actual,
+     t
+    );
+   }
   );
 
   // =========================
-  // ONLY AFTER LINE → actual marker
+  // ACTUAL MARKER AFTER ANIMATION
   // =========================
-  const actualMarker = this.adapter.createMarker(this.map, actual, {
-   color: actualColor,
-   scale: 1.35
-  });
-
-  this.markers.push(actualMarker);
+  this.markers.push(
+   this.adapter.createMarker(this.map, actual, {
+    color: actualColor,
+    scale: 1.35
+   })
+  );
  }
 
- // =========================
- // FIT CAMERA
- // =========================
- fitToPoints(points) {
-  const a = points[0];
-  const b = points[1];
-
-  const center = {
-   lat: (a.lat + b.lat) / 2,
-   lng: (a.lng + b.lng) / 2
-  };
-
-  const distance = Geometry.distance(a, b);
-
-  let zoom = 5;
-  if (distance < 10) zoom = 7;
-  else if (distance < 50) zoom = 6;
-  else if (distance < 200) zoom = 5;
-  else if (distance < 1000) zoom = 4;
-  else zoom = 3;
-
-  this.adapter.setCenter(this.map, center);
-  this.adapter.setZoom(this.map, zoom);
- }
-
- // =========================
- // CLEAR
- // =========================
  clear() {
   this.markers.forEach(m => this.adapter.removeMarker(m));
   this.markers = [];
-
-  if (this.line) {
-   this.line.remove?.();
-   this.line = null;
-  }
- }
-
- // =========================
- // RESIZE
- // =========================
- forceResize() {
-  if (!this.map) return;
-  this.map.resize();
- }
-
- // =========================
- // DESTROY
- // =========================
- destroy() {
-  if (this._resizeObserver) {
-   this._resizeObserver.disconnect();
-   this._resizeObserver = null;
-  }
  }
 }
