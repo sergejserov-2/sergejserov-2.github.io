@@ -35,77 +35,68 @@ export class MapOverviewUI {
  // =========================
  // RENDER
  // =========================
- render(round) {
-  if (!this.map || !round) return;
+render(round) {
+ if (!this.map || !round) return;
 
-  this.clear();
+ this.clear();
 
-  const actual = round.actualLocation;
-  const guess = round.guess;
+ const actual = round.actualLocation;
+ const guess = round.guess;
 
-  if (!actual) return;
+ if (!actual) return;
 
-  const playerColor = this.uiBuilder.getPlayerColor(
-   guess?.playerId || "p1"
-  );
+ const playerColor = this.uiBuilder.getPlayerColor(
+  guess?.playerId || "p1"
+ );
 
-  const actualColor = this.uiBuilder.getActualColor();
+ const actualColor = this.uiBuilder.getActualColor();
 
-  // =========================
-  // NO GUESS CASE
-  // =========================
-  if (!guess) {
-   this.adapter.createMarker(this.map, actual, {
-    color: actualColor,
-    scale: 1.35
-   });
+ // 🔥 ВАЖНО: сначала ресайз
+ this.scheduleResize?.();
 
-   this.adapter.setCenter(this.map, actual);
-   this.adapter.setZoom(this.map, 4);
-
-   return;
-  }
-
-  // =========================
-  // FIT (СТАБИЛЬНЫЙ, БЕЗ АНИМАЦИЙ КАМЕРЫ)
-  // =========================
-  this.adapter.fitBounds(this.map, [guess, actual]);
-
-  // =========================
-  // GUESS MARKER
-  // =========================
-  const guessMarker = this.adapter.createMarker(this.map, guess, {
-   color: playerColor,
-   scale: 1
+ if (!guess) {
+  this.adapter.createMarker(this.map, actual, {
+   color: actualColor,
+   scale: 1.35
   });
 
-  this.markers.push(guessMarker);
+  this.adapter.setCenter(this.map, actual);
+  this.adapter.setZoom(this.map, 4);
 
-  // =========================
-  // SEGMENTS (НЕ МЕНЯЕМ МАПУ ВООБЩЕ)
-  // =========================
-  const segments = this.adapter.createGradientPolyline(
-   this.map,
-   [guess, actual],
-   playerColor,
-   actualColor,
-   14
-  );
-
-  this.lines.push(...segments);
-
-  // =========================
-  // ANIMATE SEGMENTS
-  // =========================
-  this.animateSegments(segments, () => {
-   const actualMarker = this.adapter.createMarker(this.map, actual, {
-    color: actualColor,
-    scale: 1.35
-   });
-
-   this.markers.push(actualMarker);
-  });
+  return;
  }
+
+ const guessMarker = this.adapter.createMarker(this.map, guess, {
+  color: playerColor,
+  scale: 1
+ });
+
+ this.markers.push(guessMarker);
+
+ const segments = this.adapter.createGradientPolyline(
+  this.map,
+  [guess, actual],
+  playerColor,
+  actualColor,
+  14
+ );
+
+ this.lines.push(...segments);
+
+ // 🔥 FIT ПОСЛЕ resize + ДО рендера линий
+ requestAnimationFrame(() => {
+  this.adapter.fitBounds(this.map, [guess, actual]);
+ });
+
+ this.animateSegments(segments, () => {
+  const actualMarker = this.adapter.createMarker(this.map, actual, {
+   color: actualColor,
+   scale: 1.35
+  });
+
+  this.markers.push(actualMarker);
+ });
+}
 
  // =========================
  // SEGMENT ANIMATION
