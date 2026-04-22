@@ -1,20 +1,18 @@
 export class StaticUI {
- constructor({ hudElement }) {
+ constructor({ hudElement, uiBuilder }) {
   if (!hudElement) throw new Error("StaticUI: missing hud");
 
   this.hudElement = hudElement;
-
-  this.roundEl = hudElement.querySelector(".round b");
-  this.totalEl = hudElement.querySelector(".total-score b");
-  this.timeEl = hudElement.querySelector(".time-left b");
-  this.movesEl = hudElement.querySelector(".moves-left b");
-
-  this.delayBar = document.querySelector(".round-timer-bar");
-
-  this.delayFrame = null;
+  this.uiBuilder = uiBuilder;
 
   this.roundRoot = document.querySelector(".round-result");
   this.gameRoot = document.querySelector(".game-result");
+
+  this.roundEl = hudElement.querySelector(".round b");
+  this.totalEl = hudElement.querySelector(".total-score b");
+
+  this.delayBar = document.querySelector(".round-timer-bar");
+  this.delayFrame = null;
  }
 
  // =========================
@@ -23,142 +21,127 @@ export class StaticUI {
 
  updateHUD(vm = {}) {
   if (this.roundEl) {
-   this.roundEl.textContent =
-    `Раунд: ${vm.round} / ${vm.roundLimit}`;
+   this.roundEl.textContent = `Раунд: ${vm.round} / ${vm.roundLimit}`;
   }
 
   if (this.totalEl) {
-   this.totalEl.textContent =
-    `Общий счёт: ${vm.totalScore}`;
-  }
-
-  const timeWrap = this.timeEl?.parentElement;
-  if (timeWrap) {
-   timeWrap.style.display = vm.showTime ? "block" : "none";
-  }
-
-  const movesWrap = this.movesEl?.parentElement;
-  if (movesWrap) {
-   movesWrap.style.display = vm.showMoves ? "block" : "none";
+   this.totalEl.textContent = `Счёт: ${vm.totalScore}`;
   }
  }
 
  updateTimer(value) {
-  if (!this.timeEl) return;
-  this.timeEl.textContent = `Время: ${value}`;
+  const el = this.hudElement.querySelector(".time-left b");
+  if (el) el.textContent = `Время: ${value}`;
  }
 
  updateMoves(value) {
-  if (!this.movesEl) return;
-  this.movesEl.textContent =
-   value === -1 ? "∞" : `Ходы: ${value}`;
+  const el = this.hudElement.querySelector(".moves-left b");
+  if (!el) return;
+  el.textContent = value === -1 ? "∞" : `Ходы: ${value}`;
  }
 
  // =========================
- // HELPERS
+ // ROUND RESULT (MULTIPLAYER)
  // =========================
 
- renderPlayers(root, players = [], getColor) {
+ showRoundResult(vm = {}) {
+  const root = this.roundRoot;
   if (!root) return;
 
-  const container = root.querySelector(".players-score");
+  const container = root.querySelector(".score-view");
+  const text = root.querySelector(".score-text");
+
+  const guesses = vm.guesses || [];
+
+  // =========================
+  // TEXT: ВСЕ ИГРОКИ
+  // =========================
+  if (text) {
+   text.innerHTML = guesses.map(g => {
+    const distance = (g.distance ?? 0).toFixed(1);
+    const score = g.score ?? 0;
+
+    return `
+     <p>
+      <b>${g.playerId}</b>: расстояние ${distance} км, очки ${score}
+     </p>
+    `;
+   }).join("");
+  }
+
+  // =========================
+  // BARS
+  // =========================
+  this.renderPlayerBars(container, guesses);
+ }
+
+ // =========================
+ // GAME RESULT (MULTIPLAYER)
+ // =========================
+
+ showGameResult(vm = {}) {
+  const root = this.gameRoot;
+  if (!root) return;
+
+  const container = root.querySelector(".score-view");
+  const text = root.querySelector(".score-text");
+
+  const players = vm.players || {};
+
+  const list = Object.entries(players).map(([playerId, data]) => ({
+   playerId,
+   score: data.score || 0
+  }));
+
+  if (text) {
+   text.innerHTML = list.map(p => {
+    return `<p><b>${p.playerId}</b>: итоговые очки ${p.score}</p>`;
+   }).join("");
+  }
+
+  this.renderPlayerBars(container, list);
+
+  this.stopRoundDelay();
+ }
+
+ // =========================
+ // PLAYER BARS
+ // =========================
+
+ renderPlayerBars(container, guesses = []) {
   if (!container) return;
 
-  container.innerHTML = "";
+  const old = container.querySelector(".player-score-bar");
+  if (old) old.remove();
 
-  players.forEach(p => {
-   const color = getColor?.(p.playerId) || "#fff";
+  const wrap = document.createElement("div");
+  wrap.className = "player-score-bar";
+
+  guesses.forEach(g => {
+   const color = this.uiBuilder.getPlayerColor(g.playerId);
 
    const el = document.createElement("div");
    el.className = "player-score";
 
+   const score = g.score ?? 0;
+   const distance = g.distance ?? null;
+
    el.innerHTML = `
-    <div class="player-row">
-      <span class="player-id" style="color:${color}">
-        ${p.playerId}
-      </span>
-
-      <span class="player-distance">
-        ${p.distance?.toFixed(1) ?? 0} км
-      </span>
-
-      <span class="player-score-value">
-        ${p.score ?? 0}
-      </span>
+    <div class="player-score-label">
+     ${g.playerId} — ${score} pts
+     ${distance !== null ? ` / ${distance.toFixed(1)} km` : ""}
     </div>
-
-    <div class="score-progress-bar">
-      <div class="score-progress" 
-           style="width:${Math.min(Math.max(p.progress ?? 0,0),1)*100}%;
-                  background:${color}">
-      </div>
-    </div>
+    <div class="player-score-fill"></div>
    `;
 
-   container.appendChild(el);
+   const fill = el.querySelector(".player-score-fill");
+   fill.style.width = `${Math.min(score / 5000, 1) * 100}%`;
+   fill.style.background = color;
+
+   wrap.appendChild(el);
   });
- }
 
- // =========================
- // ROUND RESULT
- // =========================
-
- showRoundResult(model = {}) {
-  const root = this.roundRoot;
-  if (!root) return;
-
-  const text = root.querySelector(".score-text");
-  const players = model.players || [];
-
-  // =========================
-  // TEXT (fallback SOLO)
-  // =========================
-  if (text) {
-   if (players.length > 1) {
-    text.innerHTML = `<p><b>Результаты раунда</b></p>`;
-   } else {
-    const p = players[0];
-    text.innerHTML = `
-     <p>Расстояние: ${p?.distance?.toFixed(1) ?? 0} км</p>
-     <p>Очки: ${p?.score ?? 0}</p>
-    `;
-   }
-  }
-
-  // =========================
-  // PLAYERS UI
-  // =========================
-  this.renderPlayers(
-   root,
-   players,
-   model.getPlayerColor
-  );
- }
-
- // =========================
- // GAME RESULT
- // =========================
-
- showGameResult(model = {}) {
-  const root = this.gameRoot;
-  if (!root) return;
-
-  const text = root.querySelector(".score-text");
-  const players = model.players || [];
-
-  if (text) {
-   text.innerHTML = `
-    <p><b>Итог игры</b></p>
-   `;
-  }
-
-  this.renderPlayers(
-   root,
-   players,
-   model.getPlayerColor
-  );
-
-  this.stopRoundDelay();
+  container.appendChild(wrap);
  }
 
  // =========================
@@ -176,8 +159,7 @@ export class StaticUI {
   const start = performance.now();
 
   const animate = (now) => {
-   const elapsed = now - start;
-   const progress = Math.max(0, 1 - elapsed / duration);
+   const progress = Math.max(0, 1 - (now - start) / duration);
 
    this.delayBar.style.transform = `scaleX(${progress})`;
 
