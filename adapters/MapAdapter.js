@@ -295,6 +295,24 @@ createPolygon(map, coords, {
         }
     };
 }
+removePolygon(map, polygon) {
+    if (!map || !polygon) return;
 
+    const { id } = polygon;
+
+    if (!id) return;
+
+    if (map.getLayer(id + "-stroke")) {
+        map.removeLayer(id + "-stroke");
+    }
+
+    if (map.getLayer(id)) {
+        map.removeLayer(id);
+    }
+
+    if (map.getSource(id)) {
+        map.removeSource(id);
+    }
+}
     
 }
