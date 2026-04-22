@@ -1,5 +1,3 @@
-import { Geometry } from "../../domain/math/Geometry.js";
-
 export class MapOverviewUI {
  constructor({ adapter, element, uiBuilder }) {
   this.adapter = adapter;
@@ -12,23 +10,18 @@ export class MapOverviewUI {
  }
 
  init() {
-  if (!this.element) return;
-
   this.map = this.adapter.createMap(this.element, {
    center: { lat: 20, lng: 0 },
    zoom: 2
   });
 
   this._resizeObserver = new ResizeObserver(() => {
-   this.map?.resize?.();
+   this.adapter.resize(this.map);
   });
 
   this._resizeObserver.observe(this.element);
  }
 
- // =========================
- // MAIN FLOW (FIXED CINEMATIC)
- // =========================
  async render(round) {
   if (!this.map || !round) return;
 
@@ -39,61 +32,46 @@ export class MapOverviewUI {
 
   if (!actual) return;
 
-  const playerColor = this.uiBuilder.getPlayerColor(
-   guess?.playerId || "p1"
-  );
-
+  const playerColor = this.uiBuilder.getPlayerColor("p1");
   const actualColor = this.uiBuilder.getActualColor();
 
-  // =========================
-  // NO GUESS
-  // =========================
+  // без guess
   if (!guess) {
-   this.adapter.createMarker(this.map, actual, {
-    color: actualColor,
-    scale: 1.35
-   });
+   this.markers.push(
+    this.adapter.createMarker(this.map, actual, {
+     color: actualColor,
+     scale: 1.3
+    })
+   );
 
-   this.adapter.setCenter(this.map, actual);
-   this.adapter.setZoom(this.map, 4);
+   this.adapter.fitBounds(this.map, [actual]);
    return;
   }
 
-  // =========================
-  // GUESS MARKER FIRST
-  // =========================
+  // guess
   this.markers.push(
    this.adapter.createMarker(this.map, guess, {
-    color: playerColor,
-    scale: 1
+    color: playerColor
    })
   );
 
-  // =========================
-  // LINE + CAMERA SYNC
-  // =========================
-  await this.adapter.createGradientPolyline(
+  // линия (анимация)
+  await this.adapter.animateLine(
    this.map,
-   [guess, actual],
+   guess,
+   actual,
    playerColor,
-   actualColor,
-   (t) => {
-    this.adapter.updateCameraProgress(
-     this.map,
-     guess,
-     actual,
-     t
-    );
-   }
+   actualColor
   );
 
-  // =========================
-  // ACTUAL MARKER AFTER ANIMATION
-  // =========================
+  // камера
+  this.adapter.fitBounds(this.map, [guess, actual]);
+
+  // actual
   this.markers.push(
    this.adapter.createMarker(this.map, actual, {
     color: actualColor,
-    scale: 1.35
+    scale: 1.3
    })
   );
  }
@@ -101,5 +79,7 @@ export class MapOverviewUI {
  clear() {
   this.markers.forEach(m => this.adapter.removeMarker(m));
   this.markers = [];
+
+  this.adapter.clearLines(this.map);
  }
 }
