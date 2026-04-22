@@ -1,6 +1,7 @@
 import { Game } from "./core/Game.js";
 import { GameState } from "./core/GameState.js";
 import { GameFlow } from "./core/GameFlow.js";
+import { GameBridge } from "./core/GameBridge.js"
 
 import { Scoring } from "./domain/Scoring.js";
 import { Difficulty } from "./domain/math/Difficulty.js";
