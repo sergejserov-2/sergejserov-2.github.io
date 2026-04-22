@@ -1,9 +1,5 @@
-import { Geometry } from "../domain/math/Geometry.js";
-
 export class MapAdapter {
-    constructor() {
-        this._lines = new Set();
-    }
+    constructor() {}
 
     // =========================
     // COORDS
@@ -68,7 +64,7 @@ export class MapAdapter {
     }
 
     // =========================
-    // MARKER (СТАБИЛЬНЫЙ)
+    // MARKER (СТАБИЛЬНЫЙ ДОМ)
     // =========================
     createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
         const size = 20 * scale;
@@ -117,48 +113,5 @@ export class MapAdapter {
 
     removeMarker(marker) {
         marker?.remove?.();
-    }
-
-    // =========================
-    // LINE (STATIC — NO ANIMATION)
-    // =========================
-    drawLine(map, start, end, colorA, colorB) {
-        const id = `line-${Math.random().toString(36).slice(2)}`;
-
-        const coords = [
-            [start.lng, start.lat],
-            [end.lng, end.lat]
-        ];
-
-        map.addSource(id, {
-            type: "geojson",
-            data: {
-                type: "Feature",
-                geometry: {
-                    type: "LineString",
-                    coordinates: coords
-                }
-            }
-        });
-
-        map.addLayer({
-            id,
-            type: "line",
-            source: id,
-            paint: {
-                "line-width": 3,
-                "line-color": colorA
-            }
-        });
-
-        this._lines.add(id);
-    }
-
-    clearLines(map) {
-        this._lines.forEach(id => {
-            if (map.getLayer(id)) map.removeLayer(id);
-            if (map.getSource(id)) map.removeSource(id);
-        });
-        this._lines.clear();
     }
 }
