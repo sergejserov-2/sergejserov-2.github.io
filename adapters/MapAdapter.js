@@ -9,7 +9,7 @@ export class MapAdapter {
  createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   if (!element) throw new Error("Map container missing");
 
-  const MAPTILER_KEY = "YOUR_KEY_HERE";
+  const MAPTILER_KEY = "PnzOFXp1MIxIAe8nTmbt";
 
   this.map = L.map(element, {
    zoomControl: false,
@@ -20,7 +20,7 @@ export class MapAdapter {
   // 🌑 DARK BASE LAYER + RU LABELS
   // =========================
   L.tileLayer(
-   `https://api.maptiler.com/maps/darkmatter/{z}/{x}/{y}.png?key=${PnzOFXp1MIxIAe8nTmbt}`,
+   `https://api.maptiler.com/maps/darkmatter/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
    {
     tileSize: 512,
     zoomOffset: -1,
