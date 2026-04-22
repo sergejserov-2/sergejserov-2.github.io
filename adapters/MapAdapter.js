@@ -1,4 +1,3 @@
-
 export class MapAdapter {
  constructor() {
   this.map = null;
