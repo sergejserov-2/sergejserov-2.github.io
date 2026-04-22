@@ -1,7 +1,9 @@
-
 export class MapAdapter {
  constructor() {
   this.map = null;
+
+  // 🔑 фикс ключа
+  this.key = "PnzOFXp1MIxIAe8nTmbt";
  }
 
  // =========================
@@ -20,20 +22,12 @@ export class MapAdapter {
  // =========================
  createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   if (!element) throw new Error("Map container missing");
-  new key = PnzOFXp1MIxIAe8nTmbt;
+
   this.map = new maplibregl.Map({
    container: element,
 
-   style: {
-    version: 8,
-    sources: {
-     base: {
-      type: "vector",
-      url: `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/style.json?key=${key}`
-     }
-    },
-    layers: []
-   },
+   // 🔥 ВАЖНО: style.json, не "layers: []"
+   style: `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/style.json?key=${this.key}`,
 
    center: this.toLngLat(center),
    zoom,
@@ -44,7 +38,7 @@ export class MapAdapter {
  }
 
  // =========================
- // MARKER (custom DOM)
+ // MARKER (DOM)
  // =========================
  createMarker(map, { lat, lng }, options = {}) {
   const { color = "#ff4d4d", scale = 1 } = options;
@@ -83,11 +77,9 @@ export class MapAdapter {
     </div>
   `;
 
-  const marker = new maplibregl.Marker({ element: el })
+  return new maplibregl.Marker({ element: el })
    .setLngLat(this.toLngLat({ lat, lng }))
    .addTo(map);
-
-  return marker;
  }
 
  removeMarker(marker) {
@@ -119,10 +111,10 @@ export class MapAdapter {
  }
 
  // =========================
- // POLYLINE (simple GeoJSON)
+ // POLYLINE
  // =========================
  createPolyline(map, path, options = {}) {
-  const id = `line-${Math.random()}`;
+  const id = `line-${Math.random().toString(36).slice(2)}`;
 
   map.addSource(id, {
    type: "geojson",
@@ -156,22 +148,20 @@ export class MapAdapter {
  }
 
  // =========================
- // GRADIENT (упрощённый)
+ // GRADIENT LINE
  // =========================
  createGradientPolyline(map, path, fromColor, toColor, steps = 12) {
   const segments = [];
 
   for (let i = 0; i < steps; i++) {
    const t1 = i / steps;
-   const t2 = (i + 1) / steps;
 
    const p1 = this._interpolate(path[0], path[1], t1);
-   const p2 = this._interpolate(path[0], path[1], t2);
+   const p2 = this._interpolate(path[0], path[1], (i + 1) / steps);
 
    const color = this._mixColor(fromColor, toColor, t1);
 
-   const seg = this.createPolyline(map, [p1, p2], { color });
-   segments.push(seg);
+   segments.push(this.createPolyline(map, [p1, p2], { color }));
   }
 
   return segments;
@@ -191,11 +181,11 @@ export class MapAdapter {
   const a = this._hexToRgb(c1);
   const b = this._hexToRgb(c2);
 
-  const r = Math.round(a.r + (b.r - a.r) * t);
-  const g = Math.round(a.g + (b.g - a.g) * t);
-  const bl = Math.round(a.b + (b.b - a.b) * t);
-
-  return `rgb(${r},${g},${bl})`;
+  return `rgb(
+    ${Math.round(a.r + (b.r - a.r) * t)},
+    ${Math.round(a.g + (b.g - a.g) * t)},
+    ${Math.round(a.b + (b.b - a.b) * t)}
+  )`;
  }
 
  _hexToRgb(hex) {
@@ -204,7 +194,7 @@ export class MapAdapter {
    r: parseInt(h.slice(0, 2), 16),
    g: parseInt(h.slice(2, 4), 16),
    b: parseInt(h.slice(4, 6), 16)
-  };
+};
  }
 
  // =========================
