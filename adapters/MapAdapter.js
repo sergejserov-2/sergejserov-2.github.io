@@ -58,7 +58,6 @@ export class MapAdapter {
                 height:100%;
                 border-radius:50%;
                 border:2px solid ${color};
-                opacity:0.6;
             "></div>
 
             <div style="
@@ -66,8 +65,8 @@ export class MapAdapter {
                 top:50%;
                 left:50%;
                 transform:translate(-50%,-50%);
-                width:${size * 0.4}px;
-                height:${size * 0.4}px;
+                width:${size * 0.5}px;
+                height:${size * 0.5}px;
                 background:${color};
                 border-radius:50%;
             "></div>
