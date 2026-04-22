@@ -59,9 +59,6 @@ export class MapAdapter {
         // чем дальше точки — тем меньше zoom
         let zoom = 10 - maxDist * 2.2;
 
-        // clamp (ВАЖНО)
-        zoom = Math.max(1.5, Math.min(5.5, zoom));
-
         // =========================
         // 4. APPLY
         // =========================
