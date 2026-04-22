@@ -104,18 +104,10 @@ export class MapAdapter {
         marker?.remove?.();
     }
 
-
-
-
-async animateLine(map, start, end, colorA, colorB) {
-    await new Promise(res => {
-        if (map.isStyleLoaded()) return res();
-        map.once("load", res);
-    });
-
+animateLine(map, start, end, colorA, colorB) {
     const id = `line-${Math.random().toString(36).slice(2)}`;
 
-    const steps = 60;
+    const steps = 80;
 
     const coords = [];
 
@@ -128,24 +120,18 @@ async animateLine(map, start, end, colorA, colorB) {
         ]);
     }
 
-    // =========================
-    // SOURCE (ВАЖНО: lineMetrics)
-    // =========================
     map.addSource(id, {
         type: "geojson",
+        lineMetrics: true,
         data: {
             type: "Feature",
             geometry: {
                 type: "LineString",
                 coordinates: [coords[0]]
             }
-        },
-        lineMetrics: true
+        }
     });
 
-    // =========================
-    // LAYER
-    // =========================
     map.addLayer({
         id,
         type: "line",
@@ -173,14 +159,13 @@ async animateLine(map, start, end, colorA, colorB) {
             const source = map.getSource(id);
             if (!source) return;
 
-            // 🔥 защита от 1-point bug
-            const slice = coords.slice(0, Math.max(i, 2));
+            const safeIndex = Math.min(i, coords.length - 1);
 
             source.setData({
                 type: "Feature",
                 geometry: {
                     type: "LineString",
-                    coordinates: slice
+                    coordinates: coords.slice(0, safeIndex + 1)
                 }
             });
 
@@ -189,6 +174,15 @@ async animateLine(map, start, end, colorA, colorB) {
             if (i <= steps) {
                 requestAnimationFrame(animate);
             } else {
+                // 🔥 ЖЁСТКО фиксируем финальную точку
+                source.setData({
+                    type: "Feature",
+                    geometry: {
+                        type: "LineString",
+                        coordinates: coords
+                    }
+                });
+
                 resolve();
             }
         };
