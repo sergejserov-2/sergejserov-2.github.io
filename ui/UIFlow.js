@@ -97,22 +97,16 @@ export class UIFlow {
   // ROUND RESULT
   // =========================
   this.gameFlow.on("roundResultShown", ({ state }) => {
+   this.screenManager.show("roundResult");
+
+   const vm = this.uiBuilder.formatRoundVM(state);
+   this.staticUI.showRoundResult(vm);
+
    const rounds = state.rounds || [];
    const round = rounds[rounds.length - 1];
    if (!round) return;
 
    this.roundOverviewUI.render(round);
-
-   const vm = this.uiBuilder.formatRoundVM(state);
-
-   this.screenManager.show("roundResult");
-   this.staticUI.showRoundResult(vm);
-
-    requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-    this.roundOverviewUI.forceResize?.();
-   });
-   });
 
    this.staticUI.startRoundDelay(7500, () => {
     this.gameFlow.nextRound();
@@ -132,12 +126,7 @@ export class UIFlow {
    const last = rounds[rounds.length - 1];
 
    if (last) {
-    requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
      this.gameOverviewUI.render(last);
-     this.gameOverviewUI.forceResize?.();
-    });
-    });
    }
 
    // =========================
