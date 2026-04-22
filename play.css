@@ -264,7 +264,7 @@ body {
 
 .game-end-buttons {
  display: flex;
- gap: 12px;
+ gap: 30px;
  justify-content: center;
  flex-wrap: wrap;
  margin-top: 10px;
