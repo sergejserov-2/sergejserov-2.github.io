@@ -106,4 +106,36 @@ export class Geometry {
   static toRad(v) {
     return (v * Math.PI) / 180;
   }
+
+static getAreaScale(area) {
+ if (!area?.polygon?.length) return 2000;
+
+ let minLat = Infinity;
+ let maxLat = -Infinity;
+ let minLng = Infinity;
+ let maxLng = -Infinity;
+
+ for (const p of area.polygon) {
+  if (p.lat < minLat) minLat = p.lat;
+  if (p.lat > maxLat) maxLat = p.lat;
+  if (p.lng < minLng) minLng = p.lng;
+  if (p.lng > maxLng) maxLng = p.lng;
+ }
+
+ const latDiff = maxLat - minLat;
+ const lngDiff = maxLng - minLng;
+
+ // диагональ bounding box
+ const diagonalDeg = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+
+ // перевод в километры
+ const diagonalKm = diagonalDeg * 111;
+
+ // 🔥 немного смягчаем (важно для геймплея)
+ return diagonalKm * 0.7;
+}
+
+
+
+  
 }
