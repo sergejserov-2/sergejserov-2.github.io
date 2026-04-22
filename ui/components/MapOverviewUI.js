@@ -1,4 +1,3 @@
-
 import { Geometry } from "../../domain/math/Geometry.js";
 
 export class MapOverviewUI {
@@ -9,10 +8,9 @@ export class MapOverviewUI {
 
   this.map = null;
   this.markers = [];
-  this.lines = [];
+  this.line = null;
 
   this._resizeObserver = null;
-  this._resizeRAF = null;
  }
 
  // =========================
@@ -53,13 +51,15 @@ export class MapOverviewUI {
   const actualColor = this.uiBuilder.getActualColor();
 
   // =========================
-  // NO GUESS STATE
+  // NO GUESS CASE
   // =========================
   if (!guess) {
-   this.adapter.createMarker(this.map, actual, {
+   const m = this.adapter.createMarker(this.map, actual, {
     color: actualColor,
     scale: 1.35
    });
+
+   this.markers.push(m);
 
    this.adapter.setCenter(this.map, actual);
    this.adapter.setZoom(this.map, 4);
@@ -70,72 +70,57 @@ export class MapOverviewUI {
   // =========================
   // MARKERS
   // =========================
-  this.markers.push(
-   this.adapter.createMarker(this.map, guess, {
-    color: playerColor,
-    scale: 1
-   })
-  );
-
-  // =========================
-  // FIT BOUNDS (КРИТИЧЕСКИЙ ФИКС)
-  // =========================
-  requestAnimationFrame(() => {
-   this.adapter.fitBounds(this.map, [guess, actual]);
+  const guessMarker = this.adapter.createMarker(this.map, guess, {
+   color: playerColor,
+   scale: 1
   });
 
+  const actualMarker = this.adapter.createMarker(this.map, actual, {
+   color: actualColor,
+   scale: 1.35
+  });
+
+  this.markers.push(guessMarker, actualMarker);
+
   // =========================
-  // LINE SEGMENTS
+  // FIT BOUNDS FIRST
   // =========================
-  const segments = this.adapter.createGradientPolyline(
+  this.fitToPoints([guess, actual]);
+
+  // =========================
+  // SINGLE ANIMATED GRADIENT LINE
+  // =========================
+  this.line = this.adapter.createGradientPolyline(
    this.map,
    [guess, actual],
    playerColor,
-   actualColor,
-   14
+   actualColor
   );
-
-  this.lines.push(...segments);
-
-  // =========================
-  // ANIMATION (only visuals)
-  // =========================
-  this.animateSegments(segments, () => {
-   this.markers.push(
-    this.adapter.createMarker(this.map, actual, {
-     color: actualColor,
-     scale: 1.35
-    })
-   );
-  });
  }
 
  // =========================
- // ANIMATION
+ // FIT CAMERA
  // =========================
- animateSegments(segments, onComplete) {
-  if (!segments?.length) {
-   onComplete?.();
-   return;
-  }
+ fitToPoints(points) {
+  const a = points[0];
+  const b = points[1];
 
-  let i = 0;
-
-  const step = () => {
-   if (i >= segments.length) {
-    onComplete?.();
-    return;
-   }
-
-   // MapLibre layer object
-   segments[i].remove?.(); // safety
-   segments[i] = segments[i]; // already added via adapter
-
-   i++;
-   setTimeout(step, 16);
+  const center = {
+   lat: (a.lat + b.lat) / 2,
+   lng: (a.lng + b.lng) / 2
   };
 
-  step();
+  const distance = Geometry.distance(a, b);
+
+  let zoom = 5;
+  if (distance < 10) zoom = 7;
+  else if (distance < 50) zoom = 6;
+  else if (distance < 200) zoom = 5;
+  else if (distance < 1000) zoom = 4;
+  else zoom = 3;
+
+  this.adapter.setCenter(this.map, center);
+  this.adapter.setZoom(this.map, zoom);
  }
 
  // =========================
@@ -143,33 +128,20 @@ export class MapOverviewUI {
  // =========================
  clear() {
   this.markers.forEach(m => this.adapter.removeMarker(m));
-  this.lines.forEach(l => l?.remove?.());
-
   this.markers = [];
-  this.lines = [];
+
+  if (this.line) {
+   this.line.remove?.();
+   this.line = null;
+  }
  }
 
  // =========================
- // RESIZE FIX (MapLibre critical)
+ // RESIZE
  // =========================
  forceResize() {
   if (!this.map) return;
-
-  if (this._resizeRAF) {
-   cancelAnimationFrame(this._resizeRAF);
-  }
-
-  this._resizeRAF = requestAnimationFrame(() => {
-   this.map.resize();
-
-   // 🔥 ВАЖНО: повторный fit после resize
-   const bounds = this.map.getBounds?.();
-   if (bounds) {
-    this.map.fitBounds(bounds, { duration: 0 });
-   }
-
-   this._resizeRAF = null;
-  });
+  this.map.resize();
  }
 
  // =========================
