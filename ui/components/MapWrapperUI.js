@@ -163,48 +163,62 @@ export class MapWrapperUI {
  // =========================
  // DOM RESIZE HANDLER
  // =========================
- initResize() {
-  const handle =
-   this.element?.parentElement?.querySelector(".resize-handle");
+initResize() {
+ const handle =
+  this.element?.parentElement?.querySelector(".resize-handle");
 
-  if (!handle) return;
+ if (!handle) return;
 
-  let startX, startY, startW, startH;
+ let startX, startY, startW, startH;
+ let raf = null;
 
-  handle.addEventListener("mousedown", (e) => {
-   e.preventDefault();
+ const schedule = () => {
+  if (raf) return;
 
-   const wrapper = this.element.parentElement;
-   const rect = wrapper.getBoundingClientRect();
-
-   startX = e.clientX;
-   startY = e.clientY;
-   startW = rect.width;
-   startH = rect.height;
-
-   document.body.style.userSelect = "none";
-
-   const onMove = (e) => {
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-
-    wrapper.style.width = Math.max(200, startW + dx) + "px";
-    wrapper.style.height = Math.max(200, startH - dy) + "px";
-
-    this.scheduleResize();
-   };
-
-   const onUp = () => {
-    document.body.style.userSelect = "";
-
-    window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("mouseup", onUp);
-
-    this.scheduleResize();
-   };
-
-   window.addEventListener("mousemove", onMove);
-   window.addEventListener("mouseup", onUp);
+  raf = requestAnimationFrame(() => {
+   this.map?.resize?.();
+   raf = null;
   });
- }
+ };
+
+ handle.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+
+  const wrapper = this.element.parentElement;
+  const rect = wrapper.getBoundingClientRect();
+
+  startX = e.clientX;
+  startY = e.clientY;
+  startW = rect.width;
+  startH = rect.height;
+
+  document.body.style.userSelect = "none";
+
+  const onMove = (e) => {
+   const dx = e.clientX - startX;
+   const dy = e.clientY - startY;
+
+   wrapper.style.width = Math.max(200, startW + dx) + "px";
+   wrapper.style.height = Math.max(200, startH - dy) + "px";
+
+   // 🔥 НЕ ДЕРГАЕМ КАРТУ КАЖДЫЙ PIXEL
+   schedule();
+  };
+
+  const onUp = () => {
+   document.body.style.userSelect = "";
+
+   window.removeEventListener("mousemove", onMove);
+   window.removeEventListener("mouseup", onUp);
+
+   // 🔥 ФИНАЛЬНЫЙ resize (самый важный)
+   requestAnimationFrame(() => {
+    this.map?.resize?.();
+   });
+  };
+
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
+ });
+}
 }
