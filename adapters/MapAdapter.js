@@ -1,47 +1,66 @@
+import L from "leaflet";
+
 export class MapAdapter {
- constructor() {}
-
- createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
-  if (!element) throw new Error("Map container missing");
-
-  return new google.maps.Map(element, {
-   center,
-   zoom,
-   disableDefaultUI: true
-  });
+ constructor() {
+  this.map = null;
  }
 
  // =========================
- // MARKER (FIXED + SHADOW ONLY)
+ // MAP
  // =========================
-createMarker(map, { lat, lng }, options = {}) {
-  const {
-    color = "#ff4d4d",
-    scale = 1
-  } = options;
+ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
+  if (!element) throw new Error("Map container missing");
 
-  const baseSize = 24;
-  const finalSize = baseSize * scale;
-  const svg = `
-<svg width="100%" height="100%" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="12" cy="12" r="6" fill="${color}" opacity="0.9"/>
-  <circle cx="12" cy="12" r="9" stroke="${color}" stroke-width="2" fill="none" opacity="0.4"/>
-</svg>`;
+  this.map = L.map(element, {
+   zoomControl: true,
+   attributionControl: false
+  }).setView([center.lat, center.lng], zoom);
 
-  return new google.maps.Marker({
-    position: { lat, lng },
-    map,
-    icon: {
-      url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
-      scaledSize: new google.maps.Size(finalSize, finalSize),
-      anchor: new google.maps.Point(finalSize / 2, finalSize / 2)
-    },
-    optimized: false
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+   maxZoom: 19
+  }).addTo(this.map);
+
+  return this.map;
+ }
+
+ // =========================
+ // MARKER
+ // =========================
+ createMarker(map, { lat, lng }, options = {}) {
+  const { color = "#ff4d4d", scale = 1 } = options;
+
+  const size = 24 * scale;
+
+  const icon = L.divIcon({
+   className: "custom-marker",
+   html: 
+    <div style="
+      width:${size}px;
+      height:${size}px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+      <div style="
+        width:${size * 0.4}px;
+        height:${size * 0.4}px;
+        background:${color};
+        border-radius:50%;
+        box-shadow:0 0 0 4px rgba(0,0,0,0.15);
+      "></div>
+    </div>
+   ,
+   iconSize: [size, size],
+   iconAnchor: [size / 2, size / 2]
   });
-}
+
+  const marker = L.marker([lat, lng], { icon }).addTo(map);
+
+  return marker;
+ }
 
  removeMarker(marker) {
-  marker?.setMap(null);
+  marker?.remove();
  }
 
  // =========================
@@ -50,18 +69,19 @@ createMarker(map, { lat, lng }, options = {}) {
  createPolyline(map, path, options = {}) {
   const { color = "#ff4d4d" } = options;
 
-  return new google.maps.Polyline({
-   path,
-   geodesic: true,
-   strokeColor: color,
-   strokeOpacity: 1,
-   strokeWeight: 2,
-   map
-  });
+  const line = L.polyline(
+   path.map(p => [p.lat, p.lng]),
+   {
+    color,
+    weight: 2
+   }
+  ).addTo(map);
+
+  return line;
  }
 
  // =========================
- // GRADIENT LINE
+ // GRADIENT POLYLINE (segments)
  // =========================
  createGradientPolyline(map, path, fromColor, toColor, steps = 12) {
   const segments = [];
@@ -75,14 +95,17 @@ createMarker(map, { lat, lng }, options = {}) {
 
    const color = this._mixColor(fromColor, toColor, t1);
 
-   const line = new google.maps.Polyline({
-    path: [p1, p2],
-    geodesic: true,
-    strokeColor: color,
-    strokeOpacity: 1,
-    strokeWeight: 3,
-    map
-   });
+   const line = L.polyline(
+    [
+     [p1.lat, p1.lng],
+     [p2.lat, p2.lng]
+    ],
+    {
+     color,
+     weight: 3,
+     opacity: 0.9
+    }
+   );
 
    segments.push(line);
   }
@@ -90,25 +113,51 @@ createMarker(map, { lat, lng }, options = {}) {
   return segments;
  }
 
+ // =========================
+ // POLYGON
+ // =========================
  createPolygon(map, path, options = {}) {
   const {
    strokeColor = "#4ea1ff",
    fillColor = "#4ea1ff"
   } = options;
 
-  return new google.maps.Polygon({
-   paths: path,
-   strokeColor,
-   strokeOpacity: 0.8,
-   strokeWeight: 2,
-   fillColor,
-   fillOpacity: 0.15,
-   map
-  });
+  const poly = L.polygon(
+   path.map(p => [p.lat, p.lng]),
+   {
+    color: strokeColor,
+    fillColor,
+    fillOpacity: 0.15,
+    weight: 2
+   }
+  ).addTo(map);
+
+  return poly;
  }
 
  // =========================
- // HELPERS
+ // VIEWPORT FIX (ВАЖНО)
+ // =========================
+ fitBounds(map, points) {
+  if (!points?.length) return;
+
+  const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
+
+  map.fitBounds(bounds, {
+   padding: [40, 40]
+  });
+ }
+
+ setCenter(map, center) {
+  map.setView([center.lat, center.lng]);
+ }
+
+ setZoom(map, zoom) {
+  map.setZoom(zoom);
+ }
+
+ // =========================
+ // INTERNALS
  // =========================
  _interpolate(a, b, t) {
   return {
@@ -125,7 +174,7 @@ createMarker(map, { lat, lng }, options = {}) {
   const g = Math.round(a.g + (b.g - a.g) * t);
   const bl = Math.round(a.b + (b.b - a.b) * t);
 
-  return `rgb(${r},${g},${bl})`;
+  return rgb(${r},${g},${bl});
  }
 
  _hexToRgb(hex) {
