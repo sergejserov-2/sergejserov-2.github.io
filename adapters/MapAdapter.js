@@ -11,21 +11,33 @@ export class MapAdapter {
 createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   if (!element) throw new Error("Map container missing");
 
-  this.map = L.map(element, {
-    zoomControl: false,          // ❌ убрали +/-
+const map = L.map(element, {
+    zoomControl: false,        // ❌ убрали +/-
     attributionControl: false
   }).setView([center.lat, center.lng], zoom);
 
-L.tileLayer(
- "https://api.maptiler.com/maps/darkmatter/{z}/{x}/{y}.png?key=YOUR_KEY",
- {
-  attribution:
-   '&copy; OpenStreetMap contributors & MapTiler',
-  tileSize: 512,
-  zoomOffset: -1,
-  language: "ru" // 👈 ключевая идея (в некоторых стилях работает)
- }
-).addTo(this.map);
+  // 🌑 BASE LAYER (dark, NO labels)
+  L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
+    {
+      subdomains: "abcd",
+      maxZoom: 19,
+      attribution:
+        '&copy; OpenStreetMap contributors &copy; CARTO'
+    }
+  ).addTo(map);
+
+  // 🏷 LABELS LAYER (only text)
+  L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
+    {
+      subdomains: "abcd",
+      maxZoom: 19,
+      pane: "overlayPane",
+      opacity: 0.95,
+      attribution: ""
+    }
+  ).addTo(map);
 
   return this.map;
 }
