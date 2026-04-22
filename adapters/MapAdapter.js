@@ -89,60 +89,51 @@ export class MapAdapter {
     // =========================
     // MARKER (100% стабильный)
     // =========================
-    createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
-        const size = 20 * scale;
-        const inner = size * 0.45;
+createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
+    const size = 20 * scale;
+    const inner = size * 0.45;
 
-        const el = document.createElement("div");
-        el.className = "map-marker";
+    const el = document.createElement("div");
 
-        el.style.width = `${size}px`;
-        el.style.height = `${size}px`;
+    el.style.width = ${size}px;
+    el.style.height = ${size}px;
+    el.style.position = "relative";
 
-        el.style.setProperty("--color", color);
-        el.style.setProperty("--inner", `${inner}px`);
+    el.innerHTML = `
+        <div style="
+            width:${size}px;
+            height:${size}px;
+            position:relative;
+        ">
+            <div style="
+                position:absolute;
+                inset:0;
+                border-radius:50%;
+                border:2px solid ${color};
+                opacity:0.6;
+            "></div>
 
-        if (!document.getElementById("marker-style")) {
-            const style = document.createElement("style");
-            style.id = "marker-style";
-            style.innerHTML = `
-                .map-marker {
-                    position: relative;
-                }
+            <div style="
+                width:${inner}px;
+                height:${inner}px;
+                background:${color};
+                border-radius:50%;
+                position:absolute;
+                left:50%;
+                top:50%;
+                transform:translate(-50%,-50%);
+            "></div>
+        </div>
+    `;
 
-                .map-marker::before {
-                    content: "";
-                    position: absolute;
-                    inset: 0;
-                    border-radius: 50%;
-                    border: 2px solid var(--color);
-                    opacity: 0.6;
-                    box-sizing: border-box;
-                }
-
-                .map-marker::after {
-                    content: "";
-                    position: absolute;
-                    width: var(--inner);
-                    height: var(--inner);
-                    background: var(--color);
-                    border-radius: 50%;
-                    left: 50%;
-                    top: 50%;
-                    transform: translate(-50%, -50%);
-                }
-            `;
-            document.head.appendChild(style);
-        }
-
-        return new maplibregl.Marker({
-            element: el,
-            anchor: "center" // 🔥 критично для стабильности
-        })
-            .setLngLat(this.toLngLat({ lat, lng }))
-            .addTo(map);
-    }
-
+    return new maplibregl.Marker({
+        element: el,
+        anchor: "center", // 🔥 критично
+        offset: [0, 0]
+    })
+        .setLngLat([lng, lat])
+        .addTo(map);
+}
     removeMarker(marker) {
         marker?.remove?.();
     }
