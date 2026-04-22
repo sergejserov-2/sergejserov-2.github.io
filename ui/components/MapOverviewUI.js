@@ -113,7 +113,7 @@ export class MapOverviewUI {
  // 🔥 КЛЮЧЕВОЙ FIX: СТАБИЛЬНЫЙ FIT
  // =========================
  fitBothPoints(a, b) {
-  if (!this.map  !a  !b) return;
+  if (!this.map || !a || !b) return;
 
   const group = [
    [a.lat, a.lng],
