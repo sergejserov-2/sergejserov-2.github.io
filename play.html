@@ -3,13 +3,21 @@
 <head>
 <meta charset="utf-8"/>
 <title>Geo Game</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <link rel="stylesheet" href="play.css">
+
+<!-- =========================
+     LEAFLET CSS
+========================= -->
+<link
+ rel="stylesheet"
+ href="https://unpkg.com/leaflet/dist/leaflet.css"
+/>
+
 </head>
 
 <body>
-
 <div class="game">
 
     <!-- SCREENS -->
@@ -30,7 +38,6 @@
 
                 <div class="score-text"></div>
 
-                <!-- FIX: было round-timer -->
                 <div class="round-timer-bar"></div>
             </div>
         </div>
@@ -39,15 +46,17 @@
         <div class="game-result guess-overview">
             <div class="score-view">
                 <div class="overview-map"></div>
+
                 <div class="score-progress-bar">
                     <div class="score-progress"></div>
                 </div>
+
                 <div class="score-text"></div>
-                  <div class="game-end-buttons">
+
+                <div class="game-end-buttons">
                     <div class="button play-again-button">Играть снова</div>
                     <div class="button home-button">В меню</div>
-                  </div>
-        
+                </div>
             </div>
         </div>
 
@@ -57,7 +66,7 @@
     <div class="game-scene">
 
         <div class="streetview"></div>
-        
+
         <div class="hud-wrapper">
             <div class="hud">
                 <div class="round"><b></b></div>
@@ -69,6 +78,7 @@
 
         <div class="map-wrapper">
             <div class="map"></div>
+
             <div class="resize-handle"></div>
 
             <div class="polygon-button" id="togglePolygon">
@@ -81,12 +91,19 @@
         </div>
 
     </div>
-
 </div>
 
 <script type="module" src="./Init.js"></script>
 
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAJfRzZ-GGIV3iCrCVkTsYKDNh09kenzNM&libraries=geometry,marker"></script>
+<!-- Google Maps (StreetView остаётся) -->
+<script async defer
+ src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAJfRzZ-GGIV3iCrCVkTsYKDNh09kenzNM&libraries=geometry,marker">
+</script>
+
+<!-- =========================
+     LEAFLET JS
+========================= -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 </body>
 </html>
