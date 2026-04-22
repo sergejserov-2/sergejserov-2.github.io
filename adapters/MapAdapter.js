@@ -31,7 +31,7 @@ export class MapAdapter {
      base: {
       type: "raster",
       tiles: [
-       `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/256/{z}/{x}/{y}.png?key=${this.key}`
+       `https://api.maptiler.com/maps/019db4a6-96e9-70d5-a214-f01c8c0ea283/style.json?key=${this.key}`
       ],
       tileSize: 256
      }
