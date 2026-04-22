@@ -16,10 +16,16 @@ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
     attributionControl: false
   }).setView([center.lat, center.lng], zoom);
 
-  L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    { maxZoom: 19 }
-  ).addTo(this.map);
+L.tileLayer(
+ "https://api.maptiler.com/maps/darkmatter/{z}/{x}/{y}.png?key=YOUR_KEY",
+ {
+  attribution:
+   '&copy; OpenStreetMap contributors & MapTiler',
+  tileSize: 512,
+  zoomOffset: -1,
+  language: "ru" // 👈 ключевая идея (в некоторых стилях работает)
+ }
+).addTo(map);
 
   return this.map;
 }
