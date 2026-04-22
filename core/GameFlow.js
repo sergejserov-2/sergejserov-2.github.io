@@ -21,6 +21,14 @@ export class GameFlow {
   this.listeners[event]?.forEach(cb => cb(data));
  }
 
+
+applyState(state) {
+ this.game.gameState.status = state.status;
+ this.game.gameState.rounds = state.rounds;
+
+ this.emit("roundStarted", state);
+}
+ 
  async startGame() {
   this.game.startGame();
   this.emit("gameStarted", this.game.getState());
