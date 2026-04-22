@@ -123,10 +123,16 @@ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
 createGradientPolyline(map, path, fromColor, toColor) {
  const id = `line-${Math.random().toString(36).slice(2)}`;
 
- const coords = path.map(p => this.toLngLat(p));
+ const [start, end] = path;
 
  // =========================
- // SOURCE (ВАЖНО: lineMetrics)
+ // 🌍 GREAT CIRCLE POINTS
+ // =========================
+ const points = this._buildGreatCircle(start, end, 80);
+ const coords = points.map(p => this.toLngLat(p));
+
+ // =========================
+ // SOURCE
  // =========================
  map.addSource(id, {
   type: "geojson",
@@ -134,7 +140,7 @@ createGradientPolyline(map, path, fromColor, toColor) {
    type: "Feature",
    geometry: {
     type: "LineString",
-    coordinates: coords
+    coordinates: [coords[0]] // старт с одной точки
    }
   },
   lineMetrics: true
@@ -147,40 +153,28 @@ createGradientPolyline(map, path, fromColor, toColor) {
   id,
   type: "line",
   source: id,
-
   layout: {
    "line-cap": "round",
    "line-join": "round"
   },
-
   paint: {
    "line-width": 3,
-
-   // 🔥 GRADIENT PLAYER → ACTUAL
    "line-gradient": [
     "interpolate",
     ["linear"],
     ["line-progress"],
-
-    0,
-    fromColor,
-
-    1,
-    toColor
+    0, fromColor,
+    1, toColor
    ]
   }
  });
 
  // =========================
- // ANIMATION (progressive reveal)
+ // 🎬 ANIMATION
  // =========================
  let i = 1;
 
  const animate = () => {
-  if (i >= coords.length) return;
-
-  const partial = coords.slice(0, i + 1);
-
   const source = map.getSource(id);
   if (!source) return;
 
@@ -188,26 +182,25 @@ createGradientPolyline(map, path, fromColor, toColor) {
    type: "Feature",
    geometry: {
     type: "LineString",
-    coordinates: partial
+    coordinates: coords.slice(0, i)
    }
   });
 
   i++;
 
-  requestAnimationFrame(animate);
+  if (i <= coords.length) {
+   requestAnimationFrame(animate);
+  }
  };
 
  requestAnimationFrame(animate);
 
- // =========================
- // RETURN HANDLE
- // =========================
  return {
   id,
   remove: () => {
    if (map.getLayer(id)) map.removeLayer(id);
    if (map.getSource(id)) map.removeSource(id);
-  }
+   }
  };
 }
 
