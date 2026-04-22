@@ -27,17 +27,22 @@ export class MapOverviewUI {
         this.clear();
 
         const actual = round.actualLocation;
-        const guess = round.guess;
 
         if (!actual) return;
 
-        const playerColor = this.uiBuilder.getPlayerColor("p1");
         const actualColor = this.uiBuilder.getActualColor();
 
         // =========================
-        // CASE: NO GUESS
+        // 🔥 НОВОЕ: нормализация guesses
         // =========================
-        if (!guess) {
+        const guesses = round.guesses?.length
+            ? round.guesses
+            : (round.guess ? [round.guess] : []);
+
+        // =========================
+        // CASE: NO GUESSES
+        // =========================
+        if (!guesses.length) {
             this.markers.push(
                 this.adapter.createMarker(this.map, actual, {
                     color: actualColor,
@@ -48,36 +53,47 @@ export class MapOverviewUI {
         }
 
         // =========================
-        // 1. GUESS FIRST
+        // 1. CREATE ALL GUESS MARKERS
         // =========================
-        this.markers.push(
-            this.adapter.createMarker(this.map, guess, {
-                color: playerColor,
-                scale: 1
-            })
-        );
+        const pointsForCamera = [actual];
+
+        for (const g of guesses) {
+            const color = this.uiBuilder.getPlayerColor(g.playerId);
+
+            this.markers.push(
+                this.adapter.createMarker(this.map, g, {
+                    color,
+                    scale: 1
+                })
+            );
+
+            pointsForCamera.push(g);
+        }
 
         // =========================
-        // 🚀 CAMERA FIX (ДО ЛИНИИ)
+        // 🚀 CAMERA (по всем точкам)
         // =========================
-
-        this.adapter.fitBetween(this.map, guess, actual);
+        this.fitToAll(pointsForCamera);
 
         await this.adapter.waitRenderStable(this.map);
 
         // =========================
-        // 2. LINE ANIMATION
+        // 2. LINES (ПО КАЖДОМУ ИГРОКУ)
         // =========================
-        await this.adapter.animateLine(
-            this.map,
-            guess,
-            actual,
-            playerColor,
-            actualColor
-        );
+        for (const g of guesses) {
+            const color = this.uiBuilder.getPlayerColor(g.playerId);
+
+            await this.adapter.animateLine(
+                this.map,
+                g,
+                actual,
+                color,
+                actualColor
+            );
+        }
 
         // =========================
-        // 3. ACTUAL MARKER
+        // 3. ACTUAL MARKER (ПОСЛЕДНИЙ)
         // =========================
         this.markers.push(
             this.adapter.createMarker(this.map, actual, {
@@ -85,6 +101,41 @@ export class MapOverviewUI {
                 scale: 1.3
             })
         );
+    }
+
+    // =========================
+    // 🔥 FIT CAMERA FOR MULTI POINTS
+    // =========================
+    fitToAll(points) {
+        if (!points.length) return;
+
+        let minLat = Infinity;
+        let maxLat = -Infinity;
+        let minLng = Infinity;
+        let maxLng = -Infinity;
+
+        for (const p of points) {
+            if (p.lat < minLat) minLat = p.lat;
+            if (p.lat > maxLat) maxLat = p.lat;
+            if (p.lng < minLng) minLng = p.lng;
+            if (p.lng > maxLng) maxLng = p.lng;
+        }
+
+        const center = {
+            lat: (minLat + maxLat) / 2,
+            lng: (minLng + maxLng) / 2
+        };
+
+        const dx = maxLng - minLng;
+        const dy = maxLat - minLat;
+
+        const maxDist = Math.max(dx, dy);
+
+        let zoom = 6 - maxDist * 2.2;
+        zoom = Math.max(1.5, Math.min(5.5, zoom));
+
+        this.map.setCenter([center.lng, center.lat]);
+        this.map.setZoom(zoom);
     }
 
     clear() {
