@@ -14,7 +14,7 @@ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   }).setView([center.lat, center.lng], zoom);
 
   L.tileLayer(
-    https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${KEY},
+    `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${KEY}`,
     {
       tileSize: 512,
       zoomOffset: -1,
