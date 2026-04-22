@@ -1,4 +1,3 @@
-
 import { Geometry } from "../domain/math/Geometry.js";
 
 export class MapAdapter {
@@ -11,10 +10,6 @@ export class MapAdapter {
     // =========================
     toLngLat(p) {
         return [p.lng, p.lat];
-    }
-
-    fromLngLat(p) {
-        return { lng: p[0], lat: p[1] };
     }
 
     // =========================
@@ -45,22 +40,8 @@ export class MapAdapter {
         await new Promise(res => map.once("load", res));
     }
 
-    // 🔥 важно: даёт стабильный рендер после любых изменений
-    waitRenderStable(map) {
-        return new Promise(resolve => {
-            let frames = 0;
-
-            const tick = () => {
-                frames++;
-                if (frames >= 2) {
-                    resolve();
-                    return;
-                }
-                requestAnimationFrame(tick);
-            };
-
-            requestAnimationFrame(tick);
-        });
+    waitIdle(map) {
+        return new Promise(res => map.once("idle", res));
     }
 
     resize(map) {
@@ -72,7 +53,7 @@ export class MapAdapter {
     }
 
     // =========================
-    // CAMERA (простая и стабильная)
+    // CAMERA
     // =========================
     fitBounds(map, a, b) {
         const bounds = new maplibregl.LngLatBounds(
@@ -82,65 +63,66 @@ export class MapAdapter {
 
         map.fitBounds(bounds, {
             padding: 90,
-            duration: 0 // 🔥 никаких анимаций
+            duration: 0
         });
     }
 
     // =========================
-    // MARKER (100% стабильный)
+    // MARKER (СТАБИЛЬНЫЙ DOM)
     // =========================
-createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
-    const size = 20 * scale;
-    const inner = size * 0.45;
+    createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
+        const size = 20 * scale;
+        const inner = size * 0.45;
 
-    const el = document.createElement("div");
+        const el = document.createElement("div");
+        el.className = "map-marker";
 
-    el.style.width = `${size}px`;
-    el.style.height = `${size}px`;
-    el.style.position = "relative";
+        el.style.width = `${size}px`;
+        el.style.height = `${size}px`;
+        el.style.position = "relative";
 
-    el.innerHTML = `
-        <div style="
-            width:${size}px;
-            height:${size}px;
-            position:relative;
-        ">
+        el.innerHTML = `
             <div style="
-                position:absolute;
-                inset:0;
-                border-radius:50%;
-                border:2px solid ${color};
-                opacity:0.6;
-            "></div>
+                width:${size}px;
+                height:${size}px;
+                position:relative;
+            ">
+                <div style="
+                    position:absolute;
+                    inset:0;
+                    border-radius:50%;
+                    border:2px solid ${color};
+                    opacity:0.6;
+                "></div>
 
-            <div style="
-                width:${inner}px;
-                height:${inner}px;
-                background:${color};
-                border-radius:50%;
-                position:absolute;
-                left:50%;
-                top:50%;
-                transform:translate(-50%,-50%);
-            "></div>
-        </div>
-    `;
+                <div style="
+                    width:${inner}px;
+                    height:${inner}px;
+                    background:${color};
+                    border-radius:50%;
+                    position:absolute;
+                    left:50%;
+                    top:50%;
+                    transform:translate(-50%,-50%);
+                "></div>
+            </div>
+        `;
 
-    return new maplibregl.Marker({
-        element: el,
-        anchor: "center", // 🔥 критично
-        offset: [0, 0]
-    })
-        .setLngLat([lng, lat])
-        .addTo(map);
-}
+        return new maplibregl.Marker({
+            element: el,
+            anchor: "center"
+        })
+            .setLngLat(this.toLngLat({ lat, lng }))
+            .addTo(map);
+    }
+
     removeMarker(marker) {
         marker?.remove?.();
     }
 
     // =========================
     // LINES
-    //=========================
+    // =========================
     clearLines(map) {
         this._lines.forEach(id => {
             if (map.getLayer(id)) map.removeLayer(id);
@@ -149,9 +131,6 @@ createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
         this._lines.clear();
     }
 
-    // =========================
-    // LINE ANIMATION
-    // =========================
     animateLine(map, start, end, colorA, colorB) {
         const id = `line-${Math.random().toString(36).slice(2)}`;
 
