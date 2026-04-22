@@ -172,18 +172,31 @@ export class MapOverviewUI {
  // =========================
  // RESIZE
  // =========================
- scheduleResize() {
+scheduleResize() {
   if (!this.map) return;
 
   if (this._resizeRAF) {
-   cancelAnimationFrame(this._resizeRAF);
+    cancelAnimationFrame(this._resizeRAF);
   }
 
   this._resizeRAF = requestAnimationFrame(() => {
-   google.maps.event.trigger(this.map, "resize");
-   this._resizeRAF = null;
+    google.maps.event.trigger(this.map, "resize");
+
+    // 🔥 ВАЖНО: принудительный reflow камеры
+    const center = this.map.getCenter();
+    const zoom = this.map.getZoom();
+
+    if (center && zoom) {
+      // даём Google “переосознать” layout
+      setTimeout(() => {
+        this.map.setCenter(center);
+        this.map.setZoom(zoom);
+      }, 0);
+    }
+
+    this._resizeRAF = null;
   });
- }
+}
 
  forceResize() {
   this.scheduleResize();
