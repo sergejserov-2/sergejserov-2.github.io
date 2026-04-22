@@ -103,4 +103,104 @@ export class MapAdapter {
     removeMarker(marker) {
         marker?.remove?.();
     }
+
+
+
+
+animateLine(map, start, end, colorA, colorB) {
+    const id = line-${Math.random().toString(36).slice(2)};
+
+    const steps = Math.min(
+        80,
+        Math.max(
+            10,
+            Math.floor(
+                Math.sqrt(
+                    Math.pow(start.lng - end.lng, 2) +
+                    Math.pow(start.lat - end.lat, 2)
+                ) * 10
+            )
+        )
+    );
+
+    const coords = [];
+
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+
+        coords.push([
+            start.lng + (end.lng - start.lng) * t,
+            start.lat + (end.lat - start.lat) * t
+        ]);
+    }
+
+    map.addSource(id, {
+        type: "geojson",
+        data: {
+            type: "Feature",
+            geometry: {
+                type: "LineString",
+                coordinates: [coords[0]]
+            }
+        }
+    });
+
+    map.addLayer({
+        id,
+        type: "line",
+        source: id,
+        layout: {
+            "line-cap": "round",
+            "line-join": "round"
+        },
+        paint: {
+            "line-width": 3,
+            "line-gradient": [
+                "interpolate",
+                ["linear"],
+                ["line-progress"],
+                0, colorA,
+                1, colorB
+            ]
+        }
+    });
+
+    return new Promise(resolve => {
+        let i = 1;
+
+        const animate = () => {
+            const source = map.getSource(id);
+            if (!source) return;
+
+            source.setData({
+                type: "Feature",
+                geometry: {
+                    type: "LineString",
+                    coordinates: coords.slice(0, i)
+                }
+            });
+
+            i++;
+
+            if (i <= steps) {
+                requestAnimationFrame(animate);
+            } else {
+                resolve();
+            }
+        };
+
+        requestAnimationFrame(animate);
+    });
+}
+
+clearLines(map) {
+    for (const layer of map.getStyle().layers || []) {
+        if (layer.id.startsWith("line-")) {
+            if (map.getLayer(layer.id)) map.removeLayer(layer.id);
+            if (map.getSource(layer.id)) map.removeSource(layer.id);
+        }
+    }
+}
+
+    
 }
