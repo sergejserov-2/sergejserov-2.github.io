@@ -38,33 +38,39 @@ export class MapOverviewUI {
         // CASE: NO GUESS
         // =========================
         if (!guess) {
-            this.adapter.setBetween(this.map, actual, actual);
-
             this.markers.push(
                 this.adapter.createMarker(this.map, actual, {
                     color: actualColor,
                     scale: 1.3
                 })
             );
-
             return;
         }
 
         // =========================
-        // CAMERA FIRST (STATIC)
+        // 1. GUESS FIRST
         // =========================
-        this.adapter.setBetween(this.map, guess, actual);
+        const guessMarker = this.adapter.createMarker(this.map, guess, {
+            color: playerColor,
+            scale: 1
+        });
+
+        this.markers.push(guessMarker);
 
         // =========================
-        // BOTH MARKERS AT ONCE
+        // 2. LINE ANIMATION (NO CAMERA TOUCH)
         // =========================
-        this.markers.push(
-            this.adapter.createMarker(this.map, guess, {
-                color: playerColor,
-                scale: 1
-            })
+        await this.adapter.animateLine(
+            this.map,
+            guess,
+            actual,
+            playerColor,
+            actualColor
         );
 
+        // =========================
+        // 3. ACTUAL MARKER AFTER LINE
+        // =========================
         this.markers.push(
             this.adapter.createMarker(this.map, actual, {
                 color: actualColor,
@@ -76,5 +82,7 @@ export class MapOverviewUI {
     clear() {
         this.markers.forEach(m => this.adapter.removeMarker(m));
         this.markers = [];
+
+        this.adapter.clearLines(this.map);
     }
 }
