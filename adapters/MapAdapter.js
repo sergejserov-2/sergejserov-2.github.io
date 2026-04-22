@@ -2,10 +2,11 @@
 export class MapAdapter {
  constructor() {
   this.map = null;
+  this.key = "PnzOFXp1MIxIAe8nTmbt";
  }
 
  // =========================
- // COORDS
+ // COORD CONVERSIONS
  // =========================
  toLngLat(p) {
   return [p.lng, p.lat];
@@ -16,25 +17,142 @@ export class MapAdapter {
  }
 
  // =========================
- // POLYLINE (GRADIENT + ANIMATION)
+ // MAP INIT (MapLibre + MapTiler)
  // =========================
- createGradientPolyline(map, path, fromColor, toColor, steps = 60) {
+ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
+  if (!element) throw new Error("Map container missing");
+
+  this.map = new maplibregl.Map({
+   container: element,
+
+   style: {
+    version: 8,
+    sources: {
+     base: {
+      type: "raster",
+      tiles: [
+       `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/256/{z}/{x}/{y}.png?key=${this.key}`
+      ],
+      tileSize: 256
+     }
+    },
+    layers: [
+     {
+      id: "base-layer",
+      type: "raster",
+      source: "base"
+     }
+    ]
+   },
+
+   center: this.toLngLat(center),
+   zoom,
+   attributionControl: false
+  });
+
+  return this.map;
+ }
+
+ // =========================
+ // MARKER (double circle style)
+ // =========================
+ createMarker(map, { lat, lng }, options = {}) {
+  const {
+   color = "#ff4d4d",
+   scale = 1
+  } = options;
+
+  const size = 28 * scale;
+
+  const el = document.createElement("div");
+
+  el.innerHTML = `
+    <div style="
+      width:${size}px;
+      height:${size}px;
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+
+      <!-- OUTER RING -->
+      <div style="
+        position:absolute;
+        width:${size * 0.75}px;
+        height:${size * 0.75}px;
+        border-radius:50%;
+        border:2px solid ${color};
+        opacity:0.75;
+      "></div>
+
+      <!-- INNER DOT -->
+      <div style="
+        width:${size * 0.35}px;
+        height:${size * 0.35}px;
+        background:${color};
+        border-radius:50%;
+        box-shadow:
+          0 0 0 3px rgba(0,0,0,0.25),
+          0 0 10px rgba(0,0,0,0.25);
+      "></div>
+
+    </div>
+  `;
+
+  const marker = new maplibregl.Marker({ element: el })
+   .setLngLat(this.toLngLat({ lat, lng }))
+   .addTo(map);
+
+  return marker;
+ }
+
+ removeMarker(marker) {
+  marker?.remove?.();
+ }
+
+ // =========================
+ // CAMERA
+ // =========================
+ setCenter(map, point) {
+  map.setCenter(this.toLngLat(point));
+ }
+
+ setZoom(map, zoom) {
+  map.setZoom(zoom);
+ }
+
+ fitBounds(map, points) {
+  const bounds = new maplibregl.LngLatBounds();
+
+  for (const p of points) {
+   bounds.extend(this.toLngLat(p));
+  }
+
+  map.fitBounds(bounds, {
+   padding: 80,
+   duration: 0
+  });
+ }
+
+ // =========================
+ // POLYLINE (gradient + animation)
+ // =========================
+ createGradientPolyline(map, path, fromColor, toColor) {
   const id = `line-${Math.random().toString(36).slice(2)}`;
 
-  const coordinates = path.map(p => this.toLngLat(p));
+  const coords = path.map(p => this.toLngLat(p));
 
-  // стартуем с "пустой" линии (анимация)
-  const animatedData = {
-   type: "Feature",
-   geometry: {
-    type: "LineString",
-    coordinates: [coordinates[0], coordinates[0]]
-   }
-  };
-
+  // стартовая "нулевая" линия
   map.addSource(id, {
    type: "geojson",
-   data: animatedData
+   data: {
+    type: "Feature",
+    geometry: {
+     type: "LineString",
+     coordinates: [coords[0], coords[0]]
+    }
+   }
   });
 
   map.addLayer({
@@ -53,6 +171,7 @@ export class MapAdapter {
      "interpolate",
      ["linear"],
      ["line-progress"],
+
      0,
      fromColor,
      1,
@@ -62,14 +181,14 @@ export class MapAdapter {
   });
 
   // =========================
-  // ANIMATION (progressive reveal)
+  // ANIMATION (progressive draw)
   // =========================
   let i = 1;
 
-  const step = () => {
-   if (i >= coordinates.length) return;
+  const animate = () => {
+   if (i >= coords.length) return;
 
-   const partial = coordinates.slice(0, i + 1);
+   const partial = coords.slice(0, i + 1);
 
    const source = map.getSource(id);
    if (!source) return;
@@ -83,11 +202,10 @@ export class MapAdapter {
    });
 
    i++;
-
-   requestAnimationFrame(step);
+   requestAnimationFrame(animate);
   };
 
-  requestAnimationFrame(step);
+  requestAnimationFrame(animate);
 
   return {
    id,
@@ -96,5 +214,12 @@ export class MapAdapter {
     if (map.getSource(id)) map.removeSource(id);
    }
   };
+ }
+
+ // =========================
+ // RESIZE
+ // =========================
+ triggerResize(map) {
+  map?.resize?.();
  }
 }
