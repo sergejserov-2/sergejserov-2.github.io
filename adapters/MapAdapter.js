@@ -9,23 +9,20 @@ export class MapAdapter {
  // MAP
  // =========================
 createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
- if (!element) throw new Error("Map container missing");
+  if (!element) throw new Error("Map container missing");
 
- return L.map(element, {
-  center,
-  zoom,
+  this.map = L.map(element, {
+    zoomControl: false,          // ❌ убрали +/-
+    attributionControl: false
+  }).setView([center.lat, center.lng], zoom);
 
-  // 🔥 ВАЖНО: убираем +/- кнопки
-  zoomControl: false,
+  L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    { maxZoom: 19 }
+  ).addTo(this.map);
 
-  // (опционально) убираем ещё и attribution если не нужен
-  attributionControl: false
- });
- L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-  attribution: "&copy; OpenStreetMap & CARTO"
- }).addTo(this.map);
   return this.map;
- }
+}
 
  // =========================
  // MARKER
