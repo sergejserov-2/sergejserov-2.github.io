@@ -18,31 +18,22 @@ export class MapAdapter {
  // =========================
  // MAP INIT (MapLibre + MapTiler)
  // =========================
- createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
-  if (!element) throw new Error("Map container missing");
 
-  this.map = new maplibregl.Map({
-   container: element,
+createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
+ if (!element) throw new Error("Map container missing");
 
-   style: {
-    version: 8,
-    sources: {
-     base: {
-      type: "raster",
-      tiles: [
-       `https://api.maptiler.com/maps/019db4a6-96e9-70d5-a214-f01c8c0ea283/style.json?key=${this.key}`
-      ],
-      tileSize: 256
-     }
-    },
-    layers: [
-     {
-      id: "base-layer",
-      type: "raster",
-      source: "base"
-     }
-    ]
-   },
+ const key = this.key;
+
+ this.map = new maplibregl.Map({
+  container: element,
+  style: `https://api.maptiler.com/maps/019db4a6-96e9-70d5-a214-f01c8c0ea283/style.json?key=${key}`,
+  center: this.toLngLat(center),
+  zoom,
+  attributionControl: false
+ });
+
+ return this.map;
+}
 
    center: this.toLngLat(center),
    zoom,
