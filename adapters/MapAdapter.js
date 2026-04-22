@@ -1,6 +1,6 @@
 
 export class MapAdapter {
- constructor({ mapKey }) {
+ constructor() {
   this.map = null;
   this.key = PnzOFXp1MIxIAe8nTmbt;
  }
