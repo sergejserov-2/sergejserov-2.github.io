@@ -9,8 +9,14 @@ export class MapOverviewUI {
   this.map = null;
   this.markers = [];
   this.lines = [];
+
+  this._resizeObserver = null;
+  this._resizeRAF = null;
  }
 
+ // =========================
+ // INIT
+ // =========================
  init() {
   if (!this.element) return;
 
@@ -18,8 +24,18 @@ export class MapOverviewUI {
    center: { lat: 20, lng: 0 },
    zoom: 2
   });
+
+  // 🔥 правильное отслеживание размера контейнера
+  this._resizeObserver = new ResizeObserver(() => {
+   this.scheduleResize();
+  });
+
+  this._resizeObserver.observe(this.element);
  }
 
+ // =========================
+ // RENDER
+ // =========================
  render(round) {
   if (!this.map || !round) return;
 
@@ -37,7 +53,7 @@ export class MapOverviewUI {
   const actualColor = this.uiBuilder.getActualColor();
 
   // =========================
-  // NO GUESS → просто показываем actual
+  // NO GUESS CASE
   // =========================
   if (!guess) {
    const actualMarker = this.adapter.createMarker(this.map, actual, {
@@ -46,15 +62,15 @@ export class MapOverviewUI {
    });
 
    this.markers.push(actualMarker);
+
    this.fitToPoints([actual, actual]);
    return;
   }
 
   // =========================
-  // GUESS FLOW (с анимацией)
+  // GUESS CASE
   // =========================
 
-  // 1. guess marker
   const guessMarker = this.adapter.createMarker(this.map, guess, {
    color: playerColor,
    scale: 1
@@ -62,9 +78,8 @@ export class MapOverviewUI {
 
   this.markers.push(guessMarker);
 
-  // 2. создаём сегменты (СКРЫТЫЕ)
   const segments = this.adapter.createGradientPolyline(
-   null, // 🔥 ВАЖНО: не передаём map сразу
+   null,
    [guess, actual],
    playerColor,
    actualColor,
@@ -73,12 +88,9 @@ export class MapOverviewUI {
 
   this.lines.push(...segments);
 
-  // 3. позиционируем карту заранее
   this.fitToPoints([guess, actual]);
 
-  // 4. анимируем сегменты
   this.animateSegments(segments, () => {
-   // 5. после анимации → actual marker
    const actualMarker = this.adapter.createMarker(this.map, actual, {
     color: actualColor,
     scale: 1.35
@@ -98,7 +110,6 @@ export class MapOverviewUI {
   }
 
   let index = 0;
-
   const delay = Math.max(10, 200 / segments.length);
 
   const showNext = () => {
@@ -108,8 +119,6 @@ export class MapOverviewUI {
    }
 
    const segment = segments[index];
-
-   // 🔥 показываем сегмент
    segment.setMap(this.map);
 
    index++;
@@ -119,6 +128,9 @@ export class MapOverviewUI {
   showNext();
  }
 
+ // =========================
+ // FIT MAP
+ // =========================
  fitToPoints(points) {
   const a = points[0];
   const b = points[1];
@@ -141,15 +153,44 @@ export class MapOverviewUI {
   this.map.setZoom(zoom);
  }
 
+ // =========================
+ // CLEAR
+ // =========================
  clear() {
   this.markers.forEach(m => this.adapter.removeMarker(m));
   this.lines.forEach(l => l.setMap(null));
+
   this.markers = [];
   this.lines = [];
  }
 
- forceResize() {
+ // =========================
+ // RESIZE SYSTEM (🔥 FIXED)
+ // =========================
+ scheduleResize() {
   if (!this.map) return;
-  google.maps.event.trigger(this.map, "resize");
+
+  if (this._resizeRAF) {
+   cancelAnimationFrame(this._resizeRAF);
+  }
+
+  this._resizeRAF = requestAnimationFrame(() => {
+   google.maps.event.trigger(this.map, "resize");
+   this._resizeRAF = null;
+  });
+ }
+
+ forceResize() {
+  this.scheduleResize();
+ }
+
+ // =========================
+ // CLEANUP (если понадобится)
+ // =========================
+ destroy() {
+  if (this._resizeObserver) {
+   this._resizeObserver.disconnect();
+   this._resizeObserver = null;
+  }
  }
 }
