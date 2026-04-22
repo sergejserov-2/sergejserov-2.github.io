@@ -1,4 +1,4 @@
-[22.04.2026 11:06] Сергей Серов: import { Geometry } from "../../domain/math/Geometry.js";
+import { Geometry } from "../../domain/math/Geometry.js";
 
 export class MapOverviewUI {
   constructor({ adapter, element, uiBuilder }) {
@@ -176,7 +176,7 @@ export class MapOverviewUI {
       if (!startTime) startTime = timestamp;
 
       const p = ease(Math.min((timestamp - startTime) / duration, 1));
-[22.04.2026 11:06] Сергей Серов: const bounds = new google.maps.LatLngBounds(
+      const bounds = new google.maps.LatLngBounds(
         {
           lat: sw0.lat() + (sw1.lat() - sw0.lat()) * p,
           lng: sw0.lng() + (sw1.lng() - sw0.lng()) * p
