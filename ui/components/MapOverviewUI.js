@@ -35,7 +35,7 @@ export class MapOverviewUI {
         const actualColor = this.uiBuilder.getActualColor();
 
         // =========================
-        // NO GUESS
+        // CASE 1: NO GUESS
         // =========================
         if (!guess) {
             this.adapter.fitBounds(this.map, actual, actual);
@@ -52,8 +52,10 @@ export class MapOverviewUI {
         }
 
         // =========================
-        // GUESS
+        // CASE 2: GUESS + ACTUAL
         // =========================
+
+        // 1. guess marker
         this.markers.push(
             this.adapter.createMarker(this.map, guess, {
                 color: playerColor,
@@ -61,26 +63,11 @@ export class MapOverviewUI {
             })
         );
 
-        // =========================
-        // CAMERA
-        // =========================
+        // 2. camera fit both points
         this.adapter.fitBounds(this.map, guess, actual);
         await this.adapter.waitIdle(this.map);
 
-        // =========================
-        // LINE (STATIC)
-        // =========================
-        this.adapter.drawLine(
-            this.map,
-            guess,
-            actual,
-            playerColor,
-            actualColor
-        );
-
-        // =========================
-        // ACTUAL
-        // =========================
+        // 3. actual marker
         this.markers.push(
             this.adapter.createMarker(this.map, actual, {
                 color: actualColor,
@@ -92,6 +79,5 @@ export class MapOverviewUI {
     clear() {
         this.markers.forEach(m => this.adapter.removeMarker(m));
         this.markers = [];
-        this.adapter.clearLines(this.map);
     }
 }
