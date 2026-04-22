@@ -25,7 +25,7 @@ L.tileLayer(
   zoomOffset: -1,
   language: "ru" // 👈 ключевая идея (в некоторых стилях работает)
  }
-).addTo(map);
+).addTo(this.map);
 
   return this.map;
 }
