@@ -45,38 +45,58 @@ const map = L.map(element, {
  // =========================
  // MARKER
  // =========================
- createMarker(map, { lat, lng }, options = {}) {
-  const { color = "#ff4d4d", scale = 1 } = options;
+createMarker(map, { lat, lng }, options = {}) {
+  const {
+    color = "#ff4d4d",
+    scale = 1
+  } = options;
 
   const size = 24 * scale;
 
   const icon = L.divIcon({
-   className: "custom-marker",
-   html: `
-    <div style="
-      width:${size}px;
-      height:${size}px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    ">
+    className: "custom-marker",
+    html: `
       <div style="
-        width:${size * 0.4}px;
-        height:${size * 0.4}px;
-        background:${color};
-        border-radius:50%;
-        box-shadow:0 0 0 4px rgba(0,0,0,0.15);
-      "></div>
-    </div>
-   `,
-   iconSize: [size, size],
-   iconAnchor: [size / 2, size / 2]
+        width:${size}px;
+        height:${size}px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        position:relative;
+      ">
+
+        <!-- OUTER RING -->
+        <div style="
+          position:absolute;
+          width:${size * 0.75}px;
+          height:${size * 0.75}px;
+          border-radius:50%;
+          border:2px solid ${color};
+          opacity:0.7;
+        "></div>
+
+        <!-- INNER DOT -->
+        <div style="
+          width:${size * 0.35}px;
+          height:${size * 0.35}px;
+          background:${color};
+          border-radius:50%;
+          box-shadow:
+            0 0 0 3px rgba(0,0,0,0.25),
+            0 0 10px rgba(0,0,0,0.2);
+          z-index:2;
+        "></div>
+
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2]
   });
 
-  const marker = L.marker([lat, lng], { icon }).addTo(map);
-
-  return marker;
- }
+  return L.marker([lat, lng], {
+    icon
+  }).addTo(map);
+}
 
  removeMarker(marker) {
   marker?.remove();
