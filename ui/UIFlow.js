@@ -1,4 +1,3 @@
-
 export class UIFlow {
  constructor({
   gameFlow,
@@ -38,7 +37,7 @@ export class UIFlow {
   };
 
   // =========================
-  // GAME START / LOADING
+  // LOADING
   // =========================
   this.gameFlow.on("loadingStarted", () => {
    this.screenManager.show("loading");
@@ -70,7 +69,7 @@ export class UIFlow {
   });
 
   // =========================
-  // TIMER (из TimerService через GameFlow)
+  // MAIN TIMER
   // =========================
   this.gameFlow.on("timerTick", (t) => {
    this.staticUI.updateTimer(t);
@@ -88,15 +87,11 @@ export class UIFlow {
   });
 
   // =========================
-  // INPUT LOCKING
+  // INPUT LOCK
   // =========================
   this.gameFlow.on("inputLocked", () => {
    this.staticUI.lockInput?.();
    this.mapWrapperUI.lock();
-
-   // 🔥 важно для мультиплеера:
-   // игрок, который сделал guess → уходит в WAIT screen
-   this.screenManager.show("loading");
   });
 
   this.gameFlow.on("inputUnlocked", () => {
@@ -105,11 +100,17 @@ export class UIFlow {
   });
 
   // =========================
-  // GUESS RESOLVED (мультиплеерный хук)
+  // 🧠 MULTIPLAYER
   // =========================
-  this.gameFlow.on("guessResolved", () => {
-   // UI уже заблокирован в loading
-   this.screenManager.show("loading");
+
+  // 🔥 игрок сделал guess → waiting экран
+  this.gameFlow.on("roundWaiting", () => {
+   this.screenManager.show("loading"); // пока используем loading как waiting
+  });
+
+  // 🔥 таймер ожидания других игроков
+  this.gameFlow.on("roundTimerTick", (t) => {
+   this.staticUI.updateRoundTimer?.(t);
   });
 
   // =========================
@@ -153,7 +154,7 @@ export class UIFlow {
  }
 
  // =========================
- // GAME RESULT BUTTONS
+ // BUTTONS
  // =========================
  bindGameResultButtons() {
   if (this.boundGameResultButtons) return;
@@ -166,9 +167,7 @@ export class UIFlow {
   const home = root.querySelector(".home-button");
 
   playAgain?.addEventListener("click", () => {
-   this.gameFlow
-
-.startGame();
+   this.gameFlow.startGame();
   });
 
   home?.addEventListener("click", () => {
