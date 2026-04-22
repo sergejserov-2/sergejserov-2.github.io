@@ -4,6 +4,7 @@ export class ScreenManager {
 
     this.views = {
       loading: root.querySelector(".loading-screen"),
+      waiting: root.querySelector(".waiting-screen"), // 🔥 НОВОЕ
       round: root.querySelector(".game-scene"),
       roundResult: root.querySelector(".round-result"),
       gameResult: root.querySelector(".game-result")
@@ -22,7 +23,14 @@ export class ScreenManager {
     target.classList.add("active");
   }
 
-  // 🔥 НОВОЕ — доступ к root конкретного экрана
+  // =========================
+  // HELPERS (необязательно, но удобно)
+  // =========================
+  is(name) {
+    const el = this.views[name];
+    return el?.classList.contains("active");
+  }
+
   get(name) {
     return this.views[name] || null;
   }
