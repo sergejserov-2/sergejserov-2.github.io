@@ -11,7 +11,6 @@ export class StaticUI {
   this.roundEl = hudElement.querySelector(".round b");
   this.totalEl = hudElement.querySelector(".total-score b");
 
-  this.delayBar = this.roundRoot?.querySelector(".round-timer-bar");
   this.delayFrame = null;
  }
 
@@ -41,24 +40,21 @@ export class StaticUI {
  }
 
  // =========================
- // ROUND RESULT (MULTIPLAYER)
+ // ROUND RESULT
  // =========================
 
  showRoundResult(vm = {}) {
   const root = this.roundRoot;
   if (!root) return;
 
-  const text = root.querySelector(".score-text");
   const container = root.querySelector(".score-view");
-
   const guesses = vm.guesses || [];
 
   this.renderPlayerBars(container, guesses);
-
  }
 
  // =========================
- // GAME RESULT (MULTIPLAYER)
+ // GAME RESULT
  // =========================
 
  showGameResult(vm = {}) {
@@ -66,7 +62,6 @@ export class StaticUI {
   if (!root) return;
 
   const container = root.querySelector(".score-view");
-  const text = root.querySelector(".score-text");
 
   const players = vm.players || {};
 
@@ -77,17 +72,11 @@ export class StaticUI {
 
   this.renderPlayerBars(container, list);
 
-  if (text) {
-   text.innerHTML = list.map(p => `
-    <p><b>${p.playerId}</b>: ${p.score} очков</p>
-   `).join("");
-  }
-
   this.stopRoundDelay();
  }
 
  // =========================
- // PLAYER BARS (CORE DUEL UI)
+ // PLAYER BARS (без текстов вне бара)
  // =========================
 
  renderPlayerBars(container, list = []) {
@@ -104,7 +93,7 @@ export class StaticUI {
    const color = this.uiBuilder.getPlayerColor(p.playerId);
 
    const score = p.score ?? 0;
-   const distance = p.distance ?? null;
+   const distance = p.distance ?? 0;
 
    const percent = Math.min(score / MAX_SCORE, 1) * 100;
 
@@ -113,7 +102,7 @@ export class StaticUI {
 
    el.style.position = "relative";
    el.style.margin = "8px 0";
-   el.style.padding = "8px 10px";
+   el.style.padding = "10px";
    el.style.borderRadius = "8px";
    el.style.overflow = "hidden";
    el.style.background = "rgba(255,255,255,0.08)";
@@ -128,7 +117,7 @@ export class StaticUI {
       color: white;
     ">
       <span>Игрок: ${p.playerId}</span>
-      <span>На расстоянии ${distance !== null ? distance.toFixed(1) + " км" : ""}</span>
+      <span>Точка на расстоянии ${distance.toFixed(1)} км</span>
       <span>${score} / ${MAX_SCORE}</span>
     </div>
 
@@ -153,23 +142,29 @@ export class StaticUI {
  }
 
  // =========================
- // ROUND DELAY BAR
+ // ROUND TIMER BAR (FIXED)
  // =========================
 
  startRoundDelay(duration, onFinish) {
   this.stopRoundDelay();
 
-  if (!this.delayBar) return;
+  // 🔥 ВАЖНО: ищем каждый раз заново
+  const bar = this.roundRoot?.querySelector(".round-timer-bar");
 
-  this.delayBar.style.transition = "none";
-  this.delayBar.style.transform = "scaleX(1)";
+  if (!bar) {
+   console.warn("round-timer-bar not found in DOM");
+   return;
+  }
+
+  bar.style.transition = "none";
+  bar.style.transform = "scaleX(1)";
 
   const start = performance.now();
 
   const animate = (now) => {
    const progress = Math.max(0, 1 - (now - start) / duration);
 
-   this.delayBar.style.transform = `scaleX(${progress})`;
+   bar.style.transform = `scaleX(${progress})`;
 
    if (progress > 0) {
     this.delayFrame = requestAnimationFrame(animate);
@@ -188,8 +183,9 @@ export class StaticUI {
    this.delayFrame = null;
   }
 
-  if (this.delayBar) {
-   this.delayBar.style.transform = "scaleX(0)";
+  const bar = this.roundRoot?.querySelector(".round-timer-bar");
+  if (bar) {
+   bar.style.transform = "scaleX(0)";
   }
  }
 }
