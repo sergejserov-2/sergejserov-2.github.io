@@ -108,7 +108,7 @@ export class UIFlow {
 
    this.roundOverviewUI.render(round);
 
-   this.staticUI.startRoundDelay(7500, () => {
+   this.staticUI.startRoundDelay(10000, () => {
     this.gameFlow.nextRound();
    });
   });
