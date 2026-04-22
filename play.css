@@ -240,6 +240,7 @@ body {
   transform-origin: left;
   transform: scaleX(0);
   flex-shrink: 0;
+ margin-bottom: -20px;
 }
 /* =========================
    BUTTONS
