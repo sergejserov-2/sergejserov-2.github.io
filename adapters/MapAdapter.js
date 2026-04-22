@@ -246,5 +246,55 @@ clearLines(map) {
     }
 }
 
+
+createPolygon(map, coords, {
+    strokeColor = "#4ea1ff",
+    fillColor = "#4ea1ff",
+    fillOpacity = 0.2
+} = {}) {
+
+    const id = `poly-${Math.random().toString(36).slice(2)}`;
+
+    map.addSource(id, {
+        type: "geojson",
+        data: {
+            type: "Feature",
+            geometry: {
+                type: "Polygon",
+                coordinates: [coords]
+            }
+        }
+    });
+
+    map.addLayer({
+        id,
+        type: "fill",
+        source: id,
+        paint: {
+            "fill-color": fillColor,
+            "fill-opacity": fillOpacity
+        }
+    });
+
+    map.addLayer({
+        id: id + "-stroke",
+        type: "line",
+        source: id,
+        paint: {
+            "line-color": strokeColor,
+            "line-width": 2
+        }
+    });
+
+    return {
+        id,
+        remove: () => {
+            if (map.getLayer(id + "-stroke")) map.removeLayer(id + "-stroke");
+            if (map.getLayer(id)) map.removeLayer(id);
+            if (map.getSource(id)) map.removeSource(id);
+        }
+    };
+}
+
     
 }
