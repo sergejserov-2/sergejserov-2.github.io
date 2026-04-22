@@ -272,14 +272,6 @@ body {
  transition: width 0.4s ease;
 }
 
-/* =========================
-   TEXT
-========================= */
-
-.score-text {
- text-align: center;
- font-size: 15px;
-}
 
 /* =========================
    BUTTONS
