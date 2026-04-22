@@ -12,7 +12,7 @@ export class MapAdapter {
 
         const map = new maplibregl.Map({
             container: element,
-            style: `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/style.json?key=${key}`,
+            style: `https://api.maptiler.com/maps/019db70f-cecb-7876-b3f6-cb59013b8d1d/style.json?key=${key}`,
             center: this.toLngLat(center),
             zoom,
             attributionControl: false
