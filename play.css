@@ -60,9 +60,10 @@ body {
  pointer-events: none;
 }
 
+
 /* =========================
-   MAP WRAPPER (FIXED FOR LEAFLET)
-========================= */
+    MAP WRAPPER (STABLE WEBGL)
+ ========================= */
 
 .map-wrapper {
  position: absolute;
@@ -79,33 +80,80 @@ body {
 
  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 
- /* 🔥 важно для Leaflet */
- contain: layout paint size;
+ /* 🔥 важно: предотвращает layout repaint cascade */
+ contain: layout paint;
+
+ /* 🔥 убирает микродёргания при resize */
+ will-change: width, height;
+
+ /* 🔥 GPU layer */
+ transform: translateZ(0);
+ backface-visibility: hidden;
 }
 
 /* =========================
-   LEAFLET MAP CONTAINER
+   MAP CONTAINER (MAPLIBRE)
 ========================= */
 
 .map {
  width: 100%;
  height: 100%;
 
- position: relative;
+ position: absolute;
+ inset: 0;
 
- background: #111;
- border-radius: 10px;
+ background: #0f1115;
 
- /* 🔥 критично: убирает “квадратится/ломается тайлинг” */
+ /* 🔥 критично для WebGL stability */
+ transform: translateZ(0);
+ backface-visibility: hidden;
+
+ /* 🔥 убирает blurry tiles during resize */
+ image-rendering: auto;
+}
+
+/* =========================
+   MAPLIBRE CANVAS FIX
+========================= */
+
+.maplibregl-map {
+ width: 100%;
+ height: 100%;
+
+ /* 🔥 убирает jitter при resize */
+ transform: translateZ(0);
+ backface-visibility: hidden;
+}
+
+/* =========================
+   CANVAS HARD STABILIZATION
+========================= */
+
+.maplibregl-canvas {
+ outline: none;
+
+ /* 🔥 предотвращает subpixel jitter */
+ image-rendering: auto;
+
+ /* 🔥 GPU layer lock */
  transform: translateZ(0);
 }
 
-/* Leaflet core fix */
-.leaflet-container {
- width: 100%;
- height: 100%;
- background: #111;
- outline: none;
+/* =========================
+   OPTIONAL: SMOOTH INTERACTION
+========================= */
+
+.map-wrapper.dragging {
+ cursor: nwse-resize;
+ user-select: none;
+}
+
+/* =========================
+   REMOVE ANY DEFAULT BORDERS
+========================= */
+
+.maplibregl-control-container {
+ pointer-events: none;
 }
 
 /* =========================
