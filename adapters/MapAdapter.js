@@ -2,7 +2,6 @@
 export class MapAdapter {
  constructor() {
   this.map = null;
-  this.key = PnzOFXp1MIxIAe8nTmbt;
  }
 
  // =========================
@@ -21,7 +20,7 @@ export class MapAdapter {
  // =========================
  createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   if (!element) throw new Error("Map container missing");
-
+  this.key = PnzOFXp1MIxIAe8nTmbt;
   this.map = new maplibregl.Map({
    container: element,
 
