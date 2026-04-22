@@ -238,6 +238,7 @@ initResize() {
   window.addEventListener("mousemove", onMove);
   window.addEventListener("mouseup", onUp);
 }
+                         }
 
  // =========================
  // DESTROY
