@@ -1,4 +1,3 @@
-
 export class MapWrapperUI {
     constructor({ adapter, element, uiBuilder }) {
         this.adapter = adapter;
@@ -7,19 +6,14 @@ export class MapWrapperUI {
 
         this.map = null;
 
-        // state
         this.isLocked = false;
         this.lastGuessPoint = null;
 
-        // marker
         this.guessMarker = null;
 
-        // polygon
         this.area = null;
-        this.polygonId = null;
-        this.polygonVisible = false;
+        this.polygon = null;
 
-        // callbacks
         this.onGuess = null;
     }
 
@@ -34,14 +28,10 @@ export class MapWrapperUI {
             center: { lat: 20, lng: 0 }
         });
 
-        // 🔥 начальный resize
         requestAnimationFrame(() => {
             this.adapter.resize(this.map);
         });
 
-        // =========================
-        // CLICK
-        // =========================
         this.map.on("click", (e) => {
             if (this.isLocked) return;
 
@@ -54,8 +44,22 @@ export class MapWrapperUI {
             this.placeGuessMarker(point);
         });
 
-        // resize engine
         this.initResize();
+    }
+
+    // =========================
+    // RESET VIEW (🔥 NEW)
+    // =========================
+    resetView() {
+        if (!this.map) return;
+
+        this.map.jumpTo({
+            center: [0, 20],
+            zoom: 2
+        });
+
+        this.adapter.resize(this.map);
+        this.map.triggerRepaint?.();
     }
 
     // =========================
@@ -67,7 +71,6 @@ export class MapWrapperUI {
 
     getNormalizedPolygon() {
         if (!this.area?.polygon) return null;
-
         return this.area.polygon.map(p => [p.lng, p.lat]);
     }
 
@@ -82,7 +85,7 @@ export class MapWrapperUI {
         const coords = this.getNormalizedPolygon();
         if (!coords || coords.length < 3) return;
 
-        this.polygonId = this.adapter.createPolygon(
+        this.polygon = this.adapter.createPolygon(
             this.map,
             coords,
             {
@@ -91,30 +94,17 @@ export class MapWrapperUI {
                 fillOpacity: 0.2
             }
         );
-
-        this.polygonVisible = true;
     }
 
     hidePolygon() {
-        if (!this.polygonId) return;
+        if (!this.polygon) return;
 
-        this.adapter.removePolygon(this.map, this.polygonId);
-
-        this.polygonId = null;
-        this.polygonVisible = false;
+        this.adapter.removePolygon(this.map, this.polygon);
+        this.polygon = null;
     }
 
     togglePolygon() {
-        if (this.polygonVisible) {
-            this.hidePolygon();
-        } else {
-            this.showPolygon();
-        }
-    }
-
-    bindPolygonButton(el) {
-        if (!el) return;
-        el.addEventListener("click", () => this.togglePolygon());
+        this.polygon ? this.hidePolygon() : this.showPolygon();
     }
 
     // =========================
@@ -182,65 +172,61 @@ export class MapWrapperUI {
     }
 
     // =========================
-// RESIZE ENGINE (FIXED)
+    // RESIZE (STABLE)
     // =========================
+    initResize() {
+        const handle =
+            this.element?.parentElement?.querySelector(".resize-handle");
 
-initResize() {
-    const handle =
-        this.element?.parentElement?.querySelector(".resize-handle");
+        if (!handle) return;
 
-    if (!handle) return;
+        let startX, startY, startW, startH;
+        let wrapper;
+        let isDragging = false;
+        handle.addEventListener("mousedown", (e) => {
+            e.preventDefault();
 
-    let startX, startY, startW, startH;
-    let wrapper;
-    let isDragging = false;
+            isDragging = true;
 
-    handle.addEventListener("mousedown", (e) => {
-        e.preventDefault();
+            wrapper = this.element.parentElement;
+            const rect = wrapper.getBoundingClientRect();
 
-        isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startW = rect.width;
+            startH = rect.height;
 
-        wrapper = this.element.parentElement;
-        const rect = wrapper.getBoundingClientRect();
+            document.body.style.userSelect = "none";
 
-        startX = e.clientX;
-        startY = e.clientY;
-        startW = rect.width;
-        startH = rect.height;
+            const onMove = (e) => {
+                if (!isDragging) return;
 
-        document.body.style.userSelect = "none";
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
 
-        const onMove = (e) => {
-            if (!isDragging) return;
+                wrapper.style.width = Math.max(200, startW + dx) + "px";
+                wrapper.style.height = Math.max(200, startH - dy) + "px";
+            };
 
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
+            const onUp = () => {
+                isDragging = false;
 
-            wrapper.style.width = Math.max(200, startW + dx) + "px";
-            wrapper.style.height = Math.max(200, startH - dy) + "px";
-        };
+                document.body.style.userSelect = "";
 
-        const onUp = () => {
-            isDragging = false;
+                window.removeEventListener("mousemove", onMove);
+                window.removeEventListener("mouseup", onUp);
 
-            document.body.style.userSelect = "";
-
-            window.removeEventListener("mousemove", onMove);
-            window.removeEventListener("mouseup", onUp);
-
-            // 🔥 ONE SINGLE RESIZE AFTER LAYOUT STABILIZES
-            requestAnimationFrame(() => {
+                // 🔥 single stable resize
                 requestAnimationFrame(() => {
-                    this.map?.resize?.();
+                    this.adapter.resize(this.map);
                     this.map?.triggerRepaint?.();
                 });
-            });
-        };
+            };
 
-        window.addEventListener("mousemove", onMove);
-        window.addEventListener("mouseup", onUp);
-    });
-}
+            window.addEventListener("mousemove", onMove);
+            window.addEventListener("mouseup", onUp);
+        });
+    }
 
     // =========================
     // DESTROY
