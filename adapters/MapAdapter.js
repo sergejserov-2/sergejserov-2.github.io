@@ -1,105 +1,109 @@
-const L = window.L;
-
 export class MapAdapter {
  constructor() {
   this.map = null;
  }
 
  // =========================
- // MAP
+ // MAP (MapTiler DARK + RU LABELS)
  // =========================
-createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
+ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   if (!element) throw new Error("Map container missing");
 
-const map = L.map(element, {
-    zoomControl: false,        // ❌ убрали +/-
-    attributionControl: false
+  const MAPTILER_KEY = "YOUR_KEY_HERE";
+
+  this.map = L.map(element, {
+   zoomControl: false,
+   attributionControl: false
   }).setView([center.lat, center.lng], zoom);
 
-  // 🌑 BASE LAYER (dark, NO labels)
+  // =========================
+  // 🌑 DARK BASE LAYER + RU LABELS
+  // =========================
   L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
-    {
-      subdomains: "abcd",
-      maxZoom: 19,
-      attribution:
-        '&copy; OpenStreetMap contributors &copy; CARTO'
-    }
-  ).addTo(map);
+   `https://api.maptiler.com/maps/darkmatter/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
+   {
+    tileSize: 512,
+    zoomOffset: -1,
+    minZoom: 1,
+    maxZoom: 19,
+    attribution:
+     '&copy; MapTiler &copy; OpenStreetMap contributors'
+   }
+  ).addTo(this.map);
 
-  // 🏷 LABELS LAYER (only text)
+  // =========================
+  // 🏷 RUSSIAN LABEL OVERLAY
+  // =========================
   L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
-    {
-      subdomains: "abcd",
-      maxZoom: 19,
-      pane: "overlayPane",
-      opacity: 0.95,
-      attribution: ""
-    }
-  ).addTo(map);
+   `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}&language=ru`,
+   {
+    tileSize: 512,
+    zoomOffset: -1,
+    minZoom: 1,
+    maxZoom: 19,
+    opacity: 0.35, // 👈 чтобы не убить тёмный стиль
+    attribution: ""
+   }
+  ).addTo(this.map);
 
   return this.map;
-}
+ }
 
  // =========================
- // MARKER
+ // MARKER (NEW STYLE)
  // =========================
-createMarker(map, { lat, lng }, options = {}) {
+ createMarker(map, { lat, lng }, options = {}) {
   const {
-    color = "#ff4d4d",
-    scale = 1
+   color = "#ff4d4d",
+   scale = 1
   } = options;
 
   const size = 24 * scale;
 
   const icon = L.divIcon({
-    className: "custom-marker",
-    html: `
+   className: "custom-marker",
+   html: `
+    <div style="
+      width:${size}px;
+      height:${size}px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+    ">
+
+      <!-- OUTER RING -->
       <div style="
-        width:${size}px;
-        height:${size}px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        position:relative;
-      ">
+        position:absolute;
+        width:${size * 0.75}px;
+        height:${size * 0.75}px;
+        border-radius:50%;
+        border:2px solid ${color};
+        opacity:0.7;
+      "></div>
 
-        <!-- OUTER RING -->
-        <div style="
-          position:absolute;
-          width:${size * 0.75}px;
-          height:${size * 0.75}px;
-          border-radius:50%;
-          border:2px solid ${color};
-          opacity:0.7;
-        "></div>
+      <!-- INNER DOT -->
+      <div style="
+        width:${size * 0.35}px;
+        height:${size * 0.35}px;
+        background:${color};
+        border-radius:50%;
+        box-shadow:
+          0 0 0 3px rgba(0,0,0,0.25),
+          0 0 10px rgba(0,0,0,0.2);
+      "></div>
 
-        <!-- INNER DOT -->
-        <div style="
-          width:${size * 0.35}px;
-          height:${size * 0.35}px;
-          background:${color};
-          border-radius:50%;
-          box-shadow:
-            0 0 0 3px rgba(0,0,0,0.25),
-            0 0 10px rgba(0,0,0,0.2);
-          z-index:2;
-        "></div>
-
-      </div>
-    `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2]
+    </div>
+   `,
+   iconSize: [size, size],
+   iconAnchor: [size / 2, size / 2]
   });
 
-  return L.marker([lat, lng], {
-    icon
-  }).addTo(map);
-}
+  return L.marker([lat, lng], { icon }).addTo(map);
+ }
 
  removeMarker(marker) {
-  marker?.remove();
+  marker?.remove?.();
  }
 
  // =========================
@@ -108,19 +112,14 @@ createMarker(map, { lat, lng }, options = {}) {
  createPolyline(map, path, options = {}) {
   const { color = "#ff4d4d" } = options;
 
-  const line = L.polyline(
-   path.map(p => [p.lat, p.lng]),
-   {
-    color,
-    weight: 2
-   }
-  ).addTo(map);
-
-  return line;
+  return L.polyline(path, {
+   color,
+   weight: 2
+  }).addTo(map);
  }
 
  // =========================
- // GRADIENT POLYLINE (segments)
+ // GRADIENT (как у тебя было)
  // =========================
  createGradientPolyline(map, path, fromColor, toColor, steps = 12) {
   const segments = [];
@@ -134,17 +133,10 @@ createMarker(map, { lat, lng }, options = {}) {
 
    const color = this._mixColor(fromColor, toColor, t1);
 
-   const line = L.polyline(
-    [
-     [p1.lat, p1.lng],
-     [p2.lat, p2.lng]
-    ],
-    {
-     color,
-     weight: 3,
-     opacity: 0.9
-    }
-   );
+   const line = L.polyline([p1, p2], {
+    color,
+    weight: 3
+   });
 
    segments.push(line);
   }
@@ -152,51 +144,22 @@ createMarker(map, { lat, lng }, options = {}) {
   return segments;
  }
 
- // =========================
- // POLYGON
- // =========================
  createPolygon(map, path, options = {}) {
   const {
    strokeColor = "#4ea1ff",
    fillColor = "#4ea1ff"
   } = options;
 
-  const poly = L.polygon(
-   path.map(p => [p.lat, p.lng]),
-   {
-    color: strokeColor,
-    fillColor,
-    fillOpacity: 0.15,
-    weight: 2
-   }
-  ).addTo(map);
-
-  return poly;
+  return L.polygon(path, {
+   color: strokeColor,
+   fillColor,
+   fillOpacity: 0.15,
+   weight: 2
+  }).addTo(map);
  }
 
  // =========================
- // VIEWPORT FIX (ВАЖНО)
- // =========================
- fitBounds(map, points) {
-  if (!points?.length) return;
-
-  const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
-
-  map.fitBounds(bounds, {
-   padding: [40, 40]
-  });
- }
-
- setCenter(map, center) {
-  map.setView([center.lat, center.lng]);
- }
-
- setZoom(map, zoom) {
-  map.setZoom(zoom);
- }
-
- // =========================
- // INTERNALS
+ // HELPERS
  // =========================
  _interpolate(a, b, t) {
   return {
@@ -218,7 +181,6 @@ createMarker(map, { lat, lng }, options = {}) {
 
  _hexToRgb(hex) {
   const h = hex.replace("#", "");
-
   return {
    r: parseInt(h.slice(0, 2), 16),
    g: parseInt(h.slice(2, 4), 16),
