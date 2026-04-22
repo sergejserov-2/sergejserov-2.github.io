@@ -107,21 +107,15 @@ export class MapAdapter {
 
 
 
-animateLine(map, start, end, colorA, colorB) {
+async animateLine(map, start, end, colorA, colorB) {
+    await new Promise(res => {
+        if (map.isStyleLoaded()) return res();
+        map.once("load", res);
+    });
+
     const id = `line-${Math.random().toString(36).slice(2)}`;
 
-    const steps = Math.min(
-        80,
-        Math.max(
-            10,
-            Math.floor(
-                Math.sqrt(
-                    Math.pow(start.lng - end.lng, 2) +
-                    Math.pow(start.lat - end.lat, 2)
-                ) * 10
-            )
-        )
-    );
+    const steps = 60;
 
     const coords = [];
 
@@ -134,6 +128,9 @@ animateLine(map, start, end, colorA, colorB) {
         ]);
     }
 
+    // =========================
+    // SOURCE (ВАЖНО: lineMetrics)
+    // =========================
     map.addSource(id, {
         type: "geojson",
         data: {
@@ -142,9 +139,13 @@ animateLine(map, start, end, colorA, colorB) {
                 type: "LineString",
                 coordinates: [coords[0]]
             }
-        }
+        },
+        lineMetrics: true
     });
 
+    // =========================
+    // LAYER
+    // =========================
     map.addLayer({
         id,
         type: "line",
@@ -172,11 +173,14 @@ animateLine(map, start, end, colorA, colorB) {
             const source = map.getSource(id);
             if (!source) return;
 
+            // 🔥 защита от 1-point bug
+            const slice = coords.slice(0, Math.max(i, 2));
+
             source.setData({
                 type: "Feature",
                 geometry: {
                     type: "LineString",
-                    coordinates: coords.slice(0, i)
+                    coordinates: slice
                 }
             });
 
