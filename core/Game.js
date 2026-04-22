@@ -18,9 +18,6 @@ export class Game {
   this.gameState.endGame();
  }
 
- // =========================
- // MULTI-PLAYER READY VERSION (FIXED)
- // =========================
  setGuess(playerId, point) {
   const round = this.gameState.getCurrentRound();
   if (!round) return null;
@@ -39,9 +36,7 @@ export class Game {
 
   const result = this.scoring.calculate(actual, guess);
 
-  // =========================
-  // 🔥 NEW CONTRACT (NO addGuess)
-  // =========================
+  // ✅ ЕДИНАЯ ТОЧКА ЗАПИСИ
   this.gameState.setRoundResult({
    playerId,
    guess,
