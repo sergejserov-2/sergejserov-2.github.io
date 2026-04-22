@@ -6,25 +6,19 @@ export class MapAdapter {
 createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   if (!element) throw new Error("Map container missing");
 
-  const MAPTILER_KEY = "PnzOFXp1MIxIAe8nTmbt";
+  const KEY = "PnzOFXp1MIxIAe8nTmbt";
 
   this.map = L.map(element, {
     zoomControl: false,
     attributionControl: false
   }).setView([center.lat, center.lng], zoom);
 
-  // =========================
-  // 🗺 BASE TILE (CUSTOM STYLE)
-  // =========================
   L.tileLayer(
-    `https://api.maptiler.com/maps/019db4a6-96e9-70d5-a214-f01c8c0ea283/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
+    https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${KEY},
     {
       tileSize: 512,
       zoomOffset: -1,
-      minZoom: 1,
-      maxZoom: 19,
-      crossOrigin: true,
-      attribution: '&copy; MapTiler &copy; OpenStreetMap contributors'
+      crossOrigin: true
     }
   ).addTo(this.map);
 
