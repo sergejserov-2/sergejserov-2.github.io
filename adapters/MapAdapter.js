@@ -33,7 +33,7 @@ export class MapAdapter {
 
   const icon = L.divIcon({
    className: "custom-marker",
-   html: 
+   html: `
     <div style="
       width:${size}px;
       height:${size}px;
@@ -49,7 +49,7 @@ export class MapAdapter {
         box-shadow:0 0 0 4px rgba(0,0,0,0.15);
       "></div>
     </div>
-   ,
+   `,
    iconSize: [size, size],
    iconAnchor: [size / 2, size / 2]
   });
@@ -174,7 +174,7 @@ export class MapAdapter {
   const g = Math.round(a.g + (b.g - a.g) * t);
   const bl = Math.round(a.b + (b.b - a.b) * t);
 
-  return rgb(${r},${g},${bl});
+  return `rgb(${r},${g},${bl})`;
  }
 
  _hexToRgb(hex) {
