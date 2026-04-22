@@ -1,3 +1,4 @@
+
 export class MapWrapperUI {
  constructor({ adapter, element, uiBuilder }) {
   this.adapter = adapter;
@@ -14,6 +15,8 @@ export class MapWrapperUI {
   this.area = null;
   this.polygon = null;
   this.polygonVisible = false;
+
+  this._resizeObserver = null;
  }
 
  // =========================
@@ -27,10 +30,13 @@ export class MapWrapperUI {
    center: { lat: 20, lng: 0 }
   });
 
-  this.scheduleResize();
+  // безопасный resize после init
+  requestAnimationFrame(() => {
+   this.map.resize();
+  });
 
   // =========================
-  // MAPLIBRE CLICK FIX
+  // MAP CLICK
   // =========================
   this.map.on("click", (e) => {
    if (this.isLocked) return;
@@ -45,6 +51,7 @@ export class MapWrapperUI {
   });
 
   this.initResize();
+  this.initResizeObserver();
  }
 
  // =========================
@@ -78,7 +85,6 @@ export class MapWrapperUI {
 
  bindPolygonButton(el) {
   if (!el) return;
-
   el.addEventListener("click", () => this.togglePolygon());
  }
 
@@ -150,75 +156,86 @@ export class MapWrapperUI {
  }
 
  // =========================
- // RESIZE (MapLibre)
+ // RESIZE OBSERVER (безопасный)
  // =========================
- scheduleResize() {
-  if (!this.map) return;
+ initResizeObserver() {
+  if (!this.element) return;
 
-  requestAnimationFrame(() => {
-   this.map.resize();
+  this._resizeObserver = new ResizeObserver(() => {
+   // только после layout
+   requestAnimationFrame(() => {
+    this.map?.resize?.();
+   });
+  });
+
+  this._resizeObserver.observe(this.element);
+ }
+
+ // =========================
+ // MANUAL RESIZE (БЕЗ ДЁРГАНИЯ)
+ // =========================
+ initResize() {
+  const handle =
+   this.element?.parentElement?.querySelector(".resize-handle");
+
+  if (!handle) return;
+
+  let startX, startY, startW, startH;
+  let isDragging = false;
+
+  handle.addEventListener("mousedown", (e) => {
+   e.preventDefault();
+
+   isDragging = true;
+
+   const wrapper = this.element.parentElement;
+   const rect = wrapper.getBoundingClientRect();
+
+   startX = e.clientX;
+   startY = e.clientY;
+   startW = rect.width;
+   startH = rect.height;
+
+   document.body.style.userSelect = "none";
+
+   const onMove = (e) => {
+    if (!isDragging) return;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    wrapper.style.width = Math.max(200, startW + dx) + "px";
+    wrapper.style.height = Math.max(200, startH - dy) + "px";
+
+    // ❌ НЕТ resize здесь → убирает jitter
+   };
+
+   const onUp = () => {
+    isDragging = false;
+
+    document.body.style.userSelect = "";
+
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
+
+    // ✅ ЕДИНСТВЕННЫЙ resize после завершения
+    requestAnimationFrame(() => {
+     this.map?.resize?.();
+    });
+   };
+
+   window.addEventListener("mousemove", onMove);
+   window.addEventListener("mouseup", onUp);
   });
  }
 
  // =========================
- // DOM RESIZE HANDLER
+ // DESTROY
  // =========================
-initResize() {
- const handle =
-  this.element?.parentElement?.querySelector(".resize-handle");
-
- if (!handle) return;
-
- let startX, startY, startW, startH;
- let raf = null;
-
- const schedule = () => {
-  if (raf) return;
-
-  raf = requestAnimationFrame(() => {
-   this.map?.resize?.();
-   raf = null;
-  });
- };
-
- handle.addEventListener("mousedown", (e) => {
-  e.preventDefault();
-
-  const wrapper = this.element.parentElement;
-  const rect = wrapper.getBoundingClientRect();
-
-  startX = e.clientX;
-  startY = e.clientY;
-  startW = rect.width;
-  startH = rect.height;
-
-  document.body.style.userSelect = "none";
-
-  const onMove = (e) => {
-   const dx = e.clientX - startX;
-   const dy = e.clientY - startY;
-
-   wrapper.style.width = Math.max(200, startW + dx) + "px";
-   wrapper.style.height = Math.max(200, startH - dy) + "px";
-
-   // 🔥 НЕ ДЕРГАЕМ КАРТУ КАЖДЫЙ PIXEL
-   schedule();
-  };
-
-  const onUp = () => {
-   document.body.style.userSelect = "";
-
-   window.removeEventListener("mousemove", onMove);
-   window.removeEventListener("mouseup", onUp);
-
-   // 🔥 ФИНАЛЬНЫЙ resize (самый важный)
-   requestAnimationFrame(() => {
-    this.map?.resize?.();
-   });
-  };
-
-  window.addEventListener("mousemove", onMove);
-  window.addEventListener("mouseup", onUp);
- });
-}
+ destroy() {
+  if (this._resizeObserver) {
+   this._resizeObserver.disconnect();
+   this._resizeObserver = null;
+  }
+ }
 }
