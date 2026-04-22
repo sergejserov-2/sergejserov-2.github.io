@@ -120,83 +120,96 @@ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
  // =========================
  // POLYLINE (gradient + animation)
  // =========================
- createGradientPolyline(map, path, fromColor, toColor) {
-  const id = `line-${Math.random().toString(36).slice(2)}`;
+createGradientPolyline(map, path, fromColor, toColor) {
+ const id = `line-${Math.random().toString(36).slice(2)}`;
 
-  const coords = path.map(p => this.toLngLat(p));
+ const coords = path.map(p => this.toLngLat(p));
 
-  // стартовая "нулевая" линия
-  map.addSource(id, {
-   type: "geojson",
-   data: {
-    type: "Feature",
-    geometry: {
-     type: "LineString",
-     coordinates: [coords[0], coords[0]]
-    }
+ // =========================
+ // SOURCE (ВАЖНО: lineMetrics)
+ // =========================
+ map.addSource(id, {
+  type: "geojson",
+  data: {
+   type: "Feature",
+   geometry: {
+    type: "LineString",
+    coordinates: coords
+   }
+  },
+  lineMetrics: true
+ });
+
+ // =========================
+ // LAYER
+ // =========================
+ map.addLayer({
+  id,
+  type: "line",
+  source: id,
+
+  layout: {
+   "line-cap": "round",
+   "line-join": "round"
+  },
+
+  paint: {
+   "line-width": 3,
+
+   // 🔥 GRADIENT PLAYER → ACTUAL
+   "line-gradient": [
+    "interpolate",
+    ["linear"],
+    ["line-progress"],
+
+    0,
+    fromColor,
+
+    1,
+    toColor
+   ]
+  }
+ });
+
+ // =========================
+ // ANIMATION (progressive reveal)
+ // =========================
+ let i = 1;
+
+ const animate = () => {
+  if (i >= coords.length) return;
+
+  const partial = coords.slice(0, i + 1);
+
+  const source = map.getSource(id);
+  if (!source) return;
+
+  source.setData({
+   type: "Feature",
+   geometry: {
+    type: "LineString",
+    coordinates: partial
    }
   });
 
-  map.addLayer({
-   id,
-   type: "line",
-   source: id,
-   layout: {
-    "line-cap": "round",
-    "line-join": "round"
-   },
-   paint: {
-    "line-width": 3,
-
-    // 🔥 ГРАДИЕНТ
-    "line-gradient": [
-     "interpolate",
-     ["linear"],
-     ["line-progress"],
-
-     0,
-     fromColor,
-     1,
-     toColor
-    ]
-   }
-  });
-
-  // =========================
-  // ANIMATION (progressive draw)
-  // =========================
-  let i = 1;
-
-  const animate = () => {
-   if (i >= coords.length) return;
-
-   const partial = coords.slice(0, i + 1);
-
-   const source = map.getSource(id);
-   if (!source) return;
-
-   source.setData({
-    type: "Feature",
-    geometry: {
-     type: "LineString",
-     coordinates: partial
-    }
-   });
-
-   i++;
-   requestAnimationFrame(animate);
-  };
+  i++;
 
   requestAnimationFrame(animate);
+ };
 
-  return {
-   id,
-   remove: () => {
-    if (map.getLayer(id)) map.removeLayer(id);
-    if (map.getSource(id)) map.removeSource(id);
-   }
-  };
- }
+ requestAnimationFrame(animate);
+
+ // =========================
+ // RETURN HANDLE
+ // =========================
+ return {
+  id,
+  remove: () => {
+   if (map.getLayer(id)) map.removeLayer(id);
+   if (map.getSource(id)) map.removeSource(id);
+  }
+ };
+}
 
  // =========================
  // RESIZE
