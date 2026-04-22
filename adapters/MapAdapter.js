@@ -149,9 +149,7 @@ export class MapAdapter {
 
     // =========================
     // LINES
-    //
-
-=========================
+    //=========================
     clearLines(map) {
         this._lines.forEach(id => {
             if (map.getLayer(id)) map.removeLayer(id);
