@@ -34,68 +34,57 @@ export class MapOverviewUI {
  // =========================
  // RENDER
  // =========================
- render(round) {
-  if (!this.map || !round) return;
+render(round) {
+ if (!this.map || !round) return;
 
-  this.clear();
+ this.clear();
 
-  const actual = round.actualLocation;
-  const guess = round.guess;
+ const actual = round.actualLocation;
+ const guess = round.guess;
 
-  if (!actual) return;
+ if (!actual) return;
 
-  const playerColor = this.uiBuilder.getPlayerColor(
-   guess?.playerId || "p1"
-  );
+ const playerColor = this.uiBuilder.getPlayerColor(
+  guess?.playerId || "p1"
+ );
 
-  const actualColor = this.uiBuilder.getActualColor();
+ const actualColor = this.uiBuilder.getActualColor();
 
-  // =========================
-  // NO GUESS CASE
-  // =========================
-  if (!guess) {
-   this.adapter.createMarker(this.map, actual, {
-    color: actualColor,
-    scale: 1.35
-   });
-
-   this.adapter.setView(this.map, actual, 4);
-   return;
-  }
-
-  // =========================
-  // GUESS MARKER
-  // =========================
-  const guessMarker = this.adapter.createMarker(this.map, guess, {
-   color: playerColor,
-   scale: 1
+ if (!guess) {
+  this.adapter.createMarker(this.map, actual, {
+   color: actualColor,
+   scale: 1.35
   });
 
-  this.markers.push(guessMarker);
+  this.adapter.setView(this.map, actual, 4);
+  return;
+ }
 
-  // =========================
-  // SEGMENTS (hidden first)
-  // =========================
-  const segments = this.adapter.createGradientPolyline(
-   this.map,
-   [guess, actual],
-   playerColor,
-   actualColor,
-   14
-  );
+ const guessMarker = this.adapter.createMarker(this.map, guess, {
+  color: playerColor,
+  scale: 1
+ });
 
-  // скрываем сразу (анимируем появление)
-  segments.forEach(s => s.remove());
+ this.markers.push(guessMarker);
 
-  this.lines.push(...segments);
+ const segments = this.adapter.createGradientPolyline(
+  this.map,
+  [guess, actual],
+  playerColor,
+  actualColor,
+  14
+ );
 
-  // =========================
-  // FIT — ВАЖНО: ДО АНИМАЦИИ
-  // =========================
-  requestAnimationFrame(() => {
+ segments.forEach(s => s.remove());
+ this.lines.push(...segments);
+
+ // 🔥 ВАЖНО: ждём layout + resize
+ requestAnimationFrame(() => {
+  this.forceResize();
+
+  setTimeout(() => {
    this.fitBothPoints(guess, actual);
 
-   // после стабилизации карты — запускаем анимацию
    requestAnimationFrame(() => {
     this.animateSegments(segments, () => {
      const actualMarker = this.adapter.createMarker(this.map, actual, {
@@ -106,28 +95,31 @@ export class MapOverviewUI {
      this.markers.push(actualMarker);
     });
    });
-  });
- }
+
+  }, 60); // 🔥 ключевой delay против "схлопывания карты"
+ });
+}
 
  // =========================
  // 🔥 КЛЮЧЕВОЙ FIX: СТАБИЛЬНЫЙ FIT
  // =========================
- fitBothPoints(a, b) {
-  if (!this.map || !a || !b) return;
+fitBothPoints(a, b) {
+ if (!this.map || !a || !b) return;
 
-  const group = [
-   [a.lat, a.lng],
-   [b.lat, b.lng]
-  ];
+ const bounds = L.latLngBounds([
+  [a.lat, a.lng],
+  [b.lat, b.lng]
+ ]);
 
-  const bounds = L.latLngBounds(group);
+ this.map.fitBounds(bounds, {
+  paddingTopLeft: [120, 120],
+  paddingBottomRight: [120, 120],
 
-  this.map.fitBounds(bounds, {
-   padding: [80, 80],   // 🔥 важно: чтобы не “прилипало” к краям
-   maxZoom: 6,          // 🔥 ограничиваем дикий зум
-   animate: false       // 🔥 убираем дерганье
-  });
- }
+  maxZoom: 6,
+  animate: true,
+  duration: 0.4
+ });
+}
 
  // =========================
  // ANIMATION
