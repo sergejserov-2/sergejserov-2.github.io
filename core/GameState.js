@@ -30,7 +30,7 @@ export class GameState {
  }
 
  // =========================
- // MULTI-GUESS READY
+ // MULTI-GUESS SAFE
  // =========================
  setRoundResult(result) {
   const round = this.getCurrentRound();
@@ -52,15 +52,22 @@ export class GameState {
   };
 
   // =========================
-  // 🔥 DUEL STORAGE
+  // 🔥 REPLACE OR INSERT (FIX)
   // =========================
-  round.guesses.push(payload);
+  const idx = round.guesses.findIndex(
+   x => x.playerId === payload.playerId
+  );
+
+  if (idx >= 0) {
+   round.guesses[idx] = payload;
+  } else {
+   round.guesses.push(payload);
+  }
 
   // =========================
   // 🔥 SOLO COMPAT LAYER
-  // (первый игрок = старый guess)
   // =========================
-  if (!round.guess || result.playerId === "p1") {
+  if (!round.guess || payload.playerId === "p1") {
    round.guess = payload;
   }
  }
