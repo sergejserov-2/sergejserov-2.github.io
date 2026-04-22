@@ -34,8 +34,12 @@ export class MapOverviewUI {
         const playerColor = this.uiBuilder.getPlayerColor("p1");
         const actualColor = this.uiBuilder.getActualColor();
 
-        // нет guess
+        // =========================
+        // БЕЗ GUESS
+        // =========================
         if (!guess) {
+            this.adapter.fitBounds(this.map, actual, actual);
+
             this.markers.push(
                 this.adapter.createMarker(this.map, actual, {
                     color: actualColor,
@@ -45,14 +49,25 @@ export class MapOverviewUI {
             return;
         }
 
-        // guess
+        // =========================
+        // 1. КАМЕРА СРАЗУ
+        // =========================
+        this.adapter.fitBounds(this.map, guess, actual);
+
+        await this.adapter.waitIdle(this.map);
+
+        // =========================
+        // 2. GUESS
+        // =========================
         this.markers.push(
             this.adapter.createMarker(this.map, guess, {
                 color: playerColor
             })
         );
 
-        // 🔥 линия + камера
+        // =========================
+        // 3. LINE
+        // =========================
         await this.adapter.animateLine(
             this.map,
             guess,
@@ -61,10 +76,9 @@ export class MapOverviewUI {
             actualColor
         );
 
-        // 🔥 теперь карта стабильна
-        await this.adapter.waitIdle(this.map);
-
-        // actual (теперь НЕ плывёт)
+        // =========================
+        // 4. ACTUAL
+        // =========================
         this.markers.push(
             this.adapter.createMarker(this.map, actual, {
                 color: actualColor,
