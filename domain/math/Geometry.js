@@ -101,41 +101,56 @@ export class Geometry {
   }
 
   // =========================
+  // AREA SCALE
+  // =========================
+  static getAreaScale(area) {
+    if (!area?.polygon?.length) return 2000;
+
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    let minLng = Infinity;
+    let maxLng = -Infinity;
+
+    for (const p of area.polygon) {
+      if (p.lat < minLat) minLat = p.lat;
+      if (p.lat > maxLat) maxLat = p.lat;
+      if (p.lng < minLng) minLng = p.lng;
+      if (p.lng > maxLng) maxLng = p.lng;
+    }
+
+    const latDiff = maxLat - minLat;
+    const lngDiff = maxLng - minLng;
+
+    const diagonalDeg = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+    const diagonalKm = diagonalDeg * 111;
+
+    return diagonalKm * 0.7;
+  }
+
+  // =========================
+  // BOUNDS (🔥 NEW)
+  // =========================
+  static getBounds(a, b, padding = 0.25) {
+    const minLat = Math.min(a.lat, b.lat);
+    const maxLat = Math.max(a.lat, b.lat);
+    const minLng = Math.min(a.lng, b.lng);
+    const maxLng = Math.max(a.lng, b.lng);
+
+    const latPad = (maxLat - minLat) * padding || 0.5;
+    const lngPad = (maxLng - minLng) * padding || 0.5;
+
+    return {
+      minLat: minLat - latPad,
+      maxLat: maxLat + latPad,
+      minLng: minLng - lngPad,
+      maxLng: maxLng + lngPad
+    };
+  }
+
+  // =========================
   // UTILS
   // =========================
   static toRad(v) {
     return (v * Math.PI) / 180;
   }
-
-static getAreaScale(area) {
- if (!area?.polygon?.length) return 2000;
-
- let minLat = Infinity;
- let maxLat = -Infinity;
- let minLng = Infinity;
- let maxLng = -Infinity;
-
- for (const p of area.polygon) {
-  if (p.lat < minLat) minLat = p.lat;
-  if (p.lat > maxLat) maxLat = p.lat;
-  if (p.lng < minLng) minLng = p.lng;
-  if (p.lng > maxLng) maxLng = p.lng;
- }
-
- const latDiff = maxLat - minLat;
- const lngDiff = maxLng - minLng;
-
- // диагональ bounding box
- const diagonalDeg = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
-
- // перевод в километры
- const diagonalKm = diagonalDeg * 111;
-
- // 🔥 немного смягчаем (важно для геймплея)
- return diagonalKm * 0.7;
-}
-
-
-
-  
 }
