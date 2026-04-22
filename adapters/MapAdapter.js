@@ -27,7 +27,7 @@ export class MapAdapter {
    container: element,
 
    // 🔥 ВАЖНО: style.json, не "layers: []"
-   style: `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/style.json?key=${this.key}`,
+   style: `https://api.maptiler.com/maps/019db4a6-96e9-70d5-a214-f01c8c0ea283/style.json?key=${this.key}`,
 
    center: this.toLngLat(center),
    zoom,
