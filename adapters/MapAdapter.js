@@ -1,3 +1,5 @@
+import { Geometry } from "../../domain/math/Geometry.js";
+
 export class MapAdapter {
  constructor() {
   this.map = null;
