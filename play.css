@@ -230,6 +230,7 @@ body {
  flex-direction: column;
  gap: 10px;
 }
+
 .round-timer-bar {
  position: relative;
  padding: 0px 20px;
