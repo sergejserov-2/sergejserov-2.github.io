@@ -1,16 +1,10 @@
 export class MapAdapter {
     constructor() {}
 
-    // =========================
-    // COORDS
-    // =========================
     toLngLat(p) {
         return [p.lng, p.lat];
     }
 
-    // =========================
-    // MAP
-    // =========================
     createMap(element, { center, zoom }) {
         const key = "PnzOFXp1MIxIAe8nTmbt";
 
@@ -48,9 +42,6 @@ export class MapAdapter {
         });
     }
 
-    // =========================
-    // CAMERA
-    // =========================
     fitBounds(map, a, b) {
         const bounds = new maplibregl.LngLatBounds(
             this.toLngLat(a),
@@ -64,7 +55,7 @@ export class MapAdapter {
     }
 
     // =========================
-    // MARKER (СТАБИЛЬНЫЙ ДОМ)
+    // MARKER
     // =========================
     createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
         const size = 20 * scale;
@@ -77,11 +68,7 @@ export class MapAdapter {
         el.style.position = "relative";
 
         el.innerHTML = `
-            <div style="
-                width:${size}px;
-                height:${size}px;
-                position:relative;
-            ">
+            <div style="width:${size}px;height:${size}px;position:relative;">
                 <div style="
                     position:absolute;
                     inset:0;
@@ -103,15 +90,21 @@ export class MapAdapter {
             </div>
         `;
 
-        return new maplibregl.Marker({
+        const marker = new maplibregl.Marker({
             element: el,
             anchor: "center"
-        })
-            .setLngLat([lng, lat])
-            .addTo(map);
+        }).setLngLat([lng, lat]);
+
+        marker._el = el;
+
+        return marker;
     }
 
-    removeMarker(marker) {
+    showMarker(marker, map) {
+        marker.addTo(map);
+    }
+
+    hideMarker(marker) {
         marker?.remove?.();
     }
 }
