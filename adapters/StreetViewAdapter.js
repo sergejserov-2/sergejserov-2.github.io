@@ -40,26 +40,75 @@ export class StreetViewAdapter {
  }
 
 
- async getStreetViewMeta({ lat, lng }) {
+async getStreetViewMeta({ lat, lng }) {
   return new Promise(resolve => {
-   this.svService.getPanorama(
-    { location: { lat, lng }, radius: 50000 },
-    (data, status) => {
-     const valid =
-      status === "OK" &&
-      data?.location?.latLng;
+    this.svService.getPanorama(
+      {
+        location: { lat, lng },
+        radius: 50000
+      },
+      (data, status) => {
 
-     resolve({
-      valid,
-      location: valid
-       ? {
-          lat: data.location.latLng.lat(),
-          lng: data.location.latLng.lng()
-         }
-       : null
-     });
-    }
-   );
+        const validBase =
+          status === "OK" &&
+          data?.location &&
+          data?.location?.latLng;
+
+        if (!validBase) {
+          return resolve({
+            valid: false,
+            reason: "no_panorama",
+            location: null
+          });
+        }
+
+        const links = data.links || [];
+
+        // =========================
+        // 🔥 FILTER 1: NO MOVEMENT
+        // =========================
+        const hasNavigation = links.length > 0;
+
+        // =========================
+        // 🔥 FILTER 2: INDOOR DETECTION
+        // =========================
+        const desc = (data?.location?.description || "").toLowerCase();
+
+        const isIndoor =
+          desc.includes("indoor") ||
+          desc.includes("inside") ||
+          desc.includes("museum") ||
+          desc.includes("shop") ||
+          desc.includes("store");
+
+        // =========================
+        // FINAL DECISION
+        // =========================
+        if (!hasNavigation) {
+          return resolve({
+            valid: false,
+            reason: "no_navigation",
+            location: null
+          });
+        }
+
+        if (isIndoor) {
+          return resolve({
+            valid: false,
+            reason: "indoor",
+            location: null
+          });
+        }
+
+        resolve({
+          valid: true,
+          location: {
+            lat: data.location.latLng.lat(),
+            lng: data.location.latLng.lng()
+          }
+        });
+      }
+    );
   });
- }
+}
 }
