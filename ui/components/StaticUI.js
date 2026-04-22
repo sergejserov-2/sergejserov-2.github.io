@@ -60,8 +60,8 @@ export class StaticUI {
    text.innerHTML = guesses.map(g => {
     return `
      <p>
-      <b>${g.playerId}</b> — 
-      ${g.distance.toFixed(1)} км — 
+      Игрок: <b>${g.playerId}</b> — 
+      Точка на расстоянии ${g.distance.toFixed(1)} км — 
       ${g.score} / 5000
      </p>
     `;
