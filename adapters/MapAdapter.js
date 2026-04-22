@@ -45,38 +45,70 @@ export class MapAdapter {
     // =========================
     // MARKER (2 круга)
     // =========================
-    createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
-        const size = 22 * scale;
+    
+createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
+    const size = 22 * scale;
+    const inner = size * 0.4;
 
-        const el = document.createElement("div");
+    const el = document.createElement("div");
 
-        el.innerHTML = `
-        <div style="width:${size}px;height:${size}px;position:relative;">
-            <div style="
-                position:absolute;
-                width:100%;
-                height:100%;
-                border-radius:50%;
-                border:2px solid ${color};
-            "></div>
+    // базовый контейнер
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
+    el.style.position = "relative";
 
-            <div style="
-                position:absolute;
-                top:50%;
-                left:50%;
-                transform:translate(-50%,-50%);
-                width:${size * 0.5}px;
-                height:${size * 0.5}px;
-                background:${color};
-                border-radius:50%;
-            "></div>
-        </div>
+    // 🔥 один div + псевдоэлементы
+    el.style.setProperty("--color", color);
+    el.style.setProperty("--inner", `${inner}px`);
+
+    el.style.cssText += `
+        display:block;
+    `;
+
+    // создаём стиль один раз (или можно вынести в CSS)
+    if (!document.getElementById("marker-style")) {
+        const style = document.createElement("style");
+        style.id = "marker-style";
+
+        style.innerHTML = `
+        .custom-marker {
+            position: relative;
+        }
+
+        .custom-marker::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid var(--color);
+            opacity: 0.6;
+            box-sizing: border-box;
+        }
+
+        .custom-marker::after {
+            content: "";
+            position: absolute;
+            width: var(--inner);
+            height: var(--inner);
+            background: var(--color);
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
         `;
-
-        return new maplibregl.Marker({ element: el })
-            .setLngLat(this.toLngLat({ lat, lng }))
-            .addTo(map);
+        document.head.appendChild(style);
     }
+
+    el.className = "custom-marker";
+
+    return new maplibregl.Marker({
+        element: el,
+        anchor: "center"
+    })
+        .setLngLat(this.toLngLat({ lat, lng }))
+        .addTo(map);
+}
 
     removeMarker(marker) {
         marker?.remove?.();
