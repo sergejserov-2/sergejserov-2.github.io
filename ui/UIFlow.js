@@ -51,19 +51,17 @@ export class UIFlow {
   // =========================
   // ROUND START
   // =========================
-  this.gameFlow.on("roundStarted", (state) => {
-   this.mapWrapperUI.reset();
-   this.streetViewUI.unlockMove();
-
-   this.roundOverviewUI?.clear();
-   this.gameOverviewUI?.clear();
-
-   this.staticUI.stopRoundTimer?.();
-
-   this.staticUI.updateHUD(
-    this.uiBuilder.formatGameVM(state)
-   );
-  });
+this.gameFlow.on("roundStarted", (state) => {
+    this.mapWrapperUI.reset();
+    this.mapWrapperUI.resetView?.();
+    this.streetViewUI.unlockMove();
+    this.roundOverviewUI?.clear();
+    this.gameOverviewUI?.clear();
+    this.staticUI.stopRoundTimer?.();
+    this.staticUI.updateHUD(
+        this.uiBuilder.formatGameVM(state)
+    );
+});
 
   // =========================
   // TIMER / MOVES
