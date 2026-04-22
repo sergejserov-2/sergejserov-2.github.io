@@ -1,9 +1,14 @@
 :root {
  --z-world: 0;
  --z-map: 100;
+ --z-map-ui: 120;
  --z-hud: 500;
  --z-overlay: 5000;
 }
+
+/* =========================
+   BASE
+========================= */
 
 body {
  margin: 0;
@@ -16,6 +21,7 @@ body {
  position: relative;
  width: 100vw;
  height: 100vh;
+ overflow: hidden;
 }
 
 /* =========================
@@ -50,47 +56,88 @@ body {
  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
 }
 
-.hud {
- display: flex;
- flex-direction: column;
- gap: 6px;
- color: #fff;
- font-size: 14px;
- pointer-events: none;
-}
-
 /* =========================
-   MAP
+   MAP WRAPPER (CRITICAL FOR LEAFLET)
 ========================= */
 
 .map-wrapper {
  position: absolute;
  bottom: 10px;
  left: 10px;
+
  width: 400px;
  height: 300px;
+
  z-index: var(--z-map);
 
  border-radius: 10px;
+ overflow: hidden;
+
  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+
+ /* 🔥 Leaflet fix: важно для tile rendering */
+ contain: layout paint size;
 }
+
+/* =========================
+   LEAFLET CONTAINER
+========================= */
 
 .map {
  width: 100%;
  height: 100%;
+
+ position: relative;
+
+ /* Leaflet требует нормальный блок */
  background: #111;
- border-radius: 10px;
- overflow: hidden;
 }
 
-/* controls */
+/* =========================
+   Leaflet internal fix
+========================= */
+
+/* убираем любые конфликты z-index внутри leaflet */
+.leaflet-container {
+ width: 100%;
+ height: 100%;
+ background: #111;
+ outline: none;
+}
+
+/* tiles не должны вылезать */
+.leaflet-pane,
+.leaflet-map-pane {
+ z-index: 1 !important;
+}
+
+/* markers above tiles */
+.leaflet-marker-pane {
+ z-index: 600 !important;
+}
+
+/* polylines */
+.leaflet-overlay-pane {
+ z-index: 400 !important;
+}
+
+/* UI controls */
+.leaflet-control {
+ z-index: var(--z-map-ui);
+}
+
+/* =========================
+   MAP UI BUTTONS
+========================= */
 
 .resize-handle,
-.guess-button {
+.guess-button,
+.polygon-button {
  position: absolute;
- z-index: 10;
+ z-index: var(--z-map-ui);
 }
 
+/* resize */
 .resize-handle {
  top: 0;
  right: 0;
@@ -99,8 +146,8 @@ body {
  cursor: nesw-resize;
 }
 
+/* polygon */
 .polygon-button {
- position: absolute;
  left: 10px;
  bottom: 10px;
  padding: 8px 10px;
@@ -116,6 +163,7 @@ body {
  background: rgba(255,255,255,0.15);
 }
 
+/* guess */
 .guess-button {
  right: 10px;
  bottom: 10px;
@@ -140,167 +188,6 @@ body {
  position: absolute;
  inset: 0;
  z-index: var(--z-overlay);
- pointer-events: none;
-}
-
-/* =========================
-   LOADING
-========================= */
-
-.loading-screen {
- position: absolute;
- inset: 0;
-
- display: none;
- align-items: center;
- justify-content: center;
-
- background: rgba(0, 0, 0, 0.55);
- backdrop-filter: blur(8px);
-
- color: #fff;
- text-align: center;
-}
-
-.loading-screen.active {
- display: flex;
- pointer-events: auto;
-}
-
-/* =========================
-   RESULT OVERLAY (ROUND + GAME)
-========================= */
-
-.guess-overview {
- position: absolute;
- inset: 0;
-
- display: none;
- justify-content: center;
- align-items: center;
-
- background: rgba(0, 0, 0, 0.6);
- backdrop-filter: blur(10px);
-
- z-index: var(--z-overlay);
-}
-
-.guess-overview.active {
- display: flex;
- pointer-events: auto;
-}
-
-/* =========================
-   PANEL
-========================= */
-
-.score-view {
- position: relative;
- width: 950px;
- max-width: 92vw;
-
- background: #161a22;
- padding: 20px;
- border-radius: 10px;
-
- display: flex;
- flex-direction: column;
- gap: 20px;
-
- color: #fff;
-}
-
-/* =========================
-   OVERVIEW MAP
-========================= */
-
-.overview-map {
- width: 100%;
- height: 60vh;
- min-height: 320px;
-
- border-radius: 8px;
- overflow: hidden;
- background: #111;
-}
-
-/* =========================
-   PROGRESS
-========================= */
-
-.score-progress-bar {
- width: 100%;
- height: 30px;
- background: #2a2f3a;
- border-radius: 8px;
- overflow: hidden;
- margin-top: 10px;
-}
-
-.score-progress {
- width: 0%;
- height: 100%;
- background: #4ea1ff;
- transition: width 0.4s ease;
-}
-
-/* =========================
-   TEXT
-========================= */
-
-.score-text {
- text-align: center;
- font-size: 15px;
- line-height: 1.4;
-}
-
-.score-text p {
- margin: 6px 0;
-}
-
-/* =========================
-   BUTTONS
-========================= */
-
-.game-end-buttons {
- display: flex;
- gap: 30px;
- justify-content: center;
- flex-wrap: wrap;
- margin-top: 10px;
-}
-
-.button {
- right: 10px;
- bottom: 10px;
- padding: 8px 10px;
- border-radius: 8px;
- background: #4ea1ff;
- color: #fff;
- cursor: pointer;
- user-select: none;
- transition: 0.2s ease;
-}
-
-.button:hover {
- background: #3b8ee6;
-}
-
-/* =========================
-   ROUND TIMER BAR
-========================= */
-
-.round-timer-bar {
- position: absolute;
- left: 20px;
- right: 20px;
- bottom: 0;
-
- height: 3px;
- background: white;
-
- transform-origin: left;
- transform: scaleX(0);
 
  pointer-events: none;
 }
