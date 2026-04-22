@@ -39,7 +39,9 @@ export class MapOverviewUI {
         // =========================
         if (!guess) {
             this.adapter.fitBounds(this.map, actual, actual);
+
             await this.adapter.waitIdle(this.map);
+            await this.adapter.waitIdle(this.map); // 🔥 DOUBLE IDLE FIX
 
             this.markers.push(
                 this.adapter.createMarker(this.map, actual, {
@@ -62,10 +64,12 @@ export class MapOverviewUI {
         );
 
         // =========================
-        // CAMERA FIRST
+        // CAMERA
         // =========================
         this.adapter.fitBounds(this.map, guess, actual);
+
         await this.adapter.waitIdle(this.map);
+        await this.adapter.waitIdle(this.map); // 🔥 CRITICAL FIX
 
         // =========================
         // LINE
@@ -78,7 +82,13 @@ export class MapOverviewUI {
             actualColor
         );
 
+        // 🔥 LINE INVALIDATES IDLE STATE → WAIT AGAIN
         await this.adapter.waitIdle(this.map);
+
+        // =========================
+        // FINAL STABILIZATION BEFORE MARKER
+        // =========================
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
         // =========================
         // ACTUAL
@@ -94,6 +104,7 @@ export class MapOverviewUI {
     clear() {
         this.markers.forEach(m => this.adapter.removeMarker(m));
         this.markers = [];
+
         this.adapter.clearLines(this.map);
     }
 }
