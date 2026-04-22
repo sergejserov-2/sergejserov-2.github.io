@@ -12,15 +12,7 @@ export class GameState {
  startRound(actualLocation) {
   this.rounds.push({
    actualLocation,
-
-   // =========================
-   // SOLO COMPATIBILITY
-   // =========================
    guess: null,
-
-   // =========================
-   // DUEL MODE
-   // =========================
    guesses: []
   });
  }
@@ -29,9 +21,6 @@ export class GameState {
   return this.rounds[this.rounds.length - 1];
  }
 
- // =========================
- // MULTI-GUESS SAFE
- // =========================
  setRoundResult(result) {
   const round = this.getCurrentRound();
   if (!round) return;
@@ -51,23 +40,11 @@ export class GameState {
    score: result.score
   };
 
-  // =========================
-  // 🔥 REPLACE OR INSERT (FIX)
-  // =========================
-  const idx = round.guesses.findIndex(
-   x => x.playerId === payload.playerId
-  );
+  // DUEL STORAGE
+  round.guesses.push(payload);
 
-  if (idx >= 0) {
-   round.guesses[idx] = payload;
-  } else {
-   round.guesses.push(payload);
-  }
-
-  // =========================
-  // 🔥 SOLO COMPAT LAYER
-  // =========================
-  if (!round.guess || payload.playerId === "p1") {
+  // SOLO COMPAT
+  if (!round.guess || result.playerId === "p1") {
    round.guess = payload;
   }
  }
