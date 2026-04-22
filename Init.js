@@ -146,7 +146,8 @@ const gameBridge = new GameBridge({
  });
 
  const staticUI = new StaticUI({
-  hudElement: hud
+  hudElement: hud,
+  uiBuilder: uiBuilder
  });
 
  const screenManager = new ScreenManager({
