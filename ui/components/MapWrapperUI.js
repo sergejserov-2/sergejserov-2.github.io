@@ -184,6 +184,7 @@ export class MapWrapperUI {
     // =========================
 // RESIZE ENGINE (FIXED)
     // =========================
+
 initResize() {
     const handle =
         this.element?.parentElement?.querySelector(".resize-handle");
@@ -209,8 +210,12 @@ initResize() {
 
         document.body.style.userSelect = "none";
 
-        // 🔥 опционально: убираем pointer events с карты (чтобы не лагала во время drag)
-        this.element.style.pointerEvents = "none";
+        const canvas = this.map?.getCanvas?.();
+
+        // 🔥 ключ: замораживаем карту
+        if (canvas) {
+            canvas.style.visibility = "hidden";
+        }
 
         const onMove = (e) => {
             if (!isDragging) return;
@@ -220,23 +225,25 @@ initResize() {
 
             wrapper.style.width = Math.max(200, startW + dx) + "px";
             wrapper.style.height = Math.max(200, startH - dy) + "px";
-
-            // ❌ НИКАКОГО resize здесь
         };
 
         const onUp = () => {
             isDragging = false;
 
             document.body.style.userSelect = "";
-            this.element.style.pointerEvents = "";
 
             window.removeEventListener("mousemove", onMove);
             window.removeEventListener("mouseup", onUp);
 
-            // 🔥 один точный resize
+            // 🔥 сначала resize
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     this.map?.resize?.();
+
+                    // 🔥 потом возвращаем карту
+                    if (canvas) {
+                        canvas.style.visibility = "visible";
+                    }
                 });
             });
         };
