@@ -19,15 +19,29 @@ export class LocationGenerator {
    try {
     const result = await this.streetAdapter.getStreetViewMeta(point);
 
-    if (result?.valid && result?.location) {
-     return result.location;
+    // =========================
+    // 🔥 STRICT VALIDATION
+    // =========================
+    if (!result?.valid) {
+     continue;
     }
+
+    // =========================
+    // 🔥 EXTRA SAFETY CHECK
+    // =========================
+    if (!result.location) {
+     continue;
+    }
+
+    return result.location;
 
    } catch (e) {
     console.warn("StreetView meta error:", e);
    }
   }
 
-  throw new Error("LocationGenerator: failed to find valid location");
+  throw new Error(
+   "LocationGenerator: failed to find valid playable StreetView location"
+  );
  }
 }
