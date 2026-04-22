@@ -153,19 +153,21 @@ export class MapAdapter {
 animateLine(map, start, end, colorA, colorB) {
     const id = `line-${Math.random().toString(36).slice(2)}`;
 
-    const steps = 80;
+    // =========================
+    // 1. BUILD GREAT CIRCLE
+    // =========================
+    const points = Geometry.buildGreatCircle(start, end, 80);
 
-    const coords = [];
+    let coords = points.map(p => [p.lng, p.lat]);
 
-    for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
+    // =========================
+    // 2. FIX DATELINE (КРИТИЧНО)
+    // =========================
+    coords = this._fixDateline(coords);
 
-        coords.push([
-            start.lng + (end.lng - start.lng) * t,
-            start.lat + (end.lat - start.lat) * t
-        ]);
-    }
-
+    // =========================
+    // 3. SOURCE
+    // =========================
     map.addSource(id, {
         type: "geojson",
         lineMetrics: true,
@@ -178,6 +180,9 @@ animateLine(map, start, end, colorA, colorB) {
         }
     });
 
+    // =========================
+    // 4. LAYER
+    // =========================
     map.addLayer({
         id,
         type: "line",
@@ -198,6 +203,9 @@ animateLine(map, start, end, colorA, colorB) {
         }
     });
 
+    // =========================
+    // 5. ANIMATION
+    // =========================
     return new Promise(resolve => {
         let i = 1;
 
@@ -217,10 +225,10 @@ animateLine(map, start, end, colorA, colorB) {
 
             i++;
 
-            if (i <= steps) {
+            if (i <= coords.length) {
                 requestAnimationFrame(animate);
             } else {
-                // 🔥 ЖЁСТКО фиксируем финальную точку
+                // финальное состояние
                 source.setData({
                     type: "Feature",
                     geometry: {
@@ -236,6 +244,27 @@ animateLine(map, start, end, colorA, colorB) {
         requestAnimationFrame(animate);
     });
 }
+
+
+_fixDateline(coords) {
+    const fixed = [coords[0]];
+
+    for (let i = 1; i < coords.length; i++) {
+        let [lng, lat] = coords[i];
+        let [prevLng] = fixed[i - 1];
+
+        let diff = lng - prevLng;
+
+        if (diff > 180) lng -= 360;
+        if (diff < -180) lng += 360;
+
+        fixed.push([lng, lat]);
+    }
+
+    return fixed;
+}
+
+    
 
 clearLines(map) {
     for (const layer of map.getStyle().layers || []) {
