@@ -11,7 +11,6 @@ export class MapOverviewUI {
   this.lines = [];
 
   this._resizeObserver = null;
-  this._resizeRAF = null;
  }
 
  // =========================
@@ -25,8 +24,9 @@ export class MapOverviewUI {
    zoom: 2
   });
 
+  // Leaflet сам стабилен, но оставим resize observer
   this._resizeObserver = new ResizeObserver(() => {
-   this.scheduleResize();
+   this.forceResize();
   });
 
   this._resizeObserver.observe(this.element);
@@ -52,7 +52,7 @@ export class MapOverviewUI {
   const actualColor = this.uiBuilder.getActualColor();
 
   // =========================
-  // NO GUESS
+  // NO GUESS CASE
   // =========================
   if (!guess) {
    this.adapter.createMarker(this.map, actual, {
@@ -60,16 +60,16 @@ export class MapOverviewUI {
     scale: 1.35
    });
 
-   this.map.setCenter(actual);
-   this.map.setZoom(4);
+   this.adapter.setCenter(this.map, actual);
+   this.adapter.setZoom(this.map, 4);
 
    return;
   }
 
   // =========================
-  // CAMERA (ОДИН РАЗ, БЕЗ АНИМАЦИИ)
+  // FIT (СТАБИЛЬНЫЙ, БЕЗ АНИМАЦИЙ КАМЕРЫ)
   // =========================
-  this.fitToPoints([guess, actual]);
+  this.adapter.fitBounds(this.map, [guess, actual]);
 
   // =========================
   // GUESS MARKER
@@ -82,10 +82,10 @@ export class MapOverviewUI {
   this.markers.push(guessMarker);
 
   // =========================
-  // SEGMENTS
+  // SEGMENTS (НЕ МЕНЯЕМ МАПУ ВООБЩЕ)
   // =========================
   const segments = this.adapter.createGradientPolyline(
-   null,
+   this.map,
    [guess, actual],
    playerColor,
    actualColor,
@@ -95,7 +95,7 @@ export class MapOverviewUI {
   this.lines.push(...segments);
 
   // =========================
-  // ANIMATE ONLY VISUALS
+  // ANIMATE SEGMENTS
   // =========================
   this.animateSegments(segments, () => {
    const actualMarker = this.adapter.createMarker(this.map, actual, {
@@ -105,31 +105,6 @@ export class MapOverviewUI {
 
    this.markers.push(actualMarker);
   });
- }
-
- // =========================
- // CAMERA FIT (STATIC)
- // =========================
- fitToPoints(points) {
-  const a = points[0];
-  const b = points[1];
-
-  const center = {
-   lat: (a.lat + b.lat) / 2,
-   lng: (a.lng + b.lng) / 2
-  };
-
-  const distance = Geometry.distance(a, b);
-
-  let zoom = 5;
-  if (distance < 10) zoom = 7;
-  else if (distance < 50) zoom = 6;
-  else if (distance < 200) zoom = 5;
-  else if (distance < 1000) zoom = 4;
-  else zoom = 3;
-
-  this.map.setCenter(center);
-  this.map.setZoom(zoom);
  }
 
  // =========================
@@ -149,10 +124,11 @@ export class MapOverviewUI {
     return;
    }
 
-   segments[i].setMap(this.map);
+   // Leaflet: addTo(map)
+   segments[i].addTo(this.map);
    i++;
 
-   setTimeout(step, 20);
+   setTimeout(step, 18);
   };
 
   step();
@@ -162,46 +138,26 @@ export class MapOverviewUI {
  // CLEAR
  // =========================
  clear() {
-  this.markers.forEach(m => this.adapter.removeMarker(m));
-  this.lines.forEach(l => l.setMap(null));
+  this.markers.forEach(m => m?.remove?.());
+  this.lines.forEach(l => l?.remove?.());
 
   this.markers = [];
   this.lines = [];
  }
 
  // =========================
- // RESIZE
+ // RESIZE (СТАБИЛЬНЫЙ)
  // =========================
-scheduleResize() {
+ forceResize() {
   if (!this.map) return;
 
-  if (this._resizeRAF) {
-    cancelAnimationFrame(this._resizeRAF);
-  }
-
-  this._resizeRAF = requestAnimationFrame(() => {
-    google.maps.event.trigger(this.map, "resize");
-
-    // 🔥 ВАЖНО: принудительный reflow камеры
-    const center = this.map.getCenter();
-    const zoom = this.map.getZoom();
-
-    if (center && zoom) {
-      // даём Google “переосознать” layout
-      setTimeout(() => {
-        this.map.setCenter(center);
-        this.map.setZoom(zoom);
-      }, 0);
-    }
-
-    this._resizeRAF = null;
-  });
-}
-
- forceResize() {
-  this.scheduleResize();
+  // Leaflet фикс
+  this.map.invalidateSize();
  }
 
+ // =========================
+ // DESTROY
+ // =========================
  destroy() {
   if (this._resizeObserver) {
    this._resizeObserver.disconnect();
