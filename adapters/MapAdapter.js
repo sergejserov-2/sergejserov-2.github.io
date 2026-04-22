@@ -20,7 +20,7 @@ export class MapAdapter {
   // 🌑 DARK BASE LAYER + RU LABELS
   // =========================
   L.tileLayer(
-   `https://api.maptiler.com/maps/darkmatter/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
+   `https://api.maptiler.com/maps/darkmatter/{z}/{x}/{y}.png?key=${PnzOFXp1MIxIAe8nTmbt}`,
    {
     tileSize: 512,
     zoomOffset: -1,
