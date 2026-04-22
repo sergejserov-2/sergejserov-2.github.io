@@ -105,7 +105,7 @@ export class UIFlow {
 
   // 🔥 игрок сделал guess → waiting экран
   this.gameFlow.on("roundWaiting", () => {
-   this.screenManager.show("loading"); // пока используем loading как waiting
+   this.screenManager.show("waiting"); // пока используем loading как waiting
   });
 
   // 🔥 таймер ожидания других игроков
