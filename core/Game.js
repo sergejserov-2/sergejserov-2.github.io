@@ -18,6 +18,9 @@ export class Game {
   this.gameState.endGame();
  }
 
+ // =========================
+ // MULTI-PLAYER READY VERSION
+ // =========================
  setGuess(playerId, point) {
   const round = this.gameState.getCurrentRound();
   if (!round) return null;
@@ -36,7 +39,10 @@ export class Game {
 
   const result = this.scoring.calculate(actual, guess);
 
-  this.gameState.setRoundResult({
+  // =========================
+  // 🔥 KEY CHANGE: support multiple guesses
+  // =========================
+  this.gameState.addGuess({
    playerId,
    guess,
    distance: result.distance,
@@ -60,5 +66,5 @@ export class Game {
 
  reset() {
   this.gameState.reset();
-}
+ }
 }
