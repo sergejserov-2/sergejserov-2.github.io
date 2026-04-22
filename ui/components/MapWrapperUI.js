@@ -174,60 +174,70 @@ export class MapWrapperUI {
  // =========================
  // MANUAL RESIZE (БЕЗ ДЁРГАНИЯ)
  // =========================
- initResize() {
-  const handle =
-   this.element?.parentElement?.querySelector(".resize-handle");
+initResize() {
+ const handle =
+  this.element?.parentElement?.querySelector(".resize-handle");
 
-  if (!handle) return;
+ if (!handle) return;
 
-  let startX, startY, startW, startH;
-  let isDragging = false;
+ let startX, startY, startW, startH;
+ let isDragging = false;
+ let raf = null;
 
-  handle.addEventListener("mousedown", (e) => {
-   e.preventDefault();
+ const resizeMap = () => {
+  if (raf) return;
 
-   isDragging = true;
-
-   const wrapper = this.element.parentElement;
-   const rect = wrapper.getBoundingClientRect();
-
-   startX = e.clientX;
-   startY = e.clientY;
-   startW = rect.width;
-   startH = rect.height;
-
-   document.body.style.userSelect = "none";
-
-   const onMove = (e) => {
-    if (!isDragging) return;
-
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-
-    wrapper.style.width = Math.max(200, startW + dx) + "px";
-    wrapper.style.height = Math.max(200, startH - dy) + "px";
-
-    // ❌ НЕТ resize здесь → убирает jitter
-   };
-
-   const onUp = () => {
-    isDragging = false;
-
-    document.body.style.userSelect = "";
-
-    window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("mouseup", onUp);
-
-    // ✅ ЕДИНСТВЕННЫЙ resize после завершения
-    requestAnimationFrame(() => {
-     this.map?.resize?.();
-    });
-   };
-
-   window.addEventListener("mousemove", onMove);
-   window.addEventListener("mouseup", onUp);
+  raf = requestAnimationFrame(() => {
+   this.map?.resize?.();
+   raf = null;
   });
- }
+ };
+
+ handle.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+
+  isDragging = true;
+
+  const wrapper = this.element.parentElement;
+  const rect = wrapper.getBoundingClientRect();
+
+  startX = e.clientX;
+  startY = e.clientY;
+  startW = rect.width;
+  startH = rect.height;
+
+  document.body.style.userSelect = "none";
+
+  const onMove = (e) => {
+   if (!isDragging) return;
+
+   const dx = e.clientX - startX;
+   const dy = e.clientY - startY;
+
+   wrapper.style.width = Math.max(200, startW + dx) + "px";
+   wrapper.style.height = Math.max(200, startH - dy) + "px";
+
+   // 🔥 ОЧЕНЬ ВАЖНО: throttle resize
+   resizeMap();
+  };
+
+  const onUp = () => {
+   isDragging = false;
+
+   document.body.style.userSelect = "";
+
+   window.removeEventListener("mousemove", onMove);
+   window.removeEventListener("mouseup", onUp);
+
+   // 🔥 финальный гарантированный resize
+   requestAnimationFrame(() => {
+    this.map?.resize?.();
+   });
+  };
+
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
+}
 
  // =========================
  // DESTROY
