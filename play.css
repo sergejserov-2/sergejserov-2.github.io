@@ -198,16 +198,13 @@ body {
 
 .score-view {
  width: 950px;
- max-width: 950px;
+ height: 750px;
  background: #161a22;
  padding: 20px;
  border-radius: 10px;
-
  display: flex;
  flex-direction: column;
  gap: 20px;
-
- color: #fff;
 }
 
 /* =========================
@@ -217,39 +214,13 @@ body {
 .overview-map {
  width: 100%;
  height: 100%;
- min-height: 500px;
  border-radius: 8px;
  background: #111;
 }
 
 /* =========================
-   SINGLE BAR (fallback)
-========================= */
-
-.score-progress-bar {
- width: 100%;
- height: 30px;
- background: #2a2f3a;
- border-radius: 8px;
- overflow: hidden;
-}
-
-.score-progress {
- height: 100%;
- width: 0%;
- background: #4ea1ff;
- transition: width 0.4s ease;
-}
-
-/* =========================
    MULTIPLAYER SCORE BARS
 ========================= */
-
-.player-score-bar {
- display: flex;
- flex-direction: column;
- gap: 8px;
-}
 
 .player-score {
  background: #2a2f3a;
@@ -257,21 +228,18 @@ body {
  padding: 6px;
  display: flex;
  flex-direction: column;
- gap: 4px;
+ gap: 10px;
 }
+.round-timer-bar {
+ position: relative;
+ padding: 0px 20px;
+ width: 100%;
+ height: 3px;
+ background: white;
 
-.player-score-label {
- font-size: 12px;
- opacity: 0.85;
+ transform-origin: left;
+ transform: scaleX(0);
 }
-
-.player-score-fill {
- height: 10px;
- width: 0%;
- border-radius: 4px;
- transition: width 0.4s ease;
-}
-
 
 /* =========================
    BUTTONS
