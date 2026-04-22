@@ -35,7 +35,7 @@ export class MapOverviewUI {
   const playerColor = this.uiBuilder.getPlayerColor("p1");
   const actualColor = this.uiBuilder.getActualColor();
 
-  // без guess
+  // нет guess
   if (!guess) {
    this.markers.push(
     this.adapter.createMarker(this.map, actual, {
@@ -43,8 +43,6 @@ export class MapOverviewUI {
      scale: 1.3
     })
    );
-
-   this.adapter.fitBounds(this.map, [actual]);
    return;
   }
 
@@ -55,7 +53,7 @@ export class MapOverviewUI {
    })
   );
 
-  // линия (анимация)
+  // 🔥 АНИМАЦИЯ (теперь с камерой)
   await this.adapter.animateLine(
    this.map,
    guess,
@@ -63,9 +61,6 @@ export class MapOverviewUI {
    playerColor,
    actualColor
   );
-
-  // камера
-  this.adapter.fitBounds(this.map, [guess, actual]);
 
   // actual
   this.markers.push(
