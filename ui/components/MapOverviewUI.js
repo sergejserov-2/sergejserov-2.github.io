@@ -1,4 +1,4 @@
-import { Geometry } from "../../domain/math/Geometry.js";
+[22.04.2026 11:06] Сергей Серов: import { Geometry } from "../../domain/math/Geometry.js";
 
 export class MapOverviewUI {
   constructor({ adapter, element, uiBuilder }) {
@@ -52,7 +52,7 @@ export class MapOverviewUI {
     const actualColor = this.uiBuilder.getActualColor();
 
     // =========================
-    // NO GUESS
+    // NO GUESS CASE
     // =========================
     if (!guess) {
       const actualMarker = this.adapter.createMarker(this.map, actual, {
@@ -62,12 +62,13 @@ export class MapOverviewUI {
 
       this.markers.push(actualMarker);
 
-      this.fitToPoints([actual, actual], false);
+      this.map.setCenter(actual);
+      this.map.setZoom(4);
       return;
     }
 
     // =========================
-    // GUESS EXISTS
+    // GUESS CASE
     // =========================
 
     const guessMarker = this.adapter.createMarker(this.map, guess, {
@@ -76,9 +77,6 @@ export class MapOverviewUI {
     });
 
     this.markers.push(guessMarker);
-
-    // 🔥 ВАЖНО: сначала фиксируем камеру БЕЗ анимации
-    this.fitToPoints([guess, actual], false);
 
     const segments = this.adapter.createGradientPolyline(
       null,
@@ -90,42 +88,61 @@ export class MapOverviewUI {
 
     this.lines.push(...segments);
 
-    // 🔥 анимация линии
-    this.animateSegments(segments, () => {
-      const actualMarker = this.adapter.createMarker(this.map, actual, {
-        color: actualColor,
-        scale: 1.35
-      });
-
-      this.markers.push(actualMarker);
-
-      // 🔥 финальный мягкий zoom после появления actual
-      this.fitToPoints([guess, actual], true);
-    });
+    // =========================
+    // SINGLE CINEMATIC ANIMATION
+    // =========================
+    this.animateCameraAndLine(
+      guess,
+      actual,
+      segments,
+      playerColor,
+      actualColor
+    );
   }
 
   // =========================
-  // SEGMENT ANIMATION
+  // MAIN ANIMATION (CAMERA + LINE)
   // =========================
-  animateSegments(segments, onComplete) {
-    if (!segments?.length) {
-      onComplete?.();
-      return;
-    }
+  animateCameraAndLine(guess, actual, segments, playerColor, actualColor) {
+    const map = this.map;
 
+    // 1. стартуем с guess
+    map.setCenter(guess);
+    map.setZoom(4);
+
+    // 2. цель камеры (bounds)
+    const bounds = new google.maps.LatLngBounds(
+      {
+        lat: Math.min(guess.lat, actual.lat),
+        lng: Math.min(guess.lng, actual.lng)
+      },
+      {
+        lat: Math.max(guess.lat, actual.lat),
+        lng: Math.max(guess.lng, actual.lng)
+      }
+    );
+
+    // 3. запускаем анимацию камеры
+    this.animateBounds(bounds, 900);
+
+    // 4. параллельно рисуем сегменты
     let index = 0;
     const delay = Math.max(10, 180 / segments.length);
 
     const showNext = () => {
       if (index >= segments.length) {
-        onComplete?.();
+        const actualMarker = this.adapter.createMarker(map, actual, {
+          color: actualColor,
+          scale: 1.35
+        });
+
+        this.markers.push(actualMarker);
         return;
       }
 
-      const segment = segments[index];
-      segment.setMap(this.map);
-
+      segments[index].setMap(map);
       index++;
+
       setTimeout(showNext, delay);
     };
 
@@ -133,31 +150,9 @@ export class MapOverviewUI {
   }
 
   // =========================
-  // CAMERA CONTROL
+  // SMOOTH CAMERA BOUNDS
   // =========================
-  fitToPoints(points, animate = true) {
-    if (!this.map || points.length < 2) return;
-
-    const a = points[0];
-    const b = points[1];
-
-    const bounds = new google.maps.LatLngBounds(
-      { lat: Math.min(a.lat, b.lat), lng: Math.min(a.lng, b.lng) },
-      { lat: Math.max(a.lat, b.lat), lng: Math.max(a.lng, b.lng) }
-    );
-
-    if (!animate) {
-      this.map.fitBounds(bounds, 80);
-      return;
-    }
-
-    this.animateBounds(bounds, 650);
-  }
-
-  // =========================
-  // SMOOTH ZOOM ANIMATION
-  // =========================
-  animateBounds(targetBounds, duration = 650) {
+  animateBounds(targetBounds, duration = 900) {
     const map = this.map;
     if (!map) return;
 
@@ -179,9 +174,9 @@ export class MapOverviewUI {
 
     const step = (timestamp) => {
       if (!startTime) startTime = timestamp;
-      const p = ease(Math.min((timestamp - startTime) / duration, 1));
 
-      const bounds = new google.maps.LatLngBounds(
+      const p = ease(Math.min((timestamp - startTime) / duration, 1));
+[22.04.2026 11:06] Сергей Серов: const bounds = new google.maps.LatLngBounds(
         {
           lat: sw0.lat() + (sw1.lat() - sw0.lat()) * p,
           lng: sw0.lng() + (sw1.lng() - sw0.lng()) * p
