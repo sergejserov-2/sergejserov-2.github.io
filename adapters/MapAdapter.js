@@ -27,30 +27,77 @@ export class MapAdapter {
         await new Promise(res => map.once("load", res));
     }
 
+// =========================
+    // CAMERA (STABLE MANUAL VERSION)
+    // =========================
+    fitBetween(map, a, b) {
+        if (!map  !a  !b) return;
+
+        // 🔥 защита от null/undefined
+        if (
+            a.lng == null  a.lat == null 
+            b.lng == null || b.lat == null
+        ) return;
+
+        // =========================
+        // 1. CENTER
+        // =========================
+        const centerLng = (a.lng + b.lng) / 2;
+        const centerLat = (a.lat + b.lat) / 2;
+
+        // =========================
+        // 2. DISTANCE
+        // =========================
+        const dx = Math.abs(a.lng - b.lng);
+        const dy = Math.abs(a.lat - b.lat);
+
+        const maxDist = Math.max(dx, dy);
+
+        // =========================
+        // 3. ZOOM (КЛЮЧЕВОЙ ФИКС)
+        // =========================
+        // чем дальше точки — тем меньше zoom
+        let zoom = 6 - maxDist * 2.2;
+
+        // clamp (ВАЖНО)
+        zoom = Math.max(1.5, Math.min(5.5, zoom));
+
+        // =========================
+        // 4. APPLY
+        // =========================
+        map.setCenter([centerLng, centerLat]);
+        map.setZoom(zoom);
+    }
+
+    // =========================
+    // STABILITY HELPER
+    // =========================
+    waitRenderStable(map) {
+        return new Promise(resolve => {
+            let frames = 0;
+
+            const tick = () => {
+                frames++;
+
+                // даём 2 кадра WebGL стабилизации
+                if (frames >= 2) return resolve();
+
+                requestAnimationFrame(tick);
+            };
+
+            requestAnimationFrame(tick);
+        });
+    }
+
+    // =========================
+    // RESIZE (как у тебя)
+    // =========================
     resize(map) {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 map?.resize?.();
             });
         });
-    }
-
-    // =========================
-    // CAMERA (СТАТИЧНАЯ)
-    // =========================
-    setBetween(map, a, b) {
-        const lng = (a.lng + b.lng) / 2;
-        const lat = (a.lat + b.lat) / 2;
-
-        map.setCenter([lng, lat]);
-
-        const dx = Math.abs(a.lng - b.lng);
-        const dy = Math.abs(a.lat - b.lat);
-        const max = Math.max(dx, dy);
-
-        const zoom = Math.max(1.5, 6 - max * 2);
-
-        map.setZoom(zoom);
     }
 
     // =========================
