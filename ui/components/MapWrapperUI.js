@@ -1,4 +1,3 @@
-
 export class MapWrapperUI {
  constructor({ adapter, element, uiBuilder }) {
   this.adapter = adapter;
@@ -6,13 +5,12 @@ export class MapWrapperUI {
   this.element = element;
 
   this.map = null;
-
   this.guessMarker = null;
   this.isLocked = false;
+
   this.onGuess = null;
   this.lastGuessPoint = null;
 
-  // 🔥 POLYGON STATE
   this.area = null;
   this.polygon = null;
   this.polygonVisible = false;
@@ -21,41 +19,30 @@ export class MapWrapperUI {
  // =========================
  // INIT
  // =========================
-
  init() {
   if (!this.element) return;
-
-  const rect = this.element.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) {
-   console.warn("Map container not ready");
-  }
 
   this.map = this.adapter.createMap(this.element, {
    zoom: 2,
    center: { lat: 20, lng: 0 },
    disableDefaultUI: true,
-   zoomControl: false,
-   fullscreenControl: false,
-   streetViewControl: false,
-   mapTypeControl: false,
-   gestureHandling: "greedy"
+   zoomControl: false
   });
 
-  this.map.addListener("click", (e) => {
+  // Leaflet не требует resize через Google API
+  this.scheduleResize();
+
+  this.map.on("click", (e) => {
    if (this.isLocked) return;
 
    const point = {
-    lat: e.latLng.lat(),
-    lng: e.latLng.lng()
+    lat: e.latlng.lat,
+    lng: e.latlng.lng
    };
 
    this.lastGuessPoint = point;
    this.placeGuessMarker(point);
   });
-
-  setTimeout(() => {
-   google.maps.event.trigger(this.map, "resize");
-  }, 50);
 
   this.initResize();
  }
@@ -63,7 +50,6 @@ export class MapWrapperUI {
  // =========================
  // POLYGON API
  // =========================
-
  setArea(area) {
   this.area = area;
  }
@@ -72,7 +58,7 @@ export class MapWrapperUI {
   if (!this.map || !this.area) return;
 
   if (this.polygonVisible) {
-   this.polygon?.setMap(null);
+   this.polygon?.remove?.();
    this.polygon = null;
    this.polygonVisible = false;
    return;
@@ -99,7 +85,6 @@ export class MapWrapperUI {
  // =========================
  // INPUT
  // =========================
-
  bindGuess(cb) {
   this.onGuess = cb;
  }
@@ -119,7 +104,6 @@ export class MapWrapperUI {
  // =========================
  // MARKER
  // =========================
-
  placeGuessMarker(point) {
   if (!this.map || !point) return;
 
@@ -131,12 +115,13 @@ export class MapWrapperUI {
   this.guessMarker = this.adapter.createMarker(
    this.map,
    point,
-   { color, size: 20 }
+   { color, scale: 1 }
   );
  }
 
  clearGuessMarker() {
   if (!this.guessMarker) return;
+
   this.adapter.removeMarker(this.guessMarker);
   this.guessMarker = null;
  }
@@ -144,14 +129,13 @@ export class MapWrapperUI {
  // =========================
  // STATE
  // =========================
-
  reset() {
   this.unlock();
   this.clearGuessMarker();
   this.lastGuessPoint = null;
 
   if (this.polygon) {
-   this.polygon.setMap(null);
+   this.polygon.remove?.();
    this.polygon = null;
    this.polygonVisible = false;
   }
@@ -166,11 +150,23 @@ export class MapWrapperUI {
  }
 
  // =========================
- // RESIZE
+ // RESIZE (Leaflet way)
  // =========================
+ scheduleResize() {
+  if (!this.map) return;
 
+  requestAnimationFrame(() => {
+   this.map.invalidateSize();
+  });
+ }
+
+ // =========================
+ // MANUAL RESIZE HOOK
+ // =========================
  initResize() {
-  const handle = this.element?.parentElement?.querySelector(".resize-handle");
+  const handle =
+   this.element?.parentElement?.querySelector(".resize-handle");
+
   if (!handle) return;
 
   let startX, startY, startW, startH;
@@ -195,13 +191,16 @@ export class MapWrapperUI {
     wrapper.style.width = Math.max(200, startW + dx) + "px";
     wrapper.style.height = Math.max(200, startH - dy) + "px";
 
-    this.adapter.triggerResize?.(this.map);
+    this.scheduleResize();
    };
 
    const onUp = () => {
     document.body.style.userSelect = "";
+
     window.removeEventListener("mousemove", onMove);
     window.removeEventListener("mouseup", onUp);
+
+    this.scheduleResize();
    };
 
    window.addEventListener("mousemove", onMove);
