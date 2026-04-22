@@ -15,8 +15,6 @@ export class MapWrapperUI {
   this.area = null;
   this.polygon = null;
   this.polygonVisible = false;
-
-  this._resizeObserver = null;
  }
 
  // =========================
@@ -30,9 +28,9 @@ export class MapWrapperUI {
    center: { lat: 20, lng: 0 }
   });
 
-  // безопасный resize после init
+  // первичная стабилизация
   requestAnimationFrame(() => {
-   this.map.resize();
+   this.map?.resize?.();
   });
 
   // =========================
@@ -51,7 +49,6 @@ export class MapWrapperUI {
   });
 
   this.initResize();
-  this.initResizeObserver();
  }
 
  // =========================
@@ -156,97 +153,72 @@ export class MapWrapperUI {
  }
 
  // =========================
- // RESIZE OBSERVER (безопасный)
+ // RESIZE ENGINE (СТАБИЛЬНЫЙ)
  // =========================
- initResizeObserver() {
-  if (!this.element) return;
+ initResize() {
+  const handle =
+   this.element?.parentElement?.querySelector(".resize-handle");
 
-  this._resizeObserver = new ResizeObserver(() => {
-   // только после layout
-   requestAnimationFrame(() => {
+  if (!handle) return;
+
+  let startX, startY, startW, startH;
+  let isDragging = false;
+
+  let raf = null;
+
+  const scheduleResize = () => {
+   if (raf) return;
+
+   raf = requestAnimationFrame(() => {
     this.map?.resize?.();
-   });
-  });
-
-  this._resizeObserver.observe(this.element);
- }
-
- // =========================
- // MANUAL RESIZE (БЕЗ ДЁРГАНИЯ)
- // =========================
-initResize() {
- const handle =
-  this.element?.parentElement?.querySelector(".resize-handle");
-
- if (!handle) return;
-
- let startX, startY, startW, startH;
- let isDragging = false;
- let raf = null;
-
- const resizeMap = () => {
-  if (raf) return;
-
-  raf = requestAnimationFrame(() => {
-   this.map?.resize?.();
-   raf = null;
-  });
- };
-
- handle.addEventListener("mousedown", (e) => {
-  e.preventDefault();
-
-  isDragging = true;
-
-  const wrapper = this.element.parentElement;
-  const rect = wrapper.getBoundingClientRect();
-
-  startX = e.clientX;
-  startY = e.clientY;
-  startW = rect.width;
-  startH = rect.height;
-
-  document.body.style.userSelect = "none";
-
-  const onMove = (e) => {
-   if (!isDragging) return;
-
-   const dx = e.clientX - startX;
-   const dy = e.clientY - startY;
-
-   wrapper.style.width = Math.max(200, startW + dx) + "px";
-   wrapper.style.height = Math.max(200, startH - dy) + "px";
-
-   // 🔥 ОЧЕНЬ ВАЖНО: throttle resize
-   resizeMap();
-  };
-
-  const onUp = () => {
-   isDragging = false;
-
-   document.body.style.userSelect = "";
-
-   window.removeEventListener("mousemove", onMove);
-   window.removeEventListener("mouseup", onUp);
-
-   // 🔥 финальный гарантированный resize
-   requestAnimationFrame(() => {
-    this.map?.resize?.();
+    raf = null;
    });
   };
 
-  window.addEventListener("mousemove", onMove);
-  window.addEventListener("mouseup", onUp);
-}
-                         }
+  handle.addEventListener("mousedown", (e) => {
+   e.preventDefault();
 
- // =========================
- // DESTROY
- // =========================
- destroy() {
-  if (this._resizeObserver) {
-   this._resizeObserver.disconnect();
-   this._resizeObserver = null;
-  }
+   isDragging = true;
+
+   const wrapper = this.element.parentElement;
+   const rect = wrapper.getBoundingClientRect();
+
+   startX = e.clientX;
+   startY = e.clientY;
+   startW = rect.width;
+   startH = rect.height;
+
+   document.body.style.userSelect = "none";
+
+   const onMove = (e) => {
+    if (!isDragging) return;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    wrapper.style.width = Math.max(200, startW + dx) + "px";
+    wrapper.style.height = Math.max(200, startH - dy) + "px";
+
+    // 🔥 только throttled resize
+    scheduleResize();
+   };
+
+   const onUp = () => {
+    isDragging = false;
+
+    document.body.style.userSelect = "";
+
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
+
+    // 🔥 финальный resize после стабилизации layout
+    requestAnimationFrame(() => {
+     this.map?.resize?.();
+    });
+   };
+
+   window.addEventListener("mousemove", onMove);
+   window.addEventListener("mouseup", onUp);
+  });
  }
 }
