@@ -119,6 +119,12 @@ export async function init() {
   services
  });
 
+const gameBridge = new GameBridge({
+ gameFlow,
+ mode: config.mode, // "solo" | "duel"
+ network: null
+});
+ 
  // =========================
  // UI BUILDER
  // =========================
@@ -164,23 +170,24 @@ export async function init() {
 // =========================
  // UI FLOW
  // =========================
- new UIFlow({
-  gameFlow,
-  screenManager,
-  staticUI,
-  uiBuilder,
-  streetViewUI,
-  mapWrapperUI,
-  roundOverviewUI,
-  gameOverviewUI
- });
+new UIFlow({
+ gameFlow: gameBridge,
+ screenManager,
+ staticUI,
+ uiBuilder,
+ streetViewUI,
+ mapWrapperUI,
+ roundOverviewUI,
+ gameOverviewUI
+});
 
  // =========================
  // STREET VIEW
  // =========================
- streetViewUI.onReady = () => {
-  gameFlow.streetViewReady();
- };
+streetViewUI.onReady = () => {
+ gameBridge.streetViewReady();
+};
+
 
  gameFlow.on("streetViewSetLocation", (location) => {
   streetViewUI.setLocation(location);
@@ -191,9 +198,9 @@ export async function init() {
  // =========================
  // 🔥 MOVES (ЕДИНСТВЕННАЯ ТОЧКА)
  // =========================
- streetViewUI.onMove = () => {
-  gameFlow.registerMove();
- };
+streetViewUI.onMove = () => {
+ gameBridge.registerMove();
+};
 
  // =========================
  // MAP
@@ -207,9 +214,9 @@ export async function init() {
  // =========================
  // INPUT
  // =========================
- mapWrapperUI.bindGuess((point) => {
-  gameFlow.finishGuess(point);
- });
+mapWrapperUI.bindGuess((point) => {
+ gameBridge.finishGuess(point);
+});
 
  mapWrapperUI.bindGuessButton(guessBtn);
 
