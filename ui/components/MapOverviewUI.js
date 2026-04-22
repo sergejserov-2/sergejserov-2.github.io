@@ -32,9 +32,9 @@ export class MapOverviewUI {
  }
 
  // =========================
- // RENDER
+ // RENDER (FIXED FLOW)
  // =========================
- render(round) {
+ async render(round) {
   if (!this.map || !round) return;
 
   this.clear();
@@ -68,34 +68,39 @@ export class MapOverviewUI {
   }
 
   // =========================
-  // MARKERS
+  // GUESS MARKER FIRST
   // =========================
   const guessMarker = this.adapter.createMarker(this.map, guess, {
    color: playerColor,
    scale: 1
   });
 
-  const actualMarker = this.adapter.createMarker(this.map, actual, {
-   color: actualColor,
-   scale: 1.35
-  });
-
-  this.markers.push(guessMarker, actualMarker);
+  this.markers.push(guessMarker);
 
   // =========================
-  // FIT BOUNDS FIRST
+  // FIT CAMERA
   // =========================
   this.fitToPoints([guess, actual]);
 
   // =========================
-  // SINGLE ANIMATED GRADIENT LINE
+  // LINE ANIMATION (WAIT)
   // =========================
-  this.line = this.adapter.createGradientPolyline(
+  await this.adapter.createGradientPolyline(
    this.map,
    [guess, actual],
    playerColor,
    actualColor
   );
+
+  // =========================
+  // ONLY AFTER LINE → actual marker
+  // =========================
+  const actualMarker = this.adapter.createMarker(this.map, actual, {
+   color: actualColor,
+   scale: 1.35
+  });
+
+  this.markers.push(actualMarker);
  }
 
  // =========================
