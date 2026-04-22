@@ -47,7 +47,7 @@ export class StaticUI {
   const root = this.roundRoot;
   if (!root) return;
 
-  const container = root.querySelector(".score-view");
+  const container = root.querySelector(".players-score");
   const guesses = vm.guesses || [];
 
   this.renderPlayerBars(container, guesses);
@@ -61,7 +61,7 @@ export class StaticUI {
   const root = this.gameRoot;
   if (!root) return;
 
-  const container = root.querySelector(".score-view");
+  const container = root.querySelector(".players-score");
 
   const players = vm.players || {};
 
