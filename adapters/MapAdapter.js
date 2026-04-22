@@ -1,5 +1,5 @@
 
-import { Geometry } from "../../domain/math/Geometry.js";
+import { Geometry } from "../domain/math/Geometry.js";
 
 export class MapAdapter {
     constructor() {
@@ -11,6 +11,10 @@ export class MapAdapter {
     // =========================
     toLngLat(p) {
         return [p.lng, p.lat];
+    }
+
+    fromLngLat(p) {
+        return { lng: p[0], lat: p[1] };
     }
 
     // =========================
@@ -28,7 +32,10 @@ export class MapAdapter {
         });
 
         map._isReady = false;
-        map.on("load", () => (map._isReady = true));
+
+        map.on("load", () => {
+            map._isReady = true;
+        });
 
         return map;
     }
@@ -38,18 +45,34 @@ export class MapAdapter {
         await new Promise(res => map.once("load", res));
     }
 
-    waitIdle(map) {
-        return new Promise(res => map.once("idle", res));
+    // 🔥 важно: даёт стабильный рендер после любых изменений
+    waitRenderStable(map) {
+        return new Promise(resolve => {
+            let frames = 0;
+
+            const tick = () => {
+                frames++;
+                if (frames >= 2) {
+                    resolve();
+                    return;
+                }
+                requestAnimationFrame(tick);
+            };
+
+            requestAnimationFrame(tick);
+        });
     }
 
     resize(map) {
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => map?.resize?.());
+            requestAnimationFrame(() => {
+                map?.resize?.();
+            });
         });
     }
 
     // =========================
-    // CAMERA (ТОЛЬКО FIT)
+    // CAMERA (простая и стабильная)
     // =========================
     fitBounds(map, a, b) {
         const bounds = new maplibregl.LngLatBounds(
@@ -58,23 +81,24 @@ export class MapAdapter {
         );
 
         map.fitBounds(bounds, {
-            padding: 80,
-            duration: 0 // 🔥 БЕЗ анимации
+            padding: 90,
+            duration: 0 // 🔥 никаких анимаций
         });
     }
 
     // =========================
-    // MARKER (идеально точный)
+    // MARKER (100% стабильный)
     // =========================
     createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
         const size = 20 * scale;
-        const inner = size * 0.4;
+        const inner = size * 0.45;
 
         const el = document.createElement("div");
-        el.className = "marker";
+        el.className = "map-marker";
 
         el.style.width = `${size}px`;
         el.style.height = `${size}px`;
+
         el.style.setProperty("--color", color);
         el.style.setProperty("--inner", `${inner}px`);
 
@@ -82,45 +106,52 @@ export class MapAdapter {
             const style = document.createElement("style");
             style.id = "marker-style";
             style.innerHTML = `
-            .marker { position: relative; }
-            .marker::before {
-                content:"";
-                position:absolute;
-                inset:0;
-                border-radius:50%;
-                border:2px solid var(--color);
-                opacity:.6;
-                box-sizing:border-box;
-            }
-            .marker::after {
-                content:"";
-                position:absolute;
-                width:var(--inner);
-                height:var(--inner);
-                background:var(--color);
-                border-radius:50%;
-                left:50%;
-                top:50%;
-                transform:translate(-50%,-50%);
-            }`;
+                .map-marker {
+                    position: relative;
+                }
+
+                .map-marker::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    border-radius: 50%;
+                    border: 2px solid var(--color);
+                    opacity: 0.6;
+                    box-sizing: border-box;
+                }
+
+                .map-marker::after {
+                    content: "";
+                    position: absolute;
+                    width: var(--inner);
+                    height: var(--inner);
+                    background: var(--color);
+                    border-radius: 50%;
+                    left: 50%;
+                    top: 50%;
+                    transform: translate(-50%, -50%);
+                }
+            `;
             document.head.appendChild(style);
         }
 
         return new maplibregl.Marker({
             element: el,
-            anchor: "center"
+            anchor: "center" // 🔥 критично для стабильности
         })
             .setLngLat(this.toLngLat({ lat, lng }))
             .addTo(map);
     }
 
-    removeMarker(m) {
-        m?.remove?.();
+    removeMarker(marker) {
+        marker?.remove?.();
     }
 
     // =========================
-    // LINE
-    // =========================
+    // LINES
+    //
+
+=========================
     clearLines(map) {
         this._lines.forEach(id => {
             if (map.getLayer(id)) map.removeLayer(id);
@@ -129,6 +160,9 @@ export class MapAdapter {
         this._lines.clear();
     }
 
+    // =========================
+    // LINE ANIMATION
+    // =========================
     animateLine(map, start, end, colorA, colorB) {
         const id = `line-${Math.random().toString(36).slice(2)}`;
 
