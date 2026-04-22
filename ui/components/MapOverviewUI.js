@@ -5,7 +5,9 @@ export class MapOverviewUI {
         this.element = element;
 
         this.map = null;
-        this.markers = [];
+
+        this.guessMarker = null;
+        this.actualMarker = null;
     }
 
     init() {
@@ -35,49 +37,50 @@ export class MapOverviewUI {
         const actualColor = this.uiBuilder.getActualColor();
 
         // =========================
-        // CASE 1: NO GUESS
+        // PRECREATE BOTH MARKERS
         // =========================
-        if (!guess) {
-            this.adapter.fitBounds(this.map, actual, actual);
-            await this.adapter.waitIdle(this.map);
+        this.guessMarker = guess
+            ? this.adapter.createMarker(this.map, guess, {
+                  color: playerColor,
+                  scale: 1
+              })
+            : null;
 
-            this.markers.push(
-                this.adapter.createMarker(this.map, actual, {
-                    color: actualColor,
-                    scale: 1.3
-                })
-            );
+        this.actualMarker = this.adapter.createMarker(this.map, actual, {
+            color: actualColor,
+            scale: 1.3
+        });
 
-            return;
+        // =========================
+        // ONLY GUESS VISIBLE FIRST
+        // =========================
+        if (this.guessMarker) {
+            this.adapter.showMarker(this.guessMarker, this.map);
         }
 
-        // =========================
-        // CASE 2: GUESS + ACTUAL
-        // =========================
+        // actual скрыт (НЕ добавляем в карту)
+        // 👉 просто не добавляем пока
 
-        // 1. guess marker
-        this.markers.push(
-            this.adapter.createMarker(this.map, guess, {
-                color: playerColor,
-                scale: 1
-            })
-        );
-
-        // 2. camera fit both points
-        this.adapter.fitBounds(this.map, guess, actual);
+        // =========================
+        // CAMERA
+        // =========================
+        this.adapter.fitBounds(this.map, guess || actual, actual);
         await this.adapter.waitIdle(this.map);
 
-        // 3. actual marker
-        this.markers.push(
-            this.adapter.createMarker(this.map, actual, {
-                color: actualColor,
-                scale: 1.3
-            })
-        );
+        // стабилизация projection
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+        // =========================
+        // REVEAL ACTUAL
+        // =========================
+        this.adapter.showMarker(this.actualMarker, this.map);
     }
 
     clear() {
-        this.markers.forEach(m => this.adapter.removeMarker(m));
-        this.markers = [];
+        if (this.guessMarker) this.adapter.hideMarker(this.guessMarker);
+        if (this.actualMarker) this.adapter.hideMarker(this.actualMarker);
+
+        this.guessMarker = null;
+        this.actualMarker = null;
     }
 }
