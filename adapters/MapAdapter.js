@@ -95,8 +95,8 @@ createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
 
     const el = document.createElement("div");
 
-    el.style.width = ${size}px;
-    el.style.height = ${size}px;
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
     el.style.position = "relative";
 
     el.innerHTML = `
