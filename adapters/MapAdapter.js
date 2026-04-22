@@ -122,15 +122,19 @@ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
  // =========================
  // POLYLINE (gradient + animation)
  // =========================
+
 createGradientPolyline(map, path, fromColor, toColor) {
  const id = `line-${Math.random().toString(36).slice(2)}`;
 
  const [start, end] = path;
 
  // =========================
- // 🌍 GREAT CIRCLE POINTS
+ // 🌍 REAL DISTANCE
  // =========================
- const points = this._buildGreatCircle(start, end, 80);
+ const distance = Geometry.distance(start, end);
+ const steps = Geometry.getSegmentsCount(distance);
+
+ const points = Geometry.buildGreatCircle(start, end, steps);
  const coords = points.map(p => this.toLngLat(p));
 
  // =========================
@@ -142,7 +146,7 @@ createGradientPolyline(map, path, fromColor, toColor) {
    type: "Feature",
    geometry: {
     type: "LineString",
-    coordinates: [coords[0]] // старт с одной точки
+    coordinates: [coords[0]]
    }
   },
   lineMetrics: true
@@ -172,7 +176,7 @@ createGradientPolyline(map, path, fromColor, toColor) {
  });
 
  // =========================
- // 🎬 ANIMATION
+ // 🎬 SMOOTH ANIMATION
  // =========================
  let i = 1;
 
@@ -202,7 +206,7 @@ createGradientPolyline(map, path, fromColor, toColor) {
   remove: () => {
    if (map.getLayer(id)) map.removeLayer(id);
    if (map.getSource(id)) map.removeSource(id);
-   }
+  }
  };
 }
 
