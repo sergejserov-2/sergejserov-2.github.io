@@ -11,6 +11,12 @@ export class GameFlow {
   this.locked = false;
 
   this._resolveStreetViewReady = null;
+
+  // =========================
+  // MULTIPLAYER STATE
+  // =========================
+  this.playersReady = new Set();
+  this.waitTimer = null;
  }
 
  on(event, cb) {
@@ -21,14 +27,16 @@ export class GameFlow {
   this.listeners[event]?.forEach(cb => cb(data));
  }
 
+ applyState(state) {
+  this.game.gameState.status = state.status;
+  this.game.gameState.rounds = state.rounds;
 
-applyState(state) {
- this.game.gameState.status = state.status;
- this.game.gameState.rounds = state.rounds;
+  this.emit("roundStarted", state);
+ }
 
- this.emit("roundStarted", state);
-}
- 
+ // =========================
+ // GAME FLOW
+ // =========================
  async startGame() {
   this.game.startGame();
   this.emit("gameStarted", this.game.getState());
@@ -38,6 +46,7 @@ applyState(state) {
 
  async startRound() {
   this.locked = true;
+  this.playersReady.clear();
 
   this.emit("inputLocked");
   this.emit("loadingStarted");
@@ -78,13 +87,10 @@ applyState(state) {
  }
 
  // =========================
- // ГЕСС (НЕ ТРОГАЕМ ШАГИ)
+ // 🔥 MULTIPLAYER CORE LOGIC
  // =========================
  finishGuess(point, playerId = "p1") {
   if (this.locked) return;
-
-  this.locked = true;
-  this.emit("inputLocked");
 
   const result = this.game.setGuess(playerId, point);
 
@@ -92,29 +98,65 @@ applyState(state) {
    this.emit("guessResolved", result);
   }
 
-  this.finishRound("guess");
+  // =========================
+  // MARK PLAYER READY
+  // =========================
+  this.playersReady.add(playerId);
+
+  // =========================
+  // PLAYER WAIT SCREEN
+  // =========================
+  this.emit("playerWaiting", { playerId });
+
+  // =========================
+  // CHECK END CONDITIONS
+  // =========================
+  const totalPlayers = this.game.players?.length || 1;
+
+  if (this.playersReady.size >= totalPlayers) {
+   this.finishRound("all-players-ready");
+   return;
+  }
+
+  // =========================
+  // START WAIT TIMER FOR OTHERS
+  // =========================
+  if (!this.waitTimer) {
+   this.emit("waitTimerStarted", { duration: 10000 });
+
+   this.waitTimer = setTimeout(() => {
+    this.finishRound("timeout-wait");
+   }, 10000);
+  }
  }
 
  // =========================
- // MOVES теперь отдельным событием
+ // MOVES
  // =========================
-registerMove() {
- if (this.locked) return;
+ registerMove() {
+  if (this.locked) return;
 
- const ok = this.moves.consume();
+  const ok = this.moves.consume();
 
- this.emit("movesUpdated", this.moves.getRemaining());
+  this.emit("movesUpdated", this.moves.getRemaining());
 
- if (!ok || this.moves.isLocked()) {
-  this.emit("movesLocked");
-  return;
+  if (!ok || this.moves.isLocked()) {
+   this.emit("movesLocked");
+   return;
+  }
  }
-}
- 
 
+ // =========================
+ // ROUND END
+ // =========================
  finishRound(reason = "manual") {
   this.timer.clear();
   this.locked = true;
+
+  if (this.waitTimer) {
+   clearTimeout(this.waitTimer);
+   this.waitTimer = null;
+  }
 
   this.emit("inputLocked");
 
