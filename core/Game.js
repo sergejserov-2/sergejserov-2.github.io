@@ -19,7 +19,7 @@ export class Game {
  }
 
  // =========================
- // MULTI-PLAYER READY VERSION
+ // MULTI-PLAYER READY VERSION (FIXED)
  // =========================
  setGuess(playerId, point) {
   const round = this.gameState.getCurrentRound();
@@ -40,9 +40,9 @@ export class Game {
   const result = this.scoring.calculate(actual, guess);
 
   // =========================
-  // 🔥 KEY CHANGE: support multiple guesses
+  // 🔥 NEW CONTRACT (NO addGuess)
   // =========================
-  this.gameState.addGuess({
+  this.gameState.setRoundResult({
    playerId,
    guess,
    distance: result.distance,
