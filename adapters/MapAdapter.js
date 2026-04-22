@@ -1,9 +1,9 @@
-
 import { Geometry } from "../../domain/math/Geometry.js";
 
 export class MapAdapter {
  constructor() {
   this.map = null;
+  this._lines = new Set();
  }
 
  // =========================
@@ -13,16 +13,10 @@ export class MapAdapter {
   return [p.lng, p.lat];
  }
 
- fromLngLat(p) {
-  return { lat: p[1], lng: p[0] };
- }
-
  // =========================
  // MAP
  // =========================
  createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
-  if (!element) throw new Error("Map container missing");
-
   const key = "PnzOFXp1MIxIAe8nTmbt";
 
   this.map = new maplibregl.Map({
@@ -36,42 +30,29 @@ export class MapAdapter {
   return this.map;
  }
 
- // =========================
- // CAMERA (ключевая логика)
- // =========================
- updateCameraProgress(map, a, b, t) {
-  const lng1 = a.lng;
-  const lat1 = a.lat;
-  const lng2 = b.lng;
-  const lat2 = b.lat;
-
-  const center = {
-   lng: lng1 + (lng2 - lng1) * 0.5,
-   lat: lat1 + (lat2 - lat1) * 0.5
-  };
-
-  // 🔥 расстояние между точками
-  const dx = Math.abs(lng2 - lng1);
-  const dy = Math.abs(lat2 - lat1);
-  const span = Math.max(dx, dy);
-
-  // 🔥 zoom логика (чем дальше линия растёт — тем больше отдаление)
-  const zoom =
-   6 -
-   span * 1.2 -
-   t * 2.5; // ← ключ: синхронный отъезд камеры
-
-  map.setCenter([center.lng, center.lat]);
-  map.setZoom(Math.max(1.5, zoom));
+ resize(map) {
+  map?.resize?.();
  }
 
  // =========================
- // MARKER
+ // CAMERA (НОРМАЛЬНАЯ)
  // =========================
- createMarker(map, { lat, lng }, options = {}) {
-  const { color = "#ff4d4d", scale = 1 } = options;
+ fitBounds(map, points, { padding = 80, duration = 800 } = {}) {
+  const bounds = new maplibregl.LngLatBounds();
 
-  const size = 24 * scale;
+  points.forEach(p => bounds.extend(this.toLngLat(p)));
+
+  map.fitBounds(bounds, {
+   padding,
+   duration
+  });
+ }
+
+ // =========================
+ // MARKER (2 кружка)
+ // =========================
+ createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
+  const size = 22 * scale;
 
   const el = document.createElement("div");
 
@@ -80,25 +61,25 @@ export class MapAdapter {
     width:${size}px;
     height:${size}px;
     position:relative;
-    display:flex;
-    align-items:center;
-    justify-content:center;
    ">
     <div style="
      position:absolute;
-     width:${size * 0.75}px;
-     height:${size * 0.75}px;
+     width:100%;
+     height:100%;
      border-radius:50%;
      border:2px solid ${color};
-     opacity:0.7;
+     opacity:0.6;
     "></div>
 
     <div style="
-     width:${size * 0.35}px;
-     height:${size * 0.35}px;
+     position:absolute;
+     top:50%;
+     left:50%;
+     transform:translate(-50%, -50%);
+     width:${size * 0.4}px;
+     height:${size * 0.4}px;
      background:${color};
      border-radius:50%;
-     box-shadow:0 0 0 3px rgba(0,0,0,0.25);
     "></div>
    </div>
   `;
@@ -113,13 +94,50 @@ export class MapAdapter {
  }
 
  // =========================
- // GRADIENT + ANIMATION
+ // LINE (контролируемая)
  // =========================
- createGradientPolyline(map, path, fromColor, toColor, onProgress) {
-  const id = `line-${Math.random().toString(36).slice(2)}`;
+ createLine(map, path, color = "#fff") {
+  const id = `line-${Math.random()}`;
 
-  const [start, end] = path;
+  map.addSource(id, {
+   type: "geojson",
+   data: {
+    type: "Feature",
+    geometry: {
+     type: "LineString",
+     coordinates: path.map(p => this.toLngLat(p))
+    }
+   }
+  });
 
+  map.addLayer({
+   id,
+   type: "line",
+   source: id,
+   paint: {
+    "line-width": 3,
+    "line-color": color
+   }
+  });
+
+  this._lines.add(id);
+
+  return id;
+ }
+
+ clearLines(map) {
+  this._lines.forEach(id => {
+   if (map.getLayer(id)) map.removeLayer(id);
+   if (map.getSource(id)) map.removeSource(id);
+  });
+
+  this._lines.clear();
+ }
+
+ // =========================
+ // ANIMATION (фикс)
+ // =========================
+ async animateLine(map, start, end, colorA, colorB) {
   const steps = Geometry.getSegmentsCount(
    Geometry.distance(start, end)
   );
@@ -135,44 +153,41 @@ export class MapAdapter {
    });
   }
 
-  return new Promise((resolve) => {
-   map.addSource(id, {
-    type: "geojson",
-    data: {
-     type: "Feature",
-     geometry: {
-      type: "LineString",
-      coordinates: [this.toLngLat(start)]
-     }
-    },
-    lineMetrics: true
-   });
+  const id = `anim-${Math.random()}`;
 
-   map.addLayer({
-    id,
-    type: "line",
-    source: id,
-    layout: {
-     "line-cap": "round",
-     "line-join": "round"
-    },
-    paint: {
-     "line-width": 3,
-     "line-gradient": [
-      "interpolate",
-      ["linear"],
-      ["line-progress"],
-      0, fromColor,
-      1, toColor
-     ]
+  map.addSource(id, {
+   type: "geojson",
+   data: {
+    type: "Feature",
+    geometry: {
+     type: "LineString",
+     coordinates: [this.toLngLat(start)]
     }
-   });
+   }
+  });
 
+  map.addLayer({
+   id,
+   type: "line",
+   source: id,
+   paint: {
+    "line-width": 3,
+    "line-gradient": [
+     "interpolate",
+     ["linear"],
+     ["line-progress"],
+     0, colorA,
+     1, colorB
+    ]
+   }
+  });
+
+  this._lines.add(id);
+
+  return new Promise(resolve => {
    let i = 1;
 
-   const animate = () => {
-    const t = i / steps;
-
+   const step = () => {
     const source = map.getSource(id);
     if (!source) return;
 
@@ -184,19 +199,16 @@ export class MapAdapter {
      }
     });
 
-    // 🔥 синхронная камера
-    onProgress?.(t, coords[i - 1]);
-
     i++;
 
     if (i <= steps) {
-     requestAnimationFrame(animate);
+     requestAnimationFrame(step);
     } else {
      resolve();
     }
    };
 
-   requestAnimationFrame(animate);
+   step();
   });
  }
 }
