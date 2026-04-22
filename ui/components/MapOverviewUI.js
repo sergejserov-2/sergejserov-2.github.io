@@ -14,7 +14,6 @@ export class MapOverviewUI {
             zoom: 2
         });
 
-        // 🔥 единичный resize после init
         requestAnimationFrame(() => {
             this.adapter.resize(this.map);
         });
@@ -23,7 +22,6 @@ export class MapOverviewUI {
     async render(round) {
         if (!this.map || !round) return;
 
-        // 🔥 КЛЮЧ: ждём карту
         await this.adapter.waitReady(this.map);
 
         this.clear();
@@ -36,9 +34,7 @@ export class MapOverviewUI {
         const playerColor = this.uiBuilder.getPlayerColor("p1");
         const actualColor = this.uiBuilder.getActualColor();
 
-        // =========================
-        // NO GUESS
-        // =========================
+        // нет guess
         if (!guess) {
             this.markers.push(
                 this.adapter.createMarker(this.map, actual, {
@@ -49,18 +45,14 @@ export class MapOverviewUI {
             return;
         }
 
-        // =========================
-        // GUESS
-        // =========================
+        // guess
         this.markers.push(
             this.adapter.createMarker(this.map, guess, {
                 color: playerColor
             })
         );
 
-        // =========================
-        // ANIMATION
-        // =========================
+        // 🔥 линия + камера
         await this.adapter.animateLine(
             this.map,
             guess,
@@ -69,9 +61,10 @@ export class MapOverviewUI {
             actualColor
         );
 
-        // =========================
-        // ACTUAL
-        // =========================
+        // 🔥 теперь карта стабильна
+        await this.adapter.waitIdle(this.map);
+
+        // actual (теперь НЕ плывёт)
         this.markers.push(
             this.adapter.createMarker(this.map, actual, {
                 color: actualColor,
@@ -83,7 +76,6 @@ export class MapOverviewUI {
     clear() {
         this.markers.forEach(m => this.adapter.removeMarker(m));
         this.markers = [];
-
         this.adapter.clearLines(this.map);
     }
 }
