@@ -11,7 +11,7 @@ export class MapWrapperUI {
         this.isLocked = false;
         this.lastGuessPoint = null;
 
-        // markers
+        // marker
         this.guessMarker = null;
 
         // polygon
@@ -21,9 +21,6 @@ export class MapWrapperUI {
 
         // callbacks
         this.onGuess = null;
-
-        // resize
-        this._resizeObserver = null;
     }
 
     // =========================
@@ -37,14 +34,14 @@ export class MapWrapperUI {
             center: { lat: 20, lng: 0 }
         });
 
-        // 🔥 стабильный resize
-        this._resizeObserver = new ResizeObserver(() => {
+        // 🔥 начальный resize
+        requestAnimationFrame(() => {
             this.adapter.resize(this.map);
         });
 
-        this._resizeObserver.observe(this.element);
-
-        // click
+        // =========================
+        // CLICK
+        // =========================
         this.map.on("click", (e) => {
             if (this.isLocked) return;
 
@@ -56,6 +53,9 @@ export class MapWrapperUI {
             this.lastGuessPoint = point;
             this.placeGuessMarker(point);
         });
+
+        // resize engine
+        this.initResize();
     }
 
     // =========================
@@ -182,16 +182,83 @@ export class MapWrapperUI {
     }
 
     // =========================
-    // DESTROY (важно для SPA)
+// RESIZE ENGINE (FIXED)
+    // =========================
+    initResize() {
+        const handle =
+            this.element?.parentElement?.querySelector(".resize-handle");
+
+        if (!handle) return;
+
+        let startX, startY, startW, startH;
+        let wrapper;
+        let isDragging = false;
+
+        let raf = null;
+
+        const resizeMap = () => {
+            if (raf) return;
+
+            raf = requestAnimationFrame(() => {
+                this.map?.resize?.();
+                raf = null;
+            });
+        };
+
+        handle.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+
+            isDragging = true;
+
+            wrapper = this.element.parentElement;
+            const rect = wrapper.getBoundingClientRect();
+
+            startX = e.clientX;
+            startY = e.clientY;
+            startW = rect.width;
+            startH = rect.height;
+
+            document.body.style.userSelect = "none";
+
+            const onMove = (e) => {
+                if (!isDragging) return;
+
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                wrapper.style.width = Math.max(200, startW + dx) + "px";
+                wrapper.style.height = Math.max(200, startH - dy) + "px";
+
+                resizeMap();
+            };
+
+            const onUp = () => {
+                isDragging = false;
+
+                document.body.style.userSelect = "";
+
+                window.removeEventListener("mousemove", onMove);
+                window.removeEventListener("mouseup", onUp);
+
+                // финальный resize
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        this.map?.resize?.();
+                    });
+                });
+            };
+
+            window.addEventListener("mousemove", onMove);
+            window.addEventListener("mouseup", onUp);
+        });
+    }
+
+    // =========================
+    // DESTROY
     // =========================
     destroy() {
         this.clearGuessMarker();
         this.hidePolygon();
-
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-            this._resizeObserver = null;
-        }
 
         this.map?.remove?.();
         this.map = null;
