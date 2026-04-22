@@ -127,6 +127,33 @@ export class Geometry {
  }
 
  // =========================
+ // PATH UTILITIES (legacy)
+ // =========================
+ static lerp(a, b, t) {
+  return {
+   lat: a.lat + (b.lat - a.lat) * t,
+   lng: a.lng + (b.lng - a.lng) * t
+  };
+ }
+
+ static createPath(a, b, segments = 30) {
+  const path = [];
+
+  for (let i = 0; i <= segments; i++) {
+   path.push(this.lerp(a, b, i / segments));
+  }
+
+  return path;
+ }
+
+ static getSegmentsCount(distance) {
+  if (distance < 50) return 10;
+  if (distance < 200) return 20;
+  if (distance < 1000) return 40;
+  return 80;
+ }
+
+ // =========================
  // AREA SCALE
  // =========================
  static getAreaScale(area) {
