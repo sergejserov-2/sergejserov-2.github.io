@@ -1,3 +1,4 @@
+
 export class StaticUI {
  constructor({ hudElement, uiBuilder }) {
   if (!hudElement) throw new Error("StaticUI: missing hud");
@@ -8,16 +9,12 @@ export class StaticUI {
   this.roundRoot = document.querySelector(".round-result");
   this.gameRoot = document.querySelector(".game-result");
 
-  this.roundEl = hudElement.querySelector(".round b");
-  this.totalEl = hudElement.querySelector(".total-score b");
-
   this.delayBar = document.querySelector(".round-timer-bar");
   this.delayFrame = null;
- }
 
- // =========================
- // HUD
- // =========================
+  this.roundEl = hudElement.querySelector(".round b");
+  this.totalEl = hudElement.querySelector(".total-score b");
+ }
 
  updateHUD(vm = {}) {
   if (this.roundEl) {
@@ -29,114 +26,83 @@ export class StaticUI {
   }
  }
 
- updateTimer(value) {
+ updateTimer(v) {
   const el = this.hudElement.querySelector(".time-left b");
-  if (el) el.textContent = `Время: ${value}`;
+  if (el) el.textContent = `Время: ${v}`;
  }
 
- updateMoves(value) {
+ updateMoves(v) {
   const el = this.hudElement.querySelector(".moves-left b");
-  if (!el) return;
-  el.textContent = value === -1 ? "∞" : `Ходы: ${value}`;
+  if (el) el.textContent = v === -1 ? "∞" : `Ходы: ${v}`;
  }
 
- // =========================
- // ROUND RESULT (MULTIPLAYER)
- // =========================
-
+ // ROUND RESULT (DUEL)
  showRoundResult(vm = {}) {
   const root = this.roundRoot;
   if (!root) return;
 
-  const container = root.querySelector(".score-view");
   const text = root.querySelector(".score-text");
-
   const guesses = vm.guesses || [];
 
-  // =========================
-  // TEXT: ВСЕ ИГРОКИ
-  // =========================
   if (text) {
-   text.innerHTML = guesses.map(g => {
-    const distance = (g.distance ?? 0).toFixed(1);
-    const score = g.score ?? 0;
-
-    return `
-     <p>
-      <b>${g.playerId}</b>: расстояние ${distance} км, очки ${score}
-     </p>
-    `;
-   }).join("");
+   text.innerHTML = guesses.map(g => `
+    <p>
+     <b>${g.playerId}</b> — ${g.score} pts / ${g.distance.toFixed(1)} km
+    </p>
+   `).join("");
   }
 
-  // =========================
-  // BARS
-  // =========================
-  this.renderPlayerBars(container, guesses);
+  this.renderBars(root.querySelector(".score-view"), guesses);
  }
 
- // =========================
- // GAME RESULT (MULTIPLAYER)
- // =========================
-
+ // GAME RESULT
  showGameResult(vm = {}) {
   const root = this.gameRoot;
   if (!root) return;
 
-  const container = root.querySelector(".score-view");
-  const text = root.querySelector(".score-text");
-
   const players = vm.players || {};
 
-  const list = Object.entries(players).map(([playerId, data]) => ({
-   playerId,
-   score: data.score || 0
+  const list = Object.entries(players).map(([id, d]) => ({
+   playerId: id,
+   score: d.score
   }));
 
+  const text = root.querySelector(".score-text");
+
   if (text) {
-   text.innerHTML = list.map(p => {
-    return `<p><b>${p.playerId}</b>: итоговые очки ${p.score}</p>`;
-   }).join("");
+   text.innerHTML = list.map(p =>
+    `<p><b>${p.playerId}</b>: ${p.score} pts</p>`
+   ).join("");
   }
 
-  this.renderPlayerBars(container, list);
+  this.renderBars(root.querySelector(".score-view"), list);
 
   this.stopRoundDelay();
  }
 
- // =========================
- // PLAYER BARS
- // =========================
-
- renderPlayerBars(container, guesses = []) {
+ renderBars(container, list) {
   if (!container) return;
 
-  const old = container.querySelector(".player-score-bar");
-  if (old) old.remove();
+  container.querySelector(".player-score-bar")?.remove();
 
   const wrap = document.createElement("div");
   wrap.className = "player-score-bar";
 
-  guesses.forEach(g => {
-   const color = this.uiBuilder.getPlayerColor(g.playerId);
+  list.forEach(p => {
+   const color = this.uiBuilder.getPlayerColor(p.playerId);
 
    const el = document.createElement("div");
    el.className = "player-score";
 
-   const score = g.score ?? 0;
-   const distance = g.distance ?? null;
-
    el.innerHTML = `
-    <div class="player-score-label">
-     ${g.playerId} — ${score} pts
-     ${distance !== null ? ` / ${distance.toFixed(1)} km` : ""}
-    </div>
-    <div class="player-score-fill"></div>
+    <div>${p.playerId} — ${p.score}</div>
+    <div class="fill"></div>
    `;
 
-   const fill = el.querySelector(".player-score-fill");
-   fill.style.width = `${Math.min(score / 5000, 1) * 100}%`;
-   fill.style.background = color;
+   el.querySelector(".fill").style.width =
+    `${Math.min(p.score / 5000, 1) * 100}%`;
+
+   el.querySelector(".fill").style.background = color;
 
    wrap.appendChild(el);
   });
@@ -144,41 +110,29 @@ export class StaticUI {
   container.appendChild(wrap);
  }
 
- // =========================
- // ROUND DELAY BAR
- // =========================
-
- startRoundDelay(duration, onFinish) {
+ startRoundDelay(t, cb) {
   this.stopRoundDelay();
-
-  if (!this.delayBar) return;
-
-  this.delayBar.style.transition = "none";
-  this.delayBar.style.transform = "scaleX(1)";
 
   const start = performance.now();
 
-  const animate = (now) => {
-   const progress = Math.max(0, 1 - (now - start) / duration);
+  const tick = (now) => {
+   const p = Math.max(0, 1 - (now - start) / t);
+   this.delayBar.style.transform = `scaleX(${p})`;
 
-   this.delayBar.style.transform = `scaleX(${progress})`;
-
-   if (progress > 0) {
-    this.delayFrame = requestAnimationFrame(animate);
+   if (p > 0) {
+    this.delayFrame = requestAnimationFrame(tick);
    } else {
     this.stopRoundDelay();
-    onFinish?.();
+    cb?.();
    }
   };
 
-  this.delayFrame = requestAnimationFrame(animate);
+  this.delayFrame = requestAnimationFrame(tick);
  }
 
  stopRoundDelay() {
-  if (this.delayFrame) {
-   cancelAnimationFrame(this.delayFrame);
-   this.delayFrame = null;
-  }
+  cancelAnimationFrame(this.delayFrame);
+  this.delayFrame = null;
 
   if (this.delayBar) {
    this.delayBar.style.transform = "scaleX(0)";
