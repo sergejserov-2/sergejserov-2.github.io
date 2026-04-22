@@ -51,7 +51,7 @@ export class UIBuilder {
   const rounds = state.rounds || [];
 
   const totalScore = rounds.reduce((s, r) => {
-   return s + (r.guesses?.reduce((a,g)=>a+(g.score0),0)  r.guess?.score || 0);
+   return s + (r.guesses?.reduce((a,g)=>a+(g.score||0),0) || r.guess?.score || 0);
   }, 0);
 
   return {
