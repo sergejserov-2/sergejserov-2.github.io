@@ -13,7 +13,6 @@ export class StaticUI {
 
   this.delayFrame = null;
 
-  // 🔥 ВАЖНО: РАЗДЕЛЯЕМ ROOT
   this.roundRoot = document.querySelector(".round-result");
   this.gameRoot = document.querySelector(".game-result");
  }
@@ -30,7 +29,7 @@ export class StaticUI {
 
   if (this.totalEl) {
    this.totalEl.textContent =
-    `Счёт: ${vm.totalScore}`;
+    `Общий счёт: ${vm.totalScore}`;
   }
 
   const timeWrap = this.timeEl?.parentElement;
@@ -56,6 +55,51 @@ export class StaticUI {
  }
 
  // =========================
+ // HELPERS
+ // =========================
+
+ renderPlayers(root, players = [], getColor) {
+  if (!root) return;
+
+  const container = root.querySelector(".players-score");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  players.forEach(p => {
+   const color = getColor?.(p.playerId) || "#fff";
+
+   const el = document.createElement("div");
+   el.className = "player-score";
+
+   el.innerHTML = `
+    <div class="player-row">
+      <span class="player-id" style="color:${color}">
+        ${p.playerId}
+      </span>
+
+      <span class="player-distance">
+        ${p.distance?.toFixed(1) ?? 0} км
+      </span>
+
+      <span class="player-score-value">
+        ${p.score ?? 0}
+      </span>
+    </div>
+
+    <div class="score-progress-bar">
+      <div class="score-progress" 
+           style="width:${Math.min(Math.max(p.progress ?? 0,0),1)*100}%;
+                  background:${color}">
+      </div>
+    </div>
+   `;
+
+   container.appendChild(el);
+  });
+ }
+
+ // =========================
  // ROUND RESULT
  // =========================
 
@@ -63,24 +107,32 @@ export class StaticUI {
   const root = this.roundRoot;
   if (!root) return;
 
-  const distance = model.distance ?? 0;
-  const score = model.score ?? 0;
-  const progress = model.progress ?? 0;
-
   const text = root.querySelector(".score-text");
-  const bar = root.querySelector(".score-progress");
+  const players = model.players || [];
 
+  // =========================
+  // TEXT (fallback SOLO)
+  // =========================
   if (text) {
-   text.innerHTML = `
-    <p>Ваша точка на расстоянии ${distance.toFixed(1)} км от загаданной</p>
-    <p>Ваш счёт — ${score}</p>
-   `;
+   if (players.length > 1) {
+    text.innerHTML = `<p><b>Результаты раунда</b></p>`;
+   } else {
+    const p = players[0];
+    text.innerHTML = `
+     <p>Расстояние: ${p?.distance?.toFixed(1) ?? 0} км</p>
+     <p>Очки: ${p?.score ?? 0}</p>
+    `;
+   }
   }
 
-  if (bar) {
-   bar.style.width =
-    `${Math.min(Math.max(progress, 0), 1) * 100}%`;
-  }
+  // =========================
+  // PLAYERS UI
+  // =========================
+  this.renderPlayers(
+   root,
+   players,
+   model.getPlayerColor
+  );
  }
 
  // =========================
@@ -92,26 +144,25 @@ export class StaticUI {
   if (!root) return;
 
   const text = root.querySelector(".score-text");
-  const bar = root.querySelector(".score-progress");
+  const players = model.players || [];
 
   if (text) {
    text.innerHTML = `
-    <p>Ваша точка на расстоянии ${model.rounds?.slice(-1)[0]?.distance?.toFixed(1) ?? 0} км от загаданной</p>
-    <p>Ваш счёт — ${model.rounds?.slice(-1)[0]?.score ?? 0}</p>
-    <p><b>Общий счёт: ${model.totalScore} / ${model.maxScore}</b></p>
+    <p><b>Итог игры</b></p>
    `;
   }
 
-  if (bar) {
-   const p = Math.min(Math.max(model.progress ?? 0, 0), 1);
-   bar.style.width = `${p * 100}%`;
-  }
+  this.renderPlayers(
+   root,
+   players,
+   model.getPlayerColor
+  );
 
   this.stopRoundDelay();
  }
 
  // =========================
- // DELAY BAR
+ // ROUND DELAY BAR
  // =========================
 
  startRoundDelay(duration, onFinish) {
