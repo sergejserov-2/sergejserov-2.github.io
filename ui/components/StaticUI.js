@@ -11,7 +11,7 @@ export class StaticUI {
   this.roundEl = hudElement.querySelector(".round b");
   this.totalEl = hudElement.querySelector(".total-score b");
 
-  this.delayBar = document.querySelector(".round-timer-bar");
+  this.delayBar = this.roundRoot?.querySelector(".round-timer-bar");
   this.delayFrame = null;
  }
 
