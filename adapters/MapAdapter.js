@@ -13,14 +13,14 @@ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
     attributionControl: false
   }).setView([center.lat, center.lng], zoom);
 
-  L.tileLayer(
-    `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${KEY}`,
-    {
-      tileSize: 512,
-      zoomOffset: -1,
-      crossOrigin: true
-    }
-  ).addTo(this.map);
+L.tileLayer(
+  `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${KEY}&language=local`,
+  {
+    tileSize: 512,
+    zoomOffset: -1,
+    crossOrigin: true
+  }
+).addTo(this.map);
 
   return this.map;
 }
