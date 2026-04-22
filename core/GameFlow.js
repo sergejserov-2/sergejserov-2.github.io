@@ -1,5 +1,6 @@
+
 export class GameFlow {
- constructor({ game, generator, area, services }) {
+ constructor({ game, generator, area, services, mode = "solo" }) {
   this.game = game;
   this.generator = generator;
   this.area = area;
@@ -10,15 +11,19 @@ export class GameFlow {
   this.listeners = {};
   this.locked = false;
 
-  this._resolveStreetViewReady = null;
+  // =========================
+  // MULTIPLAYER
+  // =========================
+  this.mode = mode;
+  this.roundLocked = false;
+  this.finishedPlayers = new Set();
 
-  // =========================
-  // MULTIPLAYER STATE
-  // =========================
-  this.playersReady = new Set();
-  this.waitTimer = null;
+  this._resolveStreetViewReady = null;
  }
 
+ // =========================
+ // EVENT SYSTEM
+ // =========================
  on(event, cb) {
   (this.listeners[event] ||= []).push(cb);
  }
@@ -27,26 +32,36 @@ export class GameFlow {
   this.listeners[event]?.forEach(cb => cb(data));
  }
 
+ // =========================
+ // APPLY EXTERNAL STATE (future multiplayer sync)
+ // =========================
  applyState(state) {
   this.game.gameState.status = state.status;
   this.game.gameState.rounds = state.rounds;
 
-  this.emit("roundStarted", state);
+  this.emit("stateApplied", state);
  }
 
  // =========================
- // GAME FLOW
+ // GAME START
  // =========================
  async startGame() {
+  this.finishedPlayers.clear();
+  this.roundLocked = false;
+
   this.game.startGame();
   this.emit("gameStarted", this.game.getState());
 
   await this.startRound();
  }
 
+ // =========================
+ // ROUND START
+ // =========================
  async startRound() {
   this.locked = true;
-  this.playersReady.clear();
+  this.roundLocked = false;
+  this.finishedPlayers.clear();
 
   this.emit("inputLocked");
   this.emit("loadingStarted");
@@ -75,6 +90,9 @@ export class GameFlow {
   this.emit("roundStarted", this.game.getState());
  }
 
+ // =========================
+ // STREET VIEW READY
+ // =========================
  waitForStreetViewReady() {
   return new Promise(res => {
    this._resolveStreetViewReady = res;
@@ -87,47 +105,50 @@ export class GameFlow {
  }
 
  // =========================
- // 🔥 MULTIPLAYER CORE LOGIC
+ // GUESS (MULTIPLAYER CORE CHANGE)
  // =========================
  finishGuess(point, playerId = "p1") {
-  if (this.locked) return;
+  if (this.locked || this.roundLocked) return;
 
   const result = this.game.setGuess(playerId, point);
 
-  if (result) {
-   this.emit("guessResolved", result);
-  }
+  if (!result) return;
+
+  this.emit("guessResolved", result);
 
   // =========================
-  // MARK PLAYER READY
+  // SOLO MODE (старое поведение)
   // =========================
-  this.playersReady.add(playerId);
-
-  // =========================
-  // PLAYER WAIT SCREEN
-  // =========================
-  this.emit("playerWaiting", { playerId });
-
-  // =========================
-  // CHECK END CONDITIONS
-  // =========================
-  const totalPlayers = this.game.players?.length || 1;
-
-  if (this.playersReady.size >= totalPlayers) {
-   this.finishRound("all-players-ready");
+  if (this.mode === "solo") {
+   this.locked = true;
+   this.emit("inputLocked");
+   this.finishRound("guess");
    return;
   }
 
   // =========================
-  // START WAIT TIMER FOR OTHERS
+  // DUEL MODE (новое поведение)
   // =========================
-  if (!this.waitTimer) {
-   this.emit("waitTimerStarted", { duration: 10000 });
+  this.finishedPlayers.add(playerId);
 
-   this.waitTimer = setTimeout(() => {
-    this.finishRound("timeout-wait");
-   }, 10000);
-  }
+  this.emit("playerFinished", {
+   playerId,
+   state: this.game.getState()
+  });
+
+  this.locked = true;
+  this.roundLocked = true;
+
+  // 🔥 игрок уходит в waiting screen
+  this.emit("inputLocked");
+  this.emit("roundWaiting", {
+   playerId,
+   state: this.game.getState()
+  });
+
+  // ⚠️ важно:
+  // НЕ завершаем раунд сразу
+  // ждём остальных игроков или таймера сервера (будет позже)
  }
 
  // =========================
@@ -147,16 +168,11 @@ export class GameFlow {
  }
 
  // =========================
- // ROUND END
+ // ROUND END (solo + future sync point)
  // =========================
  finishRound(reason = "manual") {
   this.timer.clear();
   this.locked = true;
-
-  if (this.waitTimer) {
-   clearTimeout(this.waitTimer);
-   this.waitTimer = null;
-  }
 
   this.emit("inputLocked");
 
@@ -165,13 +181,27 @@ export class GameFlow {
   const isLast =
    state.rounds.length >= this.game.config.rules.rounds;
 
-  this.emit("roundResultShown", { state, reason });
+  this.emit("r
+
+oundResultShown", { state, reason });
 
   if (isLast) {
    this.game.endGame();
    this.emit("gameEnded", this.game.getState());
    return;
   }
+ }
+
+ // =========================
+ // EXTERNAL SYNC (DUEL CORE HOOK)
+ // =========================
+ syncRoundComplete() {
+  if (!this.roundLocked) return;
+
+  this.roundLocked = false;
+  this.finishedPlayers.clear();
+
+  this.emit("roundSyncComplete");
  }
 
  async nextRound() {
