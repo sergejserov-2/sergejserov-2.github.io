@@ -1,3 +1,4 @@
+
 export class UIFlow {
  constructor({
   gameFlow,
@@ -36,6 +37,9 @@ export class UIFlow {
    this.gameFlow.registerMove();
   };
 
+  // =========================
+  // GAME START / LOADING
+  // =========================
   this.gameFlow.on("loadingStarted", () => {
    this.screenManager.show("loading");
   });
@@ -51,24 +55,30 @@ export class UIFlow {
   // =========================
   // ROUND START
   // =========================
-this.gameFlow.on("roundStarted", (state) => {
-    this.mapWrapperUI.reset();
-    this.streetViewUI.unlockMove();
-    this.roundOverviewUI?.clear();
-    this.gameOverviewUI?.clear();
-    this.staticUI.stopRoundTimer?.();
-    this.staticUI.updateHUD(
-        this.uiBuilder.formatGameVM(state)
-    );
-});
+  this.gameFlow.on("roundStarted", (state) => {
+   this.mapWrapperUI.reset();
+   this.streetViewUI.unlockMove();
+
+   this.roundOverviewUI?.clear();
+   this.gameOverviewUI?.clear();
+
+   this.staticUI.stopRoundTimer?.();
+
+   this.staticUI.updateHUD(
+    this.uiBuilder.formatGameVM(state)
+   );
+  });
 
   // =========================
-  // TIMER / MOVES
+  // TIMER (из TimerService через GameFlow)
   // =========================
   this.gameFlow.on("timerTick", (t) => {
    this.staticUI.updateTimer(t);
   });
 
+  // =========================
+  // MOVES
+  // =========================
   this.gameFlow.on("movesUpdated", (m) => {
    this.staticUI.updateMoves?.(m);
   });
@@ -78,16 +88,28 @@ this.gameFlow.on("roundStarted", (state) => {
   });
 
   // =========================
-  // INPUT
+  // INPUT LOCKING
   // =========================
   this.gameFlow.on("inputLocked", () => {
    this.staticUI.lockInput?.();
    this.mapWrapperUI.lock();
+
+   // 🔥 важно для мультиплеера:
+   // игрок, который сделал guess → уходит в WAIT screen
+   this.screenManager.show("loading");
   });
 
   this.gameFlow.on("inputUnlocked", () => {
    this.staticUI.unlockInput?.();
    this.mapWrapperUI.unlock();
+  });
+
+  // =========================
+  // GUESS RESOLVED (мультиплеерный хук)
+  // =========================
+  this.gameFlow.on("guessResolved", () => {
+   // UI уже заблокирован в loading
+   this.screenManager.show("loading");
   });
 
   // =========================
@@ -123,12 +145,9 @@ this.gameFlow.on("roundStarted", (state) => {
    const last = rounds[rounds.length - 1];
 
    if (last) {
-     this.gameOverviewUI.render(last);
+    this.gameOverviewUI.render(last);
    }
 
-   // =========================
-   // BUTTONS (ОДИН РАЗ)
-   // =========================
    this.bindGameResultButtons();
   });
  }
@@ -147,7 +166,9 @@ this.gameFlow.on("roundStarted", (state) => {
   const home = root.querySelector(".home-button");
 
   playAgain?.addEventListener("click", () => {
-   this.gameFlow.startGame();
+   this.gameFlow
+
+.startGame();
   });
 
   home?.addEventListener("click", () => {
