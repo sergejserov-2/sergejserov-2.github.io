@@ -31,7 +31,7 @@ export class MapAdapter {
     // CAMERA (STABLE MANUAL VERSION)
     // =========================
     fitBetween(map, a, b) {
-        if (!map  !a  !b) return;
+        if (!map || !a || !b) return;
 
         // 🔥 защита от null/undefined
         if (
