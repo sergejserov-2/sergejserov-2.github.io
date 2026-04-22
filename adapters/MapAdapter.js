@@ -4,24 +4,31 @@ export class MapAdapter {
  }
 
 createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
- if (!element) throw new Error("Map container missing");
+  if (!element) throw new Error("Map container missing");
 
- this.map = L.map(element, {
-  zoomControl: false,
-  attributionControl: false
- }).setView([center.lat, center.lng], zoom);
+  const MAPTILER_KEY = "PnzOFXp1MIxIAe8nTmbt";
 
- L.tileLayer(
-  `https://api.maptiler.com/maps/019db4a6-96e9-70d5-a214-f01c8c0ea283/style.json?key=PnzOFXp1MIxIAe8nTmbt`,
-  {
-   tileSize: 512,
-   zoomOffset: -1,
-   maxZoom: 19,
-   attribution: '&copy; MapTiler &copy; OpenStreetMap contributors'
-  }
- ).addTo(this.map);
+  this.map = L.map(element, {
+    zoomControl: false,
+    attributionControl: false
+  }).setView([center.lat, center.lng], zoom);
 
- return this.map;
+  // =========================
+  // 🗺 BASE TILE (CUSTOM STYLE)
+  // =========================
+  L.tileLayer(
+    `https://api.maptiler.com/maps/019db4a6-96e9-70d5-a214-f01c8c0ea283/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
+    {
+      tileSize: 512,
+      zoomOffset: -1,
+      minZoom: 1,
+      maxZoom: 19,
+      crossOrigin: true,
+      attribution: '&copy; MapTiler &copy; OpenStreetMap contributors'
+    }
+  ).addTo(this.map);
+
+  return this.map;
 }
 
  // =========================
