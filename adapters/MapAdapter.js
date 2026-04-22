@@ -68,14 +68,13 @@ export class MapAdapter {
     }
 
     // =========================
-    // MARKER (СТАБИЛЬНЫЙ DOM)
+    // MARKER (СТАБИЛЬНЫЙ)
     // =========================
     createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
         const size = 20 * scale;
         const inner = size * 0.45;
 
         const el = document.createElement("div");
-        el.className = "map-marker";
 
         el.style.width = `${size}px`;
         el.style.height = `${size}px`;
@@ -112,7 +111,7 @@ export class MapAdapter {
             element: el,
             anchor: "center"
         })
-            .setLngLat(this.toLngLat({ lat, lng }))
+            .setLngLat([lng, lat])
             .addTo(map);
     }
 
@@ -121,36 +120,15 @@ export class MapAdapter {
     }
 
     // =========================
-    // LINES
+    // LINE (STATIC — NO ANIMATION)
     // =========================
-    clearLines(map) {
-        this._lines.forEach(id => {
-            if (map.getLayer(id)) map.removeLayer(id);
-            if (map.getSource(id)) map.removeSource(id);
-        });
-        this._lines.clear();
-    }
-
-    animateLine(map, start, end, colorA, colorB) {
+    drawLine(map, start, end, colorA, colorB) {
         const id = `line-${Math.random().toString(36).slice(2)}`;
 
-        const steps = Math.min(
-            80,
-            Geometry.getSegmentsCount(
-                Geometry.distance(start, end)
-            )
-        );
-
-        const coords = [];
-
-        for (let i = 0; i <= steps; i++) {
-            const t = i / steps;
-
-            coords.push([
-                start.lng + (end.lng - start.lng) * t,
-                start.lat + (end.lat - start.lat) * t
-            ]);
-        }
+        const coords = [
+            [start.lng, start.lat],
+            [end.lng, end.lat]
+        ];
 
         map.addSource(id, {
             type: "geojson",
@@ -158,10 +136,9 @@ export class MapAdapter {
                 type: "Feature",
                 geometry: {
                     type: "LineString",
-                    coordinates: [coords[0]]
+                    coordinates: coords
                 }
-            },
-            lineMetrics: true
+            }
         });
 
         map.addLayer({
@@ -170,43 +147,18 @@ export class MapAdapter {
             source: id,
             paint: {
                 "line-width": 3,
-                "line-gradient": [
-                    "interpolate",
-                    ["linear"],
-                    ["line-progress"],
-                    0, colorA,
-                    1, colorB
-                ]
+                "line-color": colorA
             }
         });
 
         this._lines.add(id);
+    }
 
-        return new Promise(resolve => {
-            let i = 1;
-
-            const animate = () => {
-                const source = map.getSource(id);
-                if (!source) return;
-
-                source.setData({
-                    type: "Feature",
-                    geometry: {
-                        type: "LineString",
-                        coordinates: coords.slice(0, i)
-                    }
-                });
-
-                i++;
-
-                if (i <= steps) {
-                    requestAnimationFrame(animate);
-                } else {
-                    resolve();
-                }
-            };
-
-            animate();
+    clearLines(map) {
+        this._lines.forEach(id => {
+            if (map.getLayer(id)) map.removeLayer(id);
+            if (map.getSource(id)) map.removeSource(id);
         });
+        this._lines.clear();
     }
 }
