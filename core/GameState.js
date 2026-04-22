@@ -12,7 +12,16 @@ export class GameState {
  startRound(actualLocation) {
   this.rounds.push({
    actualLocation,
-   guess: null
+
+   // =========================
+   // SOLO COMPATIBILITY
+   // =========================
+   guess: null,
+
+   // =========================
+   // DUEL MODE
+   // =========================
+   guesses: []
   });
  }
 
@@ -20,6 +29,9 @@ export class GameState {
   return this.rounds[this.rounds.length - 1];
  }
 
+ // =========================
+ // MULTI-GUESS READY
+ // =========================
  setRoundResult(result) {
   const round = this.getCurrentRound();
   if (!round) return;
@@ -31,14 +43,26 @@ export class GameState {
    return;
   }
 
-  // ✅ ПЛОСКАЯ СТРУКТУРА
-  round.guess = {
+  const payload = {
    playerId: result.playerId,
    lat: g.lat,
    lng: g.lng,
    distance: result.distance,
    score: result.score
   };
+
+  // =========================
+  // 🔥 DUEL STORAGE
+  // =========================
+  round.guesses.push(payload);
+
+  // =========================
+  // 🔥 SOLO COMPAT LAYER
+  // (первый игрок = старый guess)
+  // =========================
+  if (!round.guess || result.playerId === "p1") {
+   round.guess = payload;
+  }
  }
 
  endGame() {
@@ -52,10 +76,8 @@ export class GameState {
   };
  }
 
-reset() {
+ reset() {
   this.status = "idle";
   this.rounds = [];
-  this.currentRoundIndex = 0;
-}
- 
+ }
 }
