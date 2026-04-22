@@ -50,15 +50,23 @@ export class MapOverviewUI {
         // =========================
         // 1. GUESS FIRST
         // =========================
-        const guessMarker = this.adapter.createMarker(this.map, guess, {
-            color: playerColor,
-            scale: 1
-        });
-
-        this.markers.push(guessMarker);
+        this.markers.push(
+            this.adapter.createMarker(this.map, guess, {
+                color: playerColor,
+                scale: 1
+            })
+        );
 
         // =========================
-        // 2. LINE ANIMATION (NO CAMERA TOUCH)
+        // 🚀 CAMERA FIX (ДО ЛИНИИ)
+        // =========================
+
+        this.adapter.fitBetween(this.map, guess, actual);
+
+        await this.adapter.waitRenderStable(this.map);
+
+        // =========================
+        // 2. LINE ANIMATION
         // =========================
         await this.adapter.animateLine(
             this.map,
@@ -69,7 +77,7 @@ export class MapOverviewUI {
         );
 
         // =========================
-        // 3. ACTUAL MARKER AFTER LINE
+        // 3. ACTUAL MARKER
         // =========================
         this.markers.push(
             this.adapter.createMarker(this.map, actual, {
