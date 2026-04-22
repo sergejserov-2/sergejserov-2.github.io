@@ -36,37 +36,87 @@ export class MapOverviewUI {
 
   const actualColor = this.uiBuilder.getActualColor();
 
-  const actualMarker = this.adapter.createMarker(this.map, actual, {
+  // =========================
+  // NO GUESS → просто показываем actual
+  // =========================
+  if (!guess) {
+   const actualMarker = this.adapter.createMarker(this.map, actual, {
     color: actualColor,
     scale: 1.35
+   });
+
+   this.markers.push(actualMarker);
+   this.fitToPoints([actual, actual]);
+   return;
+  }
+
+  // =========================
+  // GUESS FLOW (с анимацией)
+  // =========================
+
+  // 1. guess marker
+  const guessMarker = this.adapter.createMarker(this.map, guess, {
+   color: playerColor,
+   scale: 1
   });
 
-  this.markers.push(actualMarker);
+  this.markers.push(guessMarker);
 
-  if (guess) {
-    const guessMarker = this.adapter.createMarker(this.map, guess, {
-      color: playerColor,
-      scale: 1
-    });
+  // 2. создаём сегменты (СКРЫТЫЕ)
+  const segments = this.adapter.createGradientPolyline(
+   null, // 🔥 ВАЖНО: не передаём map сразу
+   [guess, actual],
+   playerColor,
+   actualColor,
+   14
+  );
 
+  this.lines.push(...segments);
 
+  // 3. позиционируем карту заранее
+  this.fitToPoints([guess, actual]);
 
-   this.markers.push(guessMarker);
+  // 4. анимируем сегменты
+  this.animateSegments(segments, () => {
+   // 5. после анимации → actual marker
+   const actualMarker = this.adapter.createMarker(this.map, actual, {
+    color: actualColor,
+    scale: 1.35
+   });
 
-   const segments = this.adapter.createGradientPolyline(
-    this.map,
-    [guess, actual],
-    playerColor,
-    actualColor,
-    14
-   );
+   this.markers.push(actualMarker);
+  });
+ }
 
-   this.lines.push(...segments);
-
-   this.fitToPoints([guess, actual]);
-  } else {
-   this.fitToPoints([actual, actual]);
+ // =========================
+ // SEGMENT ANIMATION
+ // =========================
+ animateSegments(segments, onComplete) {
+  if (!segments?.length) {
+   onComplete?.();
+   return;
   }
+
+  let index = 0;
+
+  const delay = Math.max(10, 200 / segments.length);
+
+  const showNext = () => {
+   if (index >= segments.length) {
+    onComplete?.();
+    return;
+   }
+
+   const segment = segments[index];
+
+   // 🔥 показываем сегмент
+   segment.setMap(this.map);
+
+   index++;
+   setTimeout(showNext, delay);
+  };
+
+  showNext();
  }
 
  fitToPoints(points) {
