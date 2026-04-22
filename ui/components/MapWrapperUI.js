@@ -195,8 +195,6 @@ initResize() {
     let wrapper;
     let isDragging = false;
 
-    let canvas;
-
     handle.addEventListener("mousedown", (e) => {
         e.preventDefault();
 
@@ -212,20 +210,6 @@ initResize() {
 
         document.body.style.userSelect = "none";
 
-        canvas = this.map?.getCanvas?.();
-
-        // =========================
-        // 🔥 FREEZE (важно: не visibility)
-        // =========================
-        if (canvas) {
-            canvas.style.pointerEvents = "none";
-            canvas.style.willChange = "auto";
-        }
-
-        wrapper.classList.add("map-resizing");
-
-        let raf = null;
-
         const onMove = (e) => {
             if (!isDragging) return;
 
@@ -234,14 +218,6 @@ initResize() {
 
             wrapper.style.width = Math.max(200, startW + dx) + "px";
             wrapper.style.height = Math.max(200, startH - dy) + "px";
-
-            // 🔥 throttle resize (не каждый mousemove)
-            if (!raf) {
-                raf = requestAnimationFrame(() => {
-                    this.map?.resize?.();
-                    raf = null;
-                });
-            }
         };
 
         const onUp = () => {
@@ -252,20 +228,11 @@ initResize() {
             window.removeEventListener("mousemove", onMove);
             window.removeEventListener("mouseup", onUp);
 
-            wrapper.classList.remove("map-resizing");
-
-            // =========================
-            // 🔥 FINAL STABILIZATION
-            // =========================
+            // 🔥 ONE SINGLE RESIZE AFTER LAYOUT STABILIZES
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     this.map?.resize?.();
                     this.map?.triggerRepaint?.();
-
-                    if (canvas) {
-                        canvas.style.pointerEvents = "";
-                        canvas.style.willChange = "transform";
-                    }
                 });
             });
         };
