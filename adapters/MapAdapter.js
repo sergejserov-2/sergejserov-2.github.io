@@ -1,54 +1,69 @@
+
 export class MapAdapter {
- constructor() {
+ constructor({ mapKey }) {
   this.map = null;
+  this.key = PnzOFXp1MIxIAe8nTmbt;
  }
 
-createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
+ // =========================
+ // COORD CONVERSIONS
+ // =========================
+ toLngLat(p) {
+  return [p.lng, p.lat];
+ }
+
+ fromLngLat(p) {
+  return { lat: p[1], lng: p[0] };
+ }
+
+ // =========================
+ // MAP INIT
+ // =========================
+ createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   if (!element) throw new Error("Map container missing");
 
-  const KEY = "PnzOFXp1MIxIAe8nTmbt";
+  this.map = new maplibregl.Map({
+   container: element,
 
-  this.map = L.map(element, {
-    zoomControl: false,
-    attributionControl: false
-  }).setView([center.lat, center.lng], zoom);
+   style: {
+    version: 8,
+    sources: {
+     base: {
+      type: "vector",
+      url: `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/style.json?key=${this.key}`
+     }
+    },
+    layers: []
+   },
 
-L.tileLayer(
-  `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${KEY}&language=ru`,
-  {
-    tileSize: 512,
-    zoomOffset: -1,
-    crossOrigin: true
-  }
-).addTo(this.map);
+   center: this.toLngLat(center),
+   zoom,
+   attributionControl: false
+  });
 
   return this.map;
-}
+ }
 
  // =========================
- // MARKER (NEW STYLE)
+ // MARKER (custom DOM)
  // =========================
  createMarker(map, { lat, lng }, options = {}) {
-  const {
-   color = "#ff4d4d",
-   scale = 1
-  } = options;
+  const { color = "#ff4d4d", scale = 1 } = options;
 
   const size = 24 * scale;
 
-  const icon = L.divIcon({
-   className: "custom-marker",
-   html: `
+  const el = document.createElement("div");
+
+  el.innerHTML = `
     <div style="
       width:${size}px;
       height:${size}px;
+      position:relative;
       display:flex;
       align-items:center;
       justify-content:center;
-      position:relative;
     ">
 
-      <!-- OUTER RING -->
       <div style="
         position:absolute;
         width:${size * 0.75}px;
@@ -58,24 +73,22 @@ L.tileLayer(
         opacity:0.7;
       "></div>
 
-      <!-- INNER DOT -->
       <div style="
         width:${size * 0.35}px;
         height:${size * 0.35}px;
         background:${color};
         border-radius:50%;
-        box-shadow:
-          0 0 0 3px rgba(0,0,0,0.25),
-          0 0 10px rgba(0,0,0,0.2);
+        box-shadow:0 0 0 3px rgba(0,0,0,0.25);
       "></div>
 
     </div>
-   `,
-   iconSize: [size, size],
-   iconAnchor: [size / 2, size / 2]
-  });
+  `;
 
-  return L.marker([lat, lng], { icon }).addTo(map);
+  const marker = new maplibregl.Marker({ element: el })
+   .setLngLat(this.toLngLat({ lat, lng }))
+   .addTo(map);
+
+  return marker;
  }
 
  removeMarker(marker) {
@@ -83,19 +96,68 @@ L.tileLayer(
  }
 
  // =========================
- // POLYLINE
+ // CAMERA
  // =========================
- createPolyline(map, path, options = {}) {
-  const { color = "#ff4d4d" } = options;
+ setCenter(map, point) {
+  map.setCenter(this.toLngLat(point));
+ }
 
-  return L.polyline(path, {
-   color,
-   weight: 2
-  }).addTo(map);
+ setZoom(map, zoom) {
+  map.setZoom(zoom);
+ }
+
+ fitBounds(map, points) {
+  const bounds = new maplibregl.LngLatBounds();
+
+  for (const p of points) {
+   bounds.extend(this.toLngLat(p));
+  }
+
+  map.fitBounds(bounds, {
+   padding: 80,
+   duration: 0
+  });
  }
 
  // =========================
- // GRADIENT (как у тебя было)
+ // POLYLINE (simple GeoJSON)
+ // =========================
+ createPolyline(map, path, options = {}) {
+  const id = `line-${Math.random()}`;
+
+  map.addSource(id, {
+   type: "geojson",
+   data: {
+    type: "Feature",
+    geometry: {
+     type: "LineString",
+     coordinates: path.map(p => this.toLngLat(p))
+    }
+   }
+  });
+
+  map.addLayer({
+   id,
+   type: "line",
+   source: id,
+   paint: {
+    "line-color": options.color || "#ff4d4d",
+    "line-width": 2
+   }
+  });
+
+  return {
+   id,
+   remove: () => {
+    if (!map.getLayer(id)) return;
+    map.removeLayer(id);
+    map.removeSource(id);
+   }
+  };
+ }
+
+ // =========================
+ // GRADIENT (упрощённый)
  // =========================
  createGradientPolyline(map, path, fromColor, toColor, steps = 12) {
   const segments = [];
@@ -109,29 +171,11 @@ L.tileLayer(
 
    const color = this._mixColor(fromColor, toColor, t1);
 
-   const line = L.polyline([p1, p2], {
-    color,
-    weight: 3
-   });
-
-   segments.push(line);
+   const seg = this.createPolyline(map, [p1, p2], { color });
+   segments.push(seg);
   }
 
   return segments;
- }
-
- createPolygon(map, path, options = {}) {
-  const {
-   strokeColor = "#4ea1ff",
-   fillColor = "#4ea1ff"
-  } = options;
-
-  return L.polygon(path, {
-   color: strokeColor,
-   fillColor,
-   fillOpacity: 0.15,
-   weight: 2
-  }).addTo(map);
  }
 
  // =========================
@@ -162,5 +206,12 @@ L.tileLayer(
    g: parseInt(h.slice(2, 4), 16),
    b: parseInt(h.slice(4, 6), 16)
   };
+ }
+
+ // =========================
+ // RESIZE
+ // =========================
+ triggerResize(map) {
+  map?.resize?.();
  }
 }
