@@ -184,7 +184,7 @@ export class MapWrapperUI {
     // =========================
 // RESIZE ENGINE (FIXED)
     // =========================
-    initResize() {
+initResize() {
     const handle =
         this.element?.parentElement?.querySelector(".resize-handle");
 
@@ -193,19 +193,6 @@ export class MapWrapperUI {
     let startX, startY, startW, startH;
     let wrapper;
     let isDragging = false;
-
-    let lastResizeTime = 0;
-    const RESIZE_INTERVAL = 80; // 🔥 ключ (мс)
-
-    const throttledResize = () => {
-        const now = performance.now();
-
-        if (now - lastResizeTime < RESIZE_INTERVAL) return;
-
-        lastResizeTime = now;
-
-        this.map?.resize?.();
-    };
 
     handle.addEventListener("mousedown", (e) => {
         e.preventDefault();
@@ -222,6 +209,9 @@ export class MapWrapperUI {
 
         document.body.style.userSelect = "none";
 
+        // 🔥 опционально: убираем pointer events с карты (чтобы не лагала во время drag)
+        this.element.style.pointerEvents = "none";
+
         const onMove = (e) => {
             if (!isDragging) return;
 
@@ -231,19 +221,19 @@ export class MapWrapperUI {
             wrapper.style.width = Math.max(200, startW + dx) + "px";
             wrapper.style.height = Math.max(200, startH - dy) + "px";
 
-            // 🔥 теперь НЕ каждый кадр
-            throttledResize();
+            // ❌ НИКАКОГО resize здесь
         };
 
         const onUp = () => {
             isDragging = false;
 
             document.body.style.userSelect = "";
+            this.element.style.pointerEvents = "";
 
             window.removeEventListener("mousemove", onMove);
             window.removeEventListener("mouseup", onUp);
 
-            // 🔥 финальный точный resize (двойной)
+            // 🔥 один точный resize
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     this.map?.resize?.();
