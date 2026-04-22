@@ -128,86 +128,70 @@ createGradientPolyline(map, path, fromColor, toColor) {
 
  const [start, end] = path;
 
- // =========================
- // 🌍 REAL DISTANCE
- // =========================
  const distance = Geometry.distance(start, end);
  const steps = Geometry.getSegmentsCount(distance);
 
  const points = Geometry.buildGreatCircle(start, end, steps);
  const coords = points.map(p => this.toLngLat(p));
 
- // =========================
- // SOURCE
- // =========================
- map.addSource(id, {
-  type: "geojson",
-  data: {
-   type: "Feature",
-   geometry: {
-    type: "LineString",
-    coordinates: [coords[0]]
-   }
-  },
-  lineMetrics: true
- });
+ return new Promise((resolve) => {
+  map.addSource(id, {
+   type: "geojson",
+   data: {
+    type: "Feature",
+    geometry: {
+     type: "LineString",
+     coordinates: [coords[0]]
+    }
+   },
+   lineMetrics: true
+  });
 
- // =========================
- // LAYER
- // =========================
- map.addLayer({
-  id,
-  type: "line",
-  source: id,
-  layout: {
-   "line-cap": "round",
-   "line-join": "round"
-  },
-  paint: {
-   "line-width": 3,
-   "line-gradient": [
-    "interpolate",
-    ["linear"],
-    ["line-progress"],
-    0, fromColor,
-    1, toColor
-   ]
-  }
- });
-
- // =========================
- // 🎬 SMOOTH ANIMATION
- // =========================
- let i = 1;
-
- const animate = () => {
-  const source = map.getSource(id);
-  if (!source) return;
-
-  source.setData({
-   type: "Feature",
-   geometry: {
-    type: "LineString",
-    coordinates: coords.slice(0, i)
+  map.addLayer({
+   id,
+   type: "line",
+   source: id,
+   layout: {
+    "line-cap": "round",
+    "line-join": "round"
+   },
+   paint: {
+    "line-width": 3,
+    "line-gradient": [
+     "interpolate",
+     ["linear"],
+     ["line-progress"],
+     0, fromColor,
+     1, toColor
+    ]
    }
   });
 
-  i++;
+  let i = 1;
 
-  if (i <= coords.length) {
-   requestAnimationFrame(animate);
-  }
- };
+  const animate = () => {
+   const source = map.getSource(id);
+   if (!source) return;
 
- requestAnimationFrame(animate);
+   source.setData({
+    type: "Feature",
+    geometry: {
+     type: "LineString",
+     coordinates: coords.slice(0, i)
+    }
+   });
 
- return {
-  id,
-  remove: () => {
-   if (map.getLayer(id)) map.removeLayer(id);
-   if (map.getSource(id)) map.removeSource(id);
-  }
- };
+   i++;
+
+   if (i <= coords.length) {
+    requestAnimationFrame(animate);
+   } else {
+    resolve(); // 🔥 ВАЖНО
+   }
+  };
+
+  requestAnimationFrame(animate);
+ });
 }
 
  // =========================
