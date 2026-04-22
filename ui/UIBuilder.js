@@ -50,7 +50,38 @@ export class UIBuilder {
  }
 
  // =========================
- // HUD
+ // PLAYER AGGREGATION (DUEL CORE)
+ // =========================
+ getPlayerStats(state) {
+  const rounds = state.rounds || [];
+
+  const stats = {};
+
+  for (const r of rounds) {
+   const guesses = r.guesses?.length ? r.guesses : (r.guess ? [r.guess] : []);
+
+   for (const g of guesses) {
+    const id = g.playerId || "p1";
+
+    if (!stats[id]) {
+     stats[id] = {
+      playerId: id,
+      score: 0,
+      distance: 0,
+      rounds: 0
+     };
+    }
+
+    stats[id].score += g.score || 0;
+    stats[id].distance += g.distance || 0;
+   }
+  }
+
+  return Object.values(stats);
+ }
+
+ // =========================
+ // HUD (SOLO SAFE)
  // =========================
  formatGameVM(state) {
   const rounds = state.rounds || [];
@@ -70,56 +101,66 @@ export class UIBuilder {
  }
 
  // =========================
- // ROUND RESULT
+ // ROUND RESULT (DUEL READY)
  // =========================
  formatRoundVM(state) {
   const rounds = state.rounds || [];
   const round = rounds[rounds.length - 1];
 
-  const guess = round?.guess;
+  if (!round) {
+   return {
+    players: [],
+    actual: null
+   };
+  }
+
+  const guesses = round.guesses?.length
+   ? round.guesses
+   : (round.guess ? [round.guess] : []);
+
+  const players = guesses.map(g => ({
+   playerId: g.playerId,
+   lat: g.lat,
+   lng: g.lng,
+   distance: g.distance,
+   score: g.score,
+   color: this.getPlayerColor(g.playerId)
+  }));
 
   return {
-   distance: guess?.distance ?? 0,
-   score: guess?.score ?? 0,
-   progress: Math.min((guess?.score ?? 0) / 5000, 1),
-
-   guess: guess
-    ? {
-       playerId: guess.playerId,
-       lat: guess.lat,
-       lng: guess.lng
-      }
-    : null,
-
-   actual: round?.actualLocation || null
+   actual: round.actualLocation || null,
+   players,
+   totalPlayersScore: players.reduce((s, p) => s + (p.score || 0), 0)
   };
  }
 
  // =========================
- // GAME RESULT (ВАЖНО: ИДЕНТИЧНО ROUND)
+ // GAME RESULT (DUEL FULL AGGREGATION)
  // =========================
-formatGameResultVM(state) {
- const rounds = state.rounds || [];
+ formatGameResultVM(state) {
+  const playerStats = this.getPlayerStats(state);
 
- const totalScore = rounds.reduce((s, r) => {
-  return s + (r.guess?.score || 0);
- }, 0);
+  const rounds = state.rounds || [];
 
- const roundsCount = rounds.length; // 🔥 фикс
- const maxScore = roundsCount * 5000;
+  const maxScore = rounds.length * 5000;
 
- return {
-  totalScore,
-  maxScore,
-  progress: maxScore ? totalScore / maxScore : 0,
+  const totalScore = playerStats.reduce((s, p) => s + p.score, 0);
 
-  rounds: rounds.map((r, i) => ({
-   index: i,
-   score: r.guess?.score || 0,
-   distance: r.guess?.distance || 0,
-   guess: r.guess,
-   actual: r.actualLocation
-  }))
- };
-}
+  return {
+   players: playerStats.map(p => ({
+    ...p,
+    color: this.getPlayerColor(p.playerId)
+   })),
+
+   totalScore,
+   maxScore,
+   progress: maxScore ? totalScore / maxScore : 0,
+
+   rounds: rounds.map((r, i) => ({
+    index: i,
+    guesses: r.guesses || (r.guess ? [r.guess] : []),
+    actual: r.actualLocation
+   }))
+  };
+ }
 }
