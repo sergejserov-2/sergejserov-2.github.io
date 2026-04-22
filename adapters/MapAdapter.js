@@ -1,12 +1,9 @@
-
 import { Geometry } from "../../domain/math/Geometry.js";
 
 export class MapAdapter {
     constructor() {
         this.map = null;
-
         this._lines = new Set();
-        this._polygons = new Set();
     }
 
     // =========================
@@ -22,7 +19,7 @@ export class MapAdapter {
     createMap(element, { center, zoom }) {
         const key = "PnzOFXp1MIxIAe8nTmbt";
 
-        this.map = new maplibregl.Map({
+        const map = new maplibregl.Map({
             container: element,
             style: `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/style.json?key=${key}`,
             center: this.toLngLat(center),
@@ -30,11 +27,27 @@ export class MapAdapter {
             attributionControl: false
         });
 
-        return this.map;
+        // 🔥 важно
+        map._isReady = false;
+
+        map.on("load", () => {
+            map._isReady = true;
+        });
+
+        this.map = map;
+
+        return map;
+    }
+
+    async waitReady(map) {
+        if (map?._isReady) return;
+
+        await new Promise(resolve => {
+            map.once("load", resolve);
+        });
     }
 
     resize(map) {
-        // 🔥 двойной rAF — must have для MapLibre
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 map?.resize?.();
@@ -43,143 +56,67 @@ export class MapAdapter {
     }
 
     // =========================
-    // MARKER (2 круга)
+    // MARKER (фикс позиции)
     // =========================
-    
-createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
-    const size = 22 * scale;
-    const inner = size * 0.4;
+    createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
+        const size = 22 * scale;
+        const inner = size * 0.4;
 
-    const el = document.createElement("div");
+        const el = document.createElement("div");
 
-    // базовый контейнер
-    el.style.width = `${size}px`;
-    el.style.height = `${size}px`;
-    el.style.position = "relative";
+        el.style.width = `${size}px`;
+        el.style.height = `${size}px`;
+        el.style.position = "relative";
 
-    // 🔥 один div + псевдоэлементы
-    el.style.setProperty("--color", color);
-    el.style.setProperty("--inner", `${inner}px`);
+        el.style.setProperty("--color", color);
+        el.style.setProperty("--inner", `${inner}px`);
 
-    el.style.cssText += `
-        display:block;
-    `;
+        if (!document.getElementById("marker-style")) {
+            const style = document.createElement("style");
+            style.id = "marker-style";
 
-    // создаём стиль один раз (или можно вынести в CSS)
-    if (!document.getElementById("marker-style")) {
-        const style = document.createElement("style");
-        style.id = "marker-style";
+            style.innerHTML = `
+            .custom-marker {
+                position: relative;
+            }
 
-        style.innerHTML = `
-        .custom-marker {
-            position: relative;
+            .custom-marker::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: 50%;
+                border: 2px solid var(--color);
+                opacity: 0.6;
+                box-sizing: border-box;
+            }
+
+            .custom-marker::after {
+                content: "";
+                position: absolute;
+                width: var(--inner);
+                height: var(--inner);
+                background: var(--color);
+                border-radius: 50%;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+            }
+            `;
+            document.head.appendChild(style);
         }
 
-        .custom-marker::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            border: 2px solid var(--color);
-            box-sizing: border-box;
-        }
+        el.className = "custom-marker";
 
-        .custom-marker::after {
-            content: "";
-            position: absolute;
-            width: var(--inner);
-            height: var(--inner);
-            background: var(--color);
-            border-radius: 50%;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-        }
-        `;
-        document.head.appendChild(style);
+        return new maplibregl.Marker({
+            element: el,
+            anchor: "center" // 🔥 КРИТИЧНО
+        })
+            .setLngLat(this.toLngLat({ lat, lng }))
+            .addTo(map);
     }
-
-    el.className = "custom-marker";
-
-    return new maplibregl.Marker({
-        element: el,
-        anchor: "center"
-    })
-        .setLngLat(this.toLngLat({ lat, lng }))
-        .addTo(map);
-}
 
     removeMarker(marker) {
         marker?.remove?.();
-    }
-
-    // =========================
-    // POLYGON (🔥 НОВОЕ)
-    // =========================
-    createPolygon(map, coords, {
-        strokeColor = "#4ea1ff",
-        fillColor = "#4ea1ff",
-        fillOpacity = 0.2
-    } = {}) {
-
-        const id = `polygon-${Math.random().toString(36).slice(2)}`;
-
-        map.addSource(id, {
-            type: "geojson",
-            data: {
-                type: "Feature",
-                geometry: {
-                    type: "Polygon",
-                    coordinates: [coords] // [[lng,lat]]
-                }
-            }
-        });
-
-        // fill
-        map.addLayer({
-            id: `${id}-fill`,
-            type: "fill",
-            source: id,
-            paint: {
-                "fill-color": fillColor,
-                "fill-opacity": fillOpacity
-            }
-        });
-
-        // stroke
-        map.addLayer({
-            id: `${id}-line`,
-            type: "line",
-            source: id,
-            paint: {
-                "line-color": strokeColor,
-                "line-width": 2
-            }
-        });
-
-        this._polygons.add(id);
-
-        return id;
-    }
-
-    removePolygon(map, id) {
-        if (!id) return;
-
-        const fillId = `${id}-fill`;
-        const lineId = `${id}-line`;
-
-        if (map.getLayer(fillId)) map.removeLayer(fillId);
-        if (map.getLayer(lineId)) map.removeLayer(lineId);
-
-        if (map.getSource(id)) map.removeSource(id);
-
-        this._polygons.delete(id);
-    }
-
-    clearPolygons(map) {
-        this._polygons.forEach(id => {
-            this.removePolygon(map, id);
-        });
     }
 
     // =========================
@@ -188,15 +125,14 @@ createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
     clearLines(map) {
         this._lines.forEach(id => {
             if (map.getLayer(id)) map.removeLayer(id);
-
-if (map.getSource(id)) map.removeSource(id);
+            if (map.getSource(id)) map.removeSource(id);
         });
 
         this._lines.clear();
     }
 
     // =========================
-    // ANIMATION (gradient + camera)
+    // ANIMATION (фикс)
     // =========================
     animateLine(map, start, end, colorA, colorB) {
         const id = `line-${Math.random().toString(36).slice(2)}`;
@@ -228,7 +164,7 @@ if (map.getSource(id)) map.removeSource(id);
                     coordinates: [coords[0]]
                 }
             },
-            lineMetrics: true // 🔥 критично
+            lineMetrics: true
         });
 
         map.addLayer({
@@ -266,7 +202,6 @@ if (map.getSource(id)) map.removeSource(id);
                     }
                 });
 
-                // 🔥 синхронная камера
                 this.updateCamera(map, start, end, t);
 
                 i++;
