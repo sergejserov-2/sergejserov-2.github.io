@@ -35,7 +35,7 @@ export class MapAdapter {
 
         // 🔥 защита от null/undefined
         if (
-            a.lng == null  a.lat == null 
+            a.lng == null || a.lat == null ||
             b.lng == null || b.lat == null
         ) return;
 
