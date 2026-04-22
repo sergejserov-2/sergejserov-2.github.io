@@ -24,20 +24,20 @@ export class MapWrapperUI {
 
   this.map = this.adapter.createMap(this.element, {
    zoom: 2,
-   center: { lat: 20, lng: 0 },
-   disableDefaultUI: true,
-   zoomControl: false
+   center: { lat: 20, lng: 0 }
   });
 
-  // Leaflet не требует resize через Google API
   this.scheduleResize();
 
+  // =========================
+  // MAPLIBRE CLICK FIX
+  // =========================
   this.map.on("click", (e) => {
    if (this.isLocked) return;
 
    const point = {
-    lat: e.latlng.lat,
-    lng: e.latlng.lng
+    lat: e.lngLat.lat,
+    lng: e.lngLat.lng
    };
 
    this.lastGuessPoint = point;
@@ -48,7 +48,7 @@ export class MapWrapperUI {
  }
 
  // =========================
- // POLYGON API
+ // POLYGON
  // =========================
  setArea(area) {
   this.area = area;
@@ -64,12 +64,14 @@ export class MapWrapperUI {
    return;
   }
 
-  const path = this.area.polygon;
-
-  this.polygon = this.adapter.createPolygon(this.map, path, {
-   strokeColor: "#4ea1ff",
-   fillColor: "#4ea1ff"
-  });
+  this.polygon = this.adapter.createPolygon(
+   this.map,
+   this.area.polygon,
+   {
+    strokeColor: "#4ea1ff",
+    fillColor: "#4ea1ff"
+   }
+  );
 
   this.polygonVisible = true;
  }
@@ -77,9 +79,7 @@ export class MapWrapperUI {
  bindPolygonButton(el) {
   if (!el) return;
 
-  el.addEventListener("click", () => {
-   this.togglePolygon();
-  });
+  el.addEventListener("click", () => this.togglePolygon());
  }
 
  // =========================
@@ -150,18 +150,18 @@ export class MapWrapperUI {
  }
 
  // =========================
- // RESIZE (Leaflet way)
+ // RESIZE (MapLibre)
  // =========================
  scheduleResize() {
   if (!this.map) return;
 
   requestAnimationFrame(() => {
-   this.map.invalidateSize();
+   this.map.resize();
   });
  }
 
  // =========================
- // MANUAL RESIZE HOOK
+ // DOM RESIZE HANDLER
  // =========================
  initResize() {
   const handle =
