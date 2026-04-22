@@ -47,11 +47,12 @@ export class UIBuilder {
   return this.actualColor;
  }
 
+ // HUD
  formatGameVM(state) {
   const rounds = state.rounds || [];
 
   const totalScore = rounds.reduce((s, r) => {
-   return s + (r.guesses?.reduce((a,g)=>a+(g.score||0),0) || r.guess?.score || 0);
+   return s + (r.guesses?.reduce((a,g)=>a+(g.score0),0)  0);
   }, 0);
 
   return {
@@ -63,6 +64,7 @@ export class UIBuilder {
   };
  }
 
+ // ROUND
  formatRoundVM(state) {
   const round = state.rounds.at(-1);
 
@@ -72,6 +74,7 @@ export class UIBuilder {
   };
  }
 
+ // GAME RESULT
  formatGameResultVM(state) {
   const rounds = state.rounds || [];
 
