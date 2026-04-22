@@ -181,9 +181,7 @@ export class MapWrapperUI {
         this.isLocked = false;
     }
 
-    // =======================
-
-==
+    // =========================
     // DESTROY (важно для SPA)
     // =========================
     destroy() {
