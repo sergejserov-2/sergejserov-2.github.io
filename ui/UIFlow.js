@@ -53,7 +53,6 @@ export class UIFlow {
   // =========================
 this.gameFlow.on("roundStarted", (state) => {
     this.mapWrapperUI.reset();
-    this.mapWrapperUI.resetView?.();
     this.streetViewUI.unlockMove();
     this.roundOverviewUI?.clear();
     this.gameOverviewUI?.clear();
