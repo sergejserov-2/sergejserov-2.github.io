@@ -1,86 +1,184 @@
+import { Geometry } from "../../domain/math/Geometry.js";
+
 export class MapOverviewUI {
-    constructor({ adapter, element, uiBuilder }) {
-        this.adapter = adapter;
-        this.uiBuilder = uiBuilder;
-        this.element = element;
+ constructor({ adapter, element, uiBuilder }) {
+  this.adapter = adapter;
+  this.uiBuilder = uiBuilder;
+  this.element = element;
 
-        this.map = null;
+  this.map = null;
+  this.markers = [];
+  this.lines = [];
 
-        this.guessMarker = null;
-        this.actualMarker = null;
-    }
+  this._resizeObserver = null;
+ }
 
-    init() {
-        this.map = this.adapter.createMap(this.element, {
-            center: { lat: 20, lng: 0 },
-            zoom: 2
-        });
+ // =========================
+ // INIT
+ // =========================
+ init() {
+  if (!this.element) return;
 
-        requestAnimationFrame(() => {
-            this.adapter.resize(this.map);
-        });
-    }
+  this.map = this.adapter.createMap(this.element, {
+   center: { lat: 20, lng: 0 },
+   zoom: 2
+  });
 
-    async render(round) {
-        if (!this.map || !round) return;
+  this._resizeObserver = new ResizeObserver(() => {
+   this.forceResize();
+  });
 
-        await this.adapter.waitReady(this.map);
+  this._resizeObserver.observe(this.element);
+ }
 
-        this.clear();
+ // =========================
+ // RENDER
+ // =========================
+render(round) {
+ if (!this.map || !round) return;
 
-        const actual = round.actualLocation;
-        const guess = round.guess;
+ this.clear();
 
-        if (!actual) return;
+ const actual = round.actualLocation;
+ const guess = round.guess;
 
-        const playerColor = this.uiBuilder.getPlayerColor("p1");
-        const actualColor = this.uiBuilder.getActualColor();
+ if (!actual) return;
 
-        // =========================
-        // PRECREATE BOTH MARKERS
-        // =========================
-        this.guessMarker = guess
-            ? this.adapter.createMarker(this.map, guess, {
-                  color: playerColor,
-                  scale: 1
-              })
-            : null;
+ const playerColor = this.uiBuilder.getPlayerColor(
+  guess?.playerId || "p1"
+ );
 
-        this.actualMarker = this.adapter.createMarker(this.map, actual, {
-            color: actualColor,
-            scale: 1.3
-        });
+ const actualColor = this.uiBuilder.getActualColor();
 
-        // =========================
-        // ONLY GUESS VISIBLE FIRST
-        // =========================
-        if (this.guessMarker) {
-            this.adapter.showMarker(this.guessMarker, this.map);
-        }
+ if (!guess) {
+  this.adapter.createMarker(this.map, actual, {
+   color: actualColor,
+   scale: 1.35
+  });
 
-        // actual скрыт (НЕ добавляем в карту)
-        // 👉 просто не добавляем пока
+  this.adapter.setView(this.map, actual, 4);
+  return;
+ }
 
-        // =========================
-        // CAMERA
-        // =========================
-        this.adapter.fitBounds(this.map, guess || actual, actual);
-        await this.adapter.waitIdle(this.map);
+ const guessMarker = this.adapter.createMarker(this.map, guess, {
+  color: playerColor,
+  scale: 1
+ });
 
-        // стабилизация projection
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+ this.markers.push(guessMarker);
 
-        // =========================
-        // REVEAL ACTUAL
-        // =========================
-        this.adapter.showMarker(this.actualMarker, this.map);
-    }
+ const segments = this.adapter.createGradientPolyline(
+  this.map,
+  [guess, actual],
+  playerColor,
+  actualColor,
+  14
+ );
 
-    clear() {
-        if (this.guessMarker) this.adapter.hideMarker(this.guessMarker);
-        if (this.actualMarker) this.adapter.hideMarker(this.actualMarker);
+ segments.forEach(s => s.remove());
+ this.lines.push(...segments);
 
-        this.guessMarker = null;
-        this.actualMarker = null;
-    }
+ // 🔥 ВАЖНО: ждём layout + resize
+ requestAnimationFrame(() => {
+  this.forceResize();
+
+  setTimeout(() => {
+   this.fitBothPoints(guess, actual);
+
+   requestAnimationFrame(() => {
+    this.animateSegments(segments, () => {
+     const actualMarker = this.adapter.createMarker(this.map, actual, {
+      color: actualColor,
+      scale: 1.35
+     });
+
+     this.markers.push(actualMarker);
+    });
+   });
+
+  }, 60); // 🔥 ключевой delay против "схлопывания карты"
+ });
+}
+
+ // =========================
+ // 🔥 КЛЮЧЕВОЙ FIX: СТАБИЛЬНЫЙ FIT
+ // =========================
+fitBothPoints(a, b) {
+ if (!this.map || !a || !b) return;
+
+ const bounds = L.latLngBounds([
+  [a.lat, a.lng],
+  [b.lat, b.lng]
+ ]);
+
+ this.map.fitBounds(bounds, {
+  paddingTopLeft: [120, 120],
+  paddingBottomRight: [120, 120],
+
+  maxZoom: 6,
+  animate: true,
+  duration: 0.4
+ });
+}
+
+ // =========================
+ // ANIMATION
+ // =========================
+ animateSegments(segments, onComplete) {
+  if (!segments?.length) {
+   onComplete?.();
+   return;
+  }
+
+  let i = 0;
+
+  const step = () => {
+   if (i >= segments.length) {
+    onComplete?.();
+    return;
+   }
+
+   segments[i].addTo(this.map);
+   i++;
+
+   setTimeout(step, 18);
+  };
+
+  step();
+ }
+
+ // =========================
+ // CLEAR
+ // =========================
+ clear() {
+  this.markers.forEach(m => m?.remove?.());
+  this.lines.forEach(l => l?.remove?.());
+
+  this.markers = [];
+  this.lines = [];
+ }
+
+ // =========================
+ // RESIZE FIX (Leaflet correct way)
+ // =========================
+ forceResize() {
+  if (!this.map) return;
+
+  this.map.invalidateSize();
+
+  // 🔥 стабилизируем после layout shift
+  setTimeout(() => {
+   this.map.invalidateSize();
+  }, 50);
+ }
+
+ // =========================
+ // DESTROY
+ // =========================
+ destroy() {
+  if (this._resizeObserver) {
+   this._resizeObserver.disconnect();
+   this._resizeObserver = null;
+  }
+ }
 }
