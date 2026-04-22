@@ -108,8 +108,10 @@ export class UIFlow {
    this.screenManager.show("roundResult");
    this.staticUI.showRoundResult(vm);
 
-   requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
     this.roundOverviewUI.forceResize?.();
+   });
    });
 
    this.staticUI.startRoundDelay(7500, () => {
@@ -131,8 +133,10 @@ export class UIFlow {
 
    if (last) {
     requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
      this.gameOverviewUI.render(last);
      this.gameOverviewUI.forceResize?.();
+    });
     });
    }
 
