@@ -1,101 +1,83 @@
 export class GameBridge {
-  constructor({ mode = "local", gameFlow, network = null }) {
-    this.mode = mode;
-    this.gameFlow = gameFlow;
-    this.network = network;
+ constructor({ gameFlow, mode = "solo", network = null }) {
+  this.gameFlow = gameFlow;
+  this.mode = mode;
+  this.network = network;
 
-    this.listeners = new Map();
+  this.listeners = {};
+  this.bindGameFlow();
+ }
 
-    this.bindGameFlow();
-    this.bindNetwork();
+ on(event, cb) {
+  (this.listeners[event] ||= []).push(cb);
+ }
+
+ emit(event, data) {
+  this.listeners[event]?.forEach(cb => cb(data));
+ }
+
+ // =========================
+ // GAMEFLOW → UI
+ // =========================
+ bindGameFlow() {
+  const events = [
+   "loadingStarted",
+   "loadingFinished",
+   "streetViewSetLocation",
+   "roundStarted",
+   "timerTick",
+   "movesUpdated",
+   "movesLocked",
+   "inputLocked",
+   "inputUnlocked",
+   "roundResultShown",
+   "gameEnded",
+   "guessResolved"
+  ];
+
+  events.forEach(event => {
+   this.gameFlow.on(event, (data) => {
+    this.emit(event, data);
+   });
+  });
+ }
+
+ // =========================
+ // UI → GAME
+ // =========================
+ startGame() {
+  if (this.mode === "solo") {
+   this.gameFlow.startGame();
+  } else {
+   this.network.send("startGame");
   }
+ }
 
-  // =========================
-  // EVENTS (для UIFlow)
-  // =========================
-  on(event, handler) {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, []);
-    }
-
-    this.listeners.get(event).push(handler);
+ finishGuess(point) {
+  if (this.mode === "solo") {
+   this.gameFlow.finishGuess(point);
+  } else {
+   this.network.send("finishGuess", point);
   }
+ }
 
-  emit(event, payload) {
-    const handlers = this.listeners.get(event);
-    if (!handlers) return;
-
-    handlers.forEach(h => h(payload));
+ nextRound() {
+  if (this.mode === "solo") {
+   this.gameFlow.nextRound();
+  } else {
+   this.network.send("nextRound");
   }
+ }
 
-  // =========================
-  // GAMEFLOW → UI прокси
-  // =========================
-  bindGameFlow() {
-    const events = [
-      "loadingStarted",
-      "loadingFinished",
-      "streetViewSetLocation",
-      "roundStarted",
-      "timerTick",
-      "movesUpdated",
-      "movesLocked",
-      "inputLocked",
-      "inputUnlocked",
-      "roundResultShown",
-      "gameEnded"
-    ];
+ streetViewReady() {
+  this.gameFlow.streetViewReady();
+ }
 
-    events.forEach(event => {
-      this.gameFlow.on(event, (payload) => {
-        this.emit(event, payload);
-      });
-    });
-  }
+ registerMove() {
+  this.gameFlow.registerMove();
+ }
 
-  // =========================
-  // NETWORK → GAMEFLOW
-  // =========================
-  bindNetwork() {
-    if (this.mode !== "multiplayer" || !this.network) return;
-
-    this.network.on("stateSync", (state) => {
-      this.gameFlow.applyState(state);
-    });
-  }
-
-  // =========================
-  // UI → GAME
-  // =========================
-  startGame() {
-    if (this.mode === "local") {
-      this.gameFlow.startGame();
-    } else {
-      this.network.send("startGame");
-    }
-  }
-
-  submitGuess(point) {
-    if (this.mode === "local") {
-      this.gameFlow.submitGuess(point);
-    } else {
-      this.network.send("submitGuess", point);
-    }
-  }
-
-  nextRound() {
-    if (this.mode === "local") {
-      this.gameFlow.nextRound();
-    } else {
-      this.network.send("nextRound");
-    }
-  }
-
-  streetViewReady() {
-    this.gameFlow.streetViewReady();
-  }
-
-  registerMove() {
-    this.gameFlow.registerMove();
-  }
+ applyState(state) {
+  this.gameFlow.applyState?.(state);
+ }
 }
