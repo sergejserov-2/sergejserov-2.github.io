@@ -24,7 +24,6 @@ export class MapOverviewUI {
    zoom: 2
   });
 
-  // Leaflet сам стабилен, но оставим resize observer
   this._resizeObserver = new ResizeObserver(() => {
    this.forceResize();
   });
@@ -35,71 +34,103 @@ export class MapOverviewUI {
  // =========================
  // RENDER
  // =========================
-render(round) {
- if (!this.map || !round) return;
+ render(round) {
+  if (!this.map || !round) return;
 
- this.clear();
+  this.clear();
 
- const actual = round.actualLocation;
- const guess = round.guess;
+  const actual = round.actualLocation;
+  const guess = round.guess;
 
- if (!actual) return;
+  if (!actual) return;
 
- const playerColor = this.uiBuilder.getPlayerColor(
-  guess?.playerId || "p1"
- );
+  const playerColor = this.uiBuilder.getPlayerColor(
+   guess?.playerId || "p1"
+  );
 
- const actualColor = this.uiBuilder.getActualColor();
+  const actualColor = this.uiBuilder.getActualColor();
 
- // 🔥 ВАЖНО: сначала ресайз
- this.scheduleResize?.();
+  // =========================
+  // NO GUESS CASE
+  // =========================
+  if (!guess) {
+   this.adapter.createMarker(this.map, actual, {
+    color: actualColor,
+    scale: 1.35
+   });
 
- if (!guess) {
-  this.adapter.createMarker(this.map, actual, {
-   color: actualColor,
-   scale: 1.35
+   this.adapter.setView(this.map, actual, 4);
+   return;
+  }
+
+  // =========================
+  // GUESS MARKER
+  // =========================
+  const guessMarker = this.adapter.createMarker(this.map, guess, {
+   color: playerColor,
+   scale: 1
   });
 
-  this.adapter.setCenter(this.map, actual);
-  this.adapter.setZoom(this.map, 4);
+  this.markers.push(guessMarker);
 
-  return;
+  // =========================
+  // SEGMENTS (hidden first)
+  // =========================
+  const segments = this.adapter.createGradientPolyline(
+   this.map,
+   [guess, actual],
+   playerColor,
+   actualColor,
+   14
+  );
+
+  // скрываем сразу (анимируем появление)
+  segments.forEach(s => s.remove());
+
+  this.lines.push(...segments);
+
+  // =========================
+  // FIT — ВАЖНО: ДО АНИМАЦИИ
+  // =========================
+  requestAnimationFrame(() => {
+   this.fitBothPoints(guess, actual);
+
+   // после стабилизации карты — запускаем анимацию
+   requestAnimationFrame(() => {
+    this.animateSegments(segments, () => {
+     const actualMarker = this.adapter.createMarker(this.map, actual, {
+      color: actualColor,
+      scale: 1.35
+     });
+
+     this.markers.push(actualMarker);
+    });
+   });
+  });
  }
 
- const guessMarker = this.adapter.createMarker(this.map, guess, {
-  color: playerColor,
-  scale: 1
- });
+ // =========================
+ // 🔥 КЛЮЧЕВОЙ FIX: СТАБИЛЬНЫЙ FIT
+ // =========================
+ fitBothPoints(a, b) {
+  if (!this.map  !a  !b) return;
 
- this.markers.push(guessMarker);
+  const group = [
+   [a.lat, a.lng],
+   [b.lat, b.lng]
+  ];
 
- const segments = this.adapter.createGradientPolyline(
-  this.map,
-  [guess, actual],
-  playerColor,
-  actualColor,
-  14
- );
+  const bounds = L.latLngBounds(group);
 
- this.lines.push(...segments);
-
- // 🔥 FIT ПОСЛЕ resize + ДО рендера линий
- requestAnimationFrame(() => {
-  this.adapter.fitBounds(this.map, [guess, actual]);
- });
-
- this.animateSegments(segments, () => {
-  const actualMarker = this.adapter.createMarker(this.map, actual, {
-   color: actualColor,
-   scale: 1.35
+  this.map.fitBounds(bounds, {
+   padding: [80, 80],   // 🔥 важно: чтобы не “прилипало” к краям
+   maxZoom: 6,          // 🔥 ограничиваем дикий зум
+   animate: false       // 🔥 убираем дерганье
   });
-
-  this.markers.push(actualMarker);
- });
-}
+ }
 
  // =========================
- // SEGMENT ANIMATION
+ // ANIMATION
  // =========================
  animateSegments(segments, onComplete) {
   if (!segments?.length) {
@@ -115,7 +146,6 @@ render(round) {
     return;
    }
 
-   // Leaflet: addTo(map)
    segments[i].addTo(this.map);
    i++;
 
@@ -137,13 +167,17 @@ render(round) {
  }
 
  // =========================
- // RESIZE (СТАБИЛЬНЫЙ)
+ // RESIZE FIX (Leaflet correct way)
  // =========================
  forceResize() {
   if (!this.map) return;
 
-  // Leaflet фикс
   this.map.invalidateSize();
+
+  // 🔥 стабилизируем после layout shift
+  setTimeout(() => {
+   this.map.invalidateSize();
+  }, 50);
  }
 
  // =========================
