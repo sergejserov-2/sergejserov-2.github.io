@@ -108,7 +108,7 @@ export class MapAdapter {
 
 
 animateLine(map, start, end, colorA, colorB) {
-    const id = line-${Math.random().toString(36).slice(2)};
+    const id = `line-${Math.random().toString(36).slice(2)}`;
 
     const steps = Math.min(
         80,
