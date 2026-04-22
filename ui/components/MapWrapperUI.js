@@ -113,7 +113,13 @@ export class MapWrapperUI {
     bindGuess(cb) {
         this.onGuess = cb;
     }
+bindPolygonButton(el) {
+    if (!el) return;
 
+    el.addEventListener("click", () => {
+        this.togglePolygon();
+    });
+}
     bindGuessButton(el) {
         if (!el) return;
 
