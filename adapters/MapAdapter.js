@@ -1,8 +1,8 @@
 
 export class MapAdapter {
- constructor({ mapKey }) {
+ constructor() {
   this.map = null;
-  this.key = PnzOFXp1MIxIAe8nTmbt;
+  this.key = "PnzOFXp1MIxIAe8nTmbt";
  }
 
  // =========================
@@ -17,7 +17,7 @@ export class MapAdapter {
  }
 
  // =========================
- // MAP INIT
+ // MAP INIT (MapLibre + MapTiler)
  // =========================
  createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   if (!element) throw new Error("Map container missing");
@@ -29,11 +29,20 @@ export class MapAdapter {
     version: 8,
     sources: {
      base: {
-      type: "vector",
-      url: `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/style.json?key=${this.key}`
+      type: "raster",
+      tiles: [
+       `https://api.maptiler.com/maps/019db4a6-96e9-70d5-a214-f01c8c0ea283/style.json?key=${this.key}`
+      ],
+      tileSize: 256
      }
     },
-    layers: []
+    layers: [
+     {
+      id: "base-layer",
+      type: "raster",
+      source: "base"
+     }
+    ]
    },
 
    center: this.toLngLat(center),
@@ -45,12 +54,15 @@ export class MapAdapter {
  }
 
  // =========================
- // MARKER (custom DOM)
+ // MARKER (double circle style)
  // =========================
  createMarker(map, { lat, lng }, options = {}) {
-  const { color = "#ff4d4d", scale = 1 } = options;
+  const {
+   color = "#ff4d4d",
+   scale = 1
+  } = options;
 
-  const size = 24 * scale;
+  const size = 28 * scale;
 
   const el = document.createElement("div");
 
@@ -64,21 +76,25 @@ export class MapAdapter {
       justify-content:center;
     ">
 
+      <!-- OUTER RING -->
       <div style="
         position:absolute;
         width:${size * 0.75}px;
         height:${size * 0.75}px;
         border-radius:50%;
         border:2px solid ${color};
-        opacity:0.7;
+        opacity:0.75;
       "></div>
 
+      <!-- INNER DOT -->
       <div style="
         width:${size * 0.35}px;
         height:${size * 0.35}px;
         background:${color};
         border-radius:50%;
-        box-shadow:0 0 0 3px rgba(0,0,0,0.25);
+        box-shadow:
+          0 0 0 3px rgba(0,0,0,0.25),
+          0 0 10px rgba(0,0,0,0.25);
       "></div>
 
     </div>
@@ -120,18 +136,21 @@ export class MapAdapter {
  }
 
  // =========================
- // POLYLINE (simple GeoJSON)
+ // POLYLINE (gradient + animation)
  // =========================
- createPolyline(map, path, options = {}) {
-  const id = `line-${Math.random()}`;
+ createGradientPolyline(map, path, fromColor, toColor) {
+  const id = `line-${Math.random().toString(36).slice(2)}`;
 
+  const coords = path.map(p => this.toLngLat(p));
+
+  // стартовая "нулевая" линия
   map.addSource(id, {
    type: "geojson",
    data: {
     type: "Feature",
     geometry: {
      type: "LineString",
-     coordinates: path.map(p => this.toLngLat(p))
+     coordinates: [coords[0], coords[0]]
     }
    }
   });
@@ -140,71 +159,60 @@ export class MapAdapter {
    id,
    type: "line",
    source: id,
+   layout: {
+    "line-cap": "round",
+    "line-join": "round"
+   },
    paint: {
-    "line-color": options.color || "#ff4d4d",
-    "line-width": 2
+    "line-width": 3,
+
+    // 🔥 ГРАДИЕНТ
+    "line-gradient": [
+     "interpolate",
+     ["linear"],
+     ["line-progress"],
+
+     0,
+     fromColor,
+     1,
+     toColor
+    ]
    }
   });
+
+  // =========================
+  // ANIMATION (progressive draw)
+  // =========================
+  let i = 1;
+
+  const animate = () => {
+   if (i >= coords.length) return;
+
+   const partial = coords.slice(0, i + 1);
+
+   const source = map.getSource(id);
+   if (!source) return;
+
+   source.setData({
+    type: "Feature",
+    geometry: {
+     type: "LineString",
+     coordinates: partial
+    }
+   });
+
+   i++;
+   requestAnimationFrame(animate);
+  };
+
+  requestAnimationFrame(animate);
 
   return {
    id,
    remove: () => {
-    if (!map.getLayer(id)) return;
-    map.removeLayer(id);
-    map.removeSource(id);
+    if (map.getLayer(id)) map.removeLayer(id);
+    if (map.getSource(id)) map.removeSource(id);
    }
-  };
- }
-
- // =========================
- // GRADIENT (упрощённый)
- // =========================
- createGradientPolyline(map, path, fromColor, toColor, steps = 12) {
-  const segments = [];
-
-  for (let i = 0; i < steps; i++) {
-   const t1 = i / steps;
-   const t2 = (i + 1) / steps;
-
-   const p1 = this._interpolate(path[0], path[1], t1);
-   const p2 = this._interpolate(path[0], path[1], t2);
-
-   const color = this._mixColor(fromColor, toColor, t1);
-
-   const seg = this.createPolyline(map, [p1, p2], { color });
-   segments.push(seg);
-  }
-
-  return segments;
- }
-
- // =========================
- // HELPERS
- // =========================
- _interpolate(a, b, t) {
-  return {
-   lat: a.lat + (b.lat - a.lat) * t,
-   lng: a.lng + (b.lng - a.lng) * t
-  };
- }
-
- _mixColor(c1, c2, t) {
-  const a = this._hexToRgb(c1);
-  const b = this._hexToRgb(c2);
-
-  const r = Math.round(a.r + (b.r - a.r) * t);
-  const g = Math.round(a.g + (b.g - a.g) * t);
-  const bl = Math.round(a.b + (b.b - a.b) * t);
-
-  return `rgb(${r},${g},${bl})`;
- }
-
- _hexToRgb(hex) {
-  const h = hex.replace("#", "");
-  return {
-   r: parseInt(h.slice(0, 2), 16),
-   g: parseInt(h.slice(2, 4), 16),
-   b: parseInt(h.slice(4, 6), 16)
   };
  }
 
