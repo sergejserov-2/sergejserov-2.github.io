@@ -20,7 +20,7 @@ export class MapAdapter {
  // =========================
  createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
   if (!element) throw new Error("Map container missing");
-  this.key = PnzOFXp1MIxIAe8nTmbt;
+  new key = PnzOFXp1MIxIAe8nTmbt;
   this.map = new maplibregl.Map({
    container: element,
 
@@ -29,7 +29,7 @@ export class MapAdapter {
     sources: {
      base: {
       type: "vector",
-      url: `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/style.json?key=${this.key}`
+      url: `https://api.maptiler.com/maps/019db4b1-7dea-76e9-b311-977e10dcd80c/style.json?key=${key}`
      }
     },
     layers: []
