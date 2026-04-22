@@ -61,7 +61,13 @@ export class MapWrapperUI {
         this.adapter.resize(this.map);
         this.map.triggerRepaint?.();
     }
-
+    resetWrapperSize() {
+    const wrapper = this.element?.parentElement;
+    if (!wrapper) return;
+    
+    wrapper.style.width = "400px";
+    wrapper.style.height = "300px";
+    }
     // =========================
     // AREA
     // =========================
@@ -165,6 +171,8 @@ bindPolygonButton(el) {
 
         this.clearGuessMarker();
         this.lastGuessPoint = null;
+        this.resetView();
+        this.resetWrapperSize();
 
         this.hidePolygon();
     }
