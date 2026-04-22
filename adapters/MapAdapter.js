@@ -1,3 +1,4 @@
+
 import { Geometry } from "../../domain/math/Geometry.js";
 
 export class MapAdapter {
@@ -27,16 +28,13 @@ export class MapAdapter {
         });
 
         map._isReady = false;
-
-        map.on("load", () => {
-            map._isReady = true;
-        });
+        map.on("load", () => (map._isReady = true));
 
         return map;
     }
 
     async waitReady(map) {
-        if (map?._isReady) return;
+        if (map._isReady) return;
         await new Promise(res => map.once("load", res));
     }
 
@@ -46,21 +44,34 @@ export class MapAdapter {
 
     resize(map) {
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                map?.resize?.();
-            });
+            requestAnimationFrame(() => map?.resize?.());
         });
     }
 
     // =========================
-    // MARKER
+    // CAMERA (ТОЛЬКО FIT)
+    // =========================
+    fitBounds(map, a, b) {
+        const bounds = new maplibregl.LngLatBounds(
+            this.toLngLat(a),
+            this.toLngLat(b)
+        );
+
+        map.fitBounds(bounds, {
+            padding: 80,
+            duration: 0 // 🔥 БЕЗ анимации
+        });
+    }
+
+    // =========================
+    // MARKER (идеально точный)
     // =========================
     createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
-        const size = 22 * scale;
+        const size = 20 * scale;
         const inner = size * 0.4;
 
         const el = document.createElement("div");
-        el.className = "custom-marker";
+        el.className = "marker";
 
         el.style.width = `${size}px`;
         el.style.height = `${size}px`;
@@ -71,8 +82,8 @@ export class MapAdapter {
             const style = document.createElement("style");
             style.id = "marker-style";
             style.innerHTML = `
-            .custom-marker { position: relative; }
-            .custom-marker::before {
+            .marker { position: relative; }
+            .marker::before {
                 content:"";
                 position:absolute;
                 inset:0;
@@ -81,7 +92,7 @@ export class MapAdapter {
                 opacity:.6;
                 box-sizing:border-box;
             }
-            .custom-marker::after {
+            .marker::after {
                 content:"";
                 position:absolute;
                 width:var(--inner);
@@ -108,7 +119,7 @@ export class MapAdapter {
     }
 
     // =========================
-    // LINES
+    // LINE
     // =========================
     clearLines(map) {
         this._lines.forEach(id => {
@@ -118,34 +129,11 @@ export class MapAdapter {
         this._lines.clear();
     }
 
-    // =========================
-    // CAMERA FIT
-    // =========================
-    fitCamera(map, a, b) {
-        const bounds = new maplibregl.LngLatBounds(
-            this.toLngLat(a),
-            this.toLngLat(b)
-        );
-
-        map.easeTo({
-            center: bounds.getCenter(),
-            zoom: Math.min(
-                map.getZoom(),
-                map.cameraForBounds(bounds, { padding: 80 }).zoom
-            ),
-            duration: 900,
-            easing: t => t * (2 - t)
-        });
-    }
-
-    // =========================
-    // ANIMATION (FIXED)
-    // =========================
-    async animateLine(map, start, end, colorA, colorB) {
+    animateLine(map, start, end, colorA, colorB) {
         const id = `line-${Math.random().toString(36).slice(2)}`;
 
         const steps = Math.min(
-            100,
+            80,
             Geometry.getSegmentsCount(
                 Geometry.distance(start, end)
             )
@@ -192,9 +180,6 @@ export class MapAdapter {
 
         this._lines.add(id);
 
-        // 🔥 камера (реальная анимация)
-        this.fitCamera(map, start, end);
-
         return new Promise(resolve => {
             let i = 1;
 
@@ -215,7 +200,7 @@ export class MapAdapter {
                 if (i <= steps) {
                     requestAnimationFrame(animate);
                 } else {
-                    this.waitIdle(map).then(resolve);
+                    resolve();
                 }
             };
 
