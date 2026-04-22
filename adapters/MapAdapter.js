@@ -3,51 +3,37 @@ export class MapAdapter {
   this.map = null;
  }
 
- // =========================
- // MAP (MapTiler DARK + RU LABELS)
- // =========================
- createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
-  if (!element) throw new Error("Map container missing");
+createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
+ if (!element) throw new Error("Map container missing");
 
-  const MAPTILER_KEY = "PnzOFXp1MIxIAe8nTmbt";
+ const MAPTILER_KEY = "PnzOFXp1MIxIAe8nTmbt";
 
-  this.map = L.map(element, {
-   zoomControl: false,
-   attributionControl: false
-  }).setView([center.lat, center.lng], zoom);
+ this.map = L.map(element, {
+  zoomControl: false,
+  attributionControl: false
+ }).setView([center.lat, center.lng], zoom);
 
-  // =========================
-  // 🌑 DARK BASE LAYER + RU LABELS
-  // =========================
-  L.tileLayer(
-   `https://api.maptiler.com/maps/darkmatter/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
-   {
-    tileSize: 512,
-    zoomOffset: -1,
-    minZoom: 1,
-    maxZoom: 19,
-    attribution:
-     '&copy; MapTiler &copy; OpenStreetMap contributors'
-   }
-  ).addTo(this.map);
+ L.tileLayer(
+  `https://api.maptiler.com/maps/darkmatter/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
+  {
+   tileSize: 512,
+   zoomOffset: -1,
+   maxZoom: 19,
+   attribution: '&copy; MapTiler &copy; OpenStreetMap contributors'
+  }
+ ).addTo(this.map);
 
-  // =========================
-  // 🏷 RUSSIAN LABEL OVERLAY
-  // =========================
-  L.tileLayer(
-   `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}&language=ru`,
-   {
-    tileSize: 512,
-    zoomOffset: -1,
-    minZoom: 1,
-    maxZoom: 19,
-    opacity: 0.35, // 👈 чтобы не убить тёмный стиль
-    attribution: ""
-   }
-  ).addTo(this.map);
+ L.tileLayer(
+  `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}&language=ru`,
+  {
+   tileSize: 512,
+   zoomOffset: -1,
+   opacity: 0.35
+  }
+ ).addTo(this.map);
 
-  return this.map;
- }
+ return this.map;
+}
 
  // =========================
  // MARKER (NEW STYLE)
