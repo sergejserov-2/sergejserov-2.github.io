@@ -6,17 +6,11 @@ export class MapAdapter {
   this._lines = new Set();
  }
 
- // =========================
- // COORDS
- // =========================
  toLngLat(p) {
   return [p.lng, p.lat];
  }
 
- // =========================
- // MAP
- // =========================
- createMap(element, { center = { lat: 0, lng: 0 }, zoom = 2 } = {}) {
+ createMap(element, { center, zoom }) {
   const key = "PnzOFXp1MIxIAe8nTmbt";
 
   this.map = new maplibregl.Map({
@@ -31,25 +25,15 @@ export class MapAdapter {
  }
 
  resize(map) {
-  map?.resize?.();
- }
-
- // =========================
- // CAMERA (НОРМАЛЬНАЯ)
- // =========================
- fitBounds(map, points, { padding = 80, duration = 800 } = {}) {
-  const bounds = new maplibregl.LngLatBounds();
-
-  points.forEach(p => bounds.extend(this.toLngLat(p)));
-
-  map.fitBounds(bounds, {
-   padding,
-   duration
+  requestAnimationFrame(() => {
+   requestAnimationFrame(() => {
+    map?.resize?.();
+   });
   });
  }
 
  // =========================
- // MARKER (2 кружка)
+ // MARKER (2 круга)
  // =========================
  createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
   const size = 22 * scale;
@@ -57,11 +41,7 @@ export class MapAdapter {
   const el = document.createElement("div");
 
   el.innerHTML = `
-   <div style="
-    width:${size}px;
-    height:${size}px;
-    position:relative;
-   ">
+   <div style="width:${size}px;height:${size}px;position:relative;">
     <div style="
      position:absolute;
      width:100%;
@@ -75,7 +55,7 @@ export class MapAdapter {
      position:absolute;
      top:50%;
      left:50%;
-     transform:translate(-50%, -50%);
+     transform:translate(-50%,-50%);
      width:${size * 0.4}px;
      height:${size * 0.4}px;
      background:${color};
@@ -89,57 +69,32 @@ export class MapAdapter {
    .addTo(map);
  }
 
- removeMarker(marker) {
-  marker?.remove?.();
+ removeMarker(m) {
+  m?.remove?.();
  }
 
  // =========================
- // LINE (контролируемая)
+ // CLEAR LINES
  // =========================
- createLine(map, path, color = "#fff") {
-  const id = `line-${Math.random()}`;
-
-  map.addSource(id, {
-   type: "geojson",
-   data: {
-    type: "Feature",
-    geometry: {
-     type: "LineString",
-     coordinates: path.map(p => this.toLngLat(p))
-    }
-   }
-  });
-
-  map.addLayer({
-   id,
-   type: "line",
-   source: id,
-   paint: {
-    "line-width": 3,
-    "line-color": color
-   }
-  });
-
-  this._lines.add(id);
-
-  return id;
- }
-
  clearLines(map) {
   this._lines.forEach(id => {
    if (map.getLayer(id)) map.removeLayer(id);
    if (map.getSource(id)) map.removeSource(id);
   });
-
   this._lines.clear();
  }
 
  // =========================
- // ANIMATION (фикс)
+ // CINEMATIC ANIMATION (FIX)
  // =========================
- async animateLine(map, start, end, colorA, colorB) {
-  const steps = Geometry.getSegmentsCount(
-   Geometry.distance(start, end)
+ animateLine(map, start, end, colorA, colorB) {
+  const id = `line-${Math.random()}`;
+
+  const steps = Math.min(
+   120, // 🔥 ограничение — убирает лаги
+   Geometry.getSegmentsCount(
+    Geometry.distance(start, end)
+   )
   );
 
   const coords = [];
@@ -147,13 +102,11 @@ export class MapAdapter {
   for (let i = 0; i <= steps; i++) {
    const t = i / steps;
 
-   coords.push({
-    lng: start.lng + (end.lng - start.lng) * t,
-    lat: start.lat + (end.lat - start.lat) * t
-   });
+   coords.push([
+    start.lng + (end.lng - start.lng) * t,
+    start.lat + (end.lat - start.lat) * t
+   ]);
   }
-
-  const id = `anim-${Math.random()}`;
 
   map.addSource(id, {
    type: "geojson",
@@ -161,9 +114,10 @@ export class MapAdapter {
     type: "Feature",
     geometry: {
      type: "LineString",
-     coordinates: [this.toLngLat(start)]
+     coordinates: [coords[0]]
     }
-   }
+   },
+   lineMetrics: true // 🔥 КРИТИЧНО
   });
 
   map.addLayer({
@@ -187,28 +141,57 @@ export class MapAdapter {
   return new Promise(resolve => {
    let i = 1;
 
-   const step = () => {
+   const animate = () => {
     const source = map.getSource(id);
     if (!source) return;
+
+    const t = i / steps;
 
     source.setData({
      type: "Feature",
      geometry: {
       type: "LineString",
-      coordinates: coords.slice(0, i).map(p => [p.lng, p.lat])
+      coordinates: coords.slice(0, i)
      }
     });
+
+    // 🔥 СИНХРОННАЯ КАМЕРА
+    this.updateCamera(map, start, end, t);
 
     i++;
 
     if (i <= steps) {
-     requestAnimationFrame(step);
+     requestAnimationFrame(animate);
     } else {
      resolve();
     }
    };
 
-   step();
+   animate();
+  });
+ }
+
+ // =========================
+ // CAMERA (FIXED)
+ // =========================
+ updateCamera(map, a, b, t) {
+  const center = {
+   lng: (a.lng + b.lng) / 2,
+   lat: (a.lat + b.lat) / 2
+  };
+
+  const dx = Math.abs(a.lng - b.lng);
+  const dy = Math.abs(a.lat - b.lat);
+  const span = Math.max(dx, dy);
+
+  const zoom =
+   6 -
+   span * 1.3 -
+   t * 2.2;
+
+  map.jumpTo({
+   center: [center.lng, center.lat],
+   zoom: Math.max(1.4, zoom)
   });
  }
 }
