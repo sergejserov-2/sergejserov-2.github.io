@@ -14,7 +14,6 @@ export class MapOverviewUI {
             zoom: 2
         });
 
-        // 🔥 важно: resize после layout
         requestAnimationFrame(() => {
             this.adapter.resize(this.map);
         });
@@ -30,16 +29,17 @@ export class MapOverviewUI {
         const actual = round.actualLocation;
         const guess = round.guess;
 
-        if (!actual) return;
-
         const playerColor = this.uiBuilder.getPlayerColor("p1");
         const actualColor = this.uiBuilder.getActualColor();
 
+        if (!actual) return;
+
         // =========================
-        // CASE 1: NO GUESS
+        // NO GUESS
         // =========================
         if (!guess) {
             this.adapter.fitBounds(this.map, actual, actual);
+            await this.adapter.waitIdle(this.map);
 
             this.markers.push(
                 this.adapter.createMarker(this.map, actual, {
@@ -52,7 +52,7 @@ export class MapOverviewUI {
         }
 
         // =========================
-        // CASE 2: GUESS FIRST
+        // GUESS
         // =========================
         this.markers.push(
             this.adapter.createMarker(this.map, guess, {
@@ -62,15 +62,13 @@ export class MapOverviewUI {
         );
 
         // =========================
-        // FIT CAMERA TO BOTH POINTS
+        // CAMERA FIRST
         // =========================
         this.adapter.fitBounds(this.map, guess, actual);
-
-        // 🔥 CRITICAL: ждём стабилизацию после fitBounds
-        await this.adapter.waitRenderStable(this.map);
+        await this.adapter.waitIdle(this.map);
 
         // =========================
-        // LINE ANIMATION
+        // LINE
         // =========================
         await this.adapter.animateLine(
             this.map,
@@ -80,11 +78,10 @@ export class MapOverviewUI {
             actualColor
         );
 
-        // 🔥 ещё один стабилизирующий кадр
-        await this.adapter.waitRenderStable(this.map);
+        await this.adapter.waitIdle(this.map);
 
         // =========================
-        // ACTUAL MARKER
+        // ACTUAL
         // =========================
         this.markers.push(
             this.adapter.createMarker(this.map, actual, {
@@ -97,7 +94,6 @@ export class MapOverviewUI {
     clear() {
         this.markers.forEach(m => this.adapter.removeMarker(m));
         this.markers = [];
-
         this.adapter.clearLines(this.map);
     }
 }
