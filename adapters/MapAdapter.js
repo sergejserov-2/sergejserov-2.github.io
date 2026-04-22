@@ -4,7 +4,7 @@ export class MapAdapter {
     toLngLat(p) {
         return [p.lng, p.lat];
     }
-
+    
     createMap(element, { center, zoom }) {
         const key = "PnzOFXp1MIxIAe8nTmbt";
 
