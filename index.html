@@ -242,7 +242,17 @@ input:disabled {
 <script type="module">
 import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 
+// =========================
+// STATE (ВАЖНО)
+// =========================
 let roomController = null;
+
+let mode = "solo";
+let area = "europe";
+let rounds = 5;
+
+let timeEnabled = false;
+let movesEnabled = false;
 
 // =========================
 // MODE
@@ -253,7 +263,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   document.querySelectorAll("[data-mode]").forEach(x => x.classList.remove("active"));
   b.classList.add("active");
 
-  const mode = b.dataset.mode;
+  mode = b.dataset.mode;
 
   const link = document.getElementById("duelLink");
   const start = document.getElementById("start");
@@ -269,6 +279,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
    const room = await roomController.createRoom(buildConfig());
 
    link.value = room.inviteLink;
+   link.disabled = false;
 
    roomController.onGuestReady(() => {
     start.textContent = "START GAME";
@@ -277,12 +288,14 @@ document.querySelectorAll("[data-mode]").forEach(b => {
    });
 
    roomController.onStart(() => {
-    window.location.href = `/play.html?room=${room.roomId}`;
+    window.location.href = /play.html?room=${room.roomId};
    });
 
   } else {
 
    roomController = null;
+
+   const start = document.getElementById("start");
 
    start.textContent = "Начать игру";
    start.disabled = false;
@@ -292,32 +305,100 @@ document.querySelectorAll("[data-mode]").forEach(b => {
 });
 
 // =========================
-// CONFIG
+// ROUNDS
+// =========================
+document.querySelectorAll("[data-rounds]").forEach(b => {
+ b.onclick = () => {
+  document.querySelectorAll("[data-rounds]").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  rounds = +b.dataset.rounds;
+ };
+});
+
+// =========================
+// AREA
+// =========================
+document.querySelectorAll("[data-area]").forEach(b => {
+ b.onclick = () => {
+  document.querySelectorAll("[data-area]").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  area = b.dataset.area;
+ };
+});
+
+// =========================
+// TOGGLE HELPERS
+// =========================
+function togglePair(offBtn, onBtn, input, setter) {
+ offBtn.onclick = () => {
+  offBtn.classList.add("active");
+  onBtn.classList.remove("active");
+  input.disabled = true;
+  setter(false);
+ };
+
+ onBtn.onclick = () => {
+  onBtn.classList.add("active");
+  offBtn.classList.remove("active");
+  input.disabled = false;
+  setter(true);
+ };
+}
+
+// =========================
+// TIMER
+// =========================
+const timeOff = document.getElementById("timeOff");
+const timeOn = document.getElementById("timeOn");
+const timeInput = document.getElementById("timeInput");
+
+togglePair(timeOff, timeOn, timeInput, (v) => {
+ timeEnabled = v;
+});
+
+// =========================
+// MOVES
+// =========================
+const movesOff = document.getElementById("movesOff");
+const movesOn = document.getElementById("movesOn");
+const movesInput = document.getElementById("movesInput");
+
+togglePair(movesOff, movesOn, movesInput, (v) => {
+ movesEnabled = v;
+});
+
+// =========================
+// CONFIG BUILDER (FIXED)
 // =========================
 function buildConfig() {
  return {
-  mode: document.querySelector(".active[data-mode]").dataset.mode,
-  area: "europe",
+  mode,
+  area,
   rules: {
-   rounds: 5,
-   time: -1,
-   moves: -1
+   rounds,
+   time: timeEnabled ? +timeInput.value : -1,
+   moves: movesEnabled ? +movesInput.value : -1
   }
  };
 }
 
 // =========================
-// START
+// START BUTTON
 // =========================
 document.getElementById("start").onclick = () => {
- if (roomController) {
-  roomController.startGame();
+
+ const config = buildConfig();
+
+ localStorage.setItem("gameConfig", JSON.stringify(config));
+
+ if (mode === "duel") {
+  roomController?.startGame?.();
   return;
  }
 
  window.location.href = "/play.html";
 };
-</script>
 
+</script>
 </body>
 </html>
