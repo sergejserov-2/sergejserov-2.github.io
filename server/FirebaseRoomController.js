@@ -24,15 +24,23 @@ export class FirebaseRoomController {
   this.roomId = null;
   this.roomRef = null;
 
+  // listeners
   this.listeners = {
    start: [],
    draftConfig: [],
    roundStarted: [],
    guess: [],
-   roundComplete: []
+   roundComplete: [],
+   state: []
   };
 
   this.lastSeen = new Set();
+
+  // 🔥 DERIVED STATE (ключ фикса)
+  this.state = {
+   guestReady: false,
+   started: false
+  };
  }
 
  // =========================
@@ -73,7 +81,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // EMIT
+ // EVENT EMITTER
  // =========================
  async emitEvent(type, payload = {}) {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
@@ -88,7 +96,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // BIND
+ // BIND + REDUCER
  // =========================
  bind() {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
@@ -107,7 +115,14 @@ export class FirebaseRoomController {
       this.listeners.draftConfig.forEach(cb => cb(e.payload));
       break;
 
+     case EVENTS.GUEST_READY:
+      this.state.guestReady = true;
+      this.pushState();
+      break;
+
      case EVENTS.GAME_STARTED:
+      this.state.started = true;
+      this.pushState();
       this.listeners.start.forEach(cb => cb(e.payload));
       break;
 
@@ -125,6 +140,13 @@ export class FirebaseRoomController {
     }
    }
   });
+ }
+
+ // =========================
+ // STATE PUSH
+ // =========================
+ pushState() {
+  this.listeners.state.forEach(cb => cb({ ...this.state }));
  }
 
  // =========================
@@ -155,7 +177,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // LISTEN
+ // LISTENERS
  // =========================
  onStart(cb) {
   this.listeners.start.push(cb);
@@ -175,5 +197,9 @@ export class FirebaseRoomController {
 
  onRoundComplete(cb) {
   this.listeners.roundComplete.push(cb);
+ }
+
+onState(cb) {
+  this.listeners.state.push(cb);
  }
 }
