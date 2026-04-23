@@ -1,7 +1,6 @@
 import {
  ref,
  set,
- update,
  onValue,
  push,
  get
@@ -9,9 +8,6 @@ import {
 
 import { db } from "./firebaseApp.js";
 
-// =========================
-// EVENT TYPES
-// =========================
 const EVENTS = {
  GUEST_JOINED: "GUEST_JOINED",
  CONFIG_UPDATED: "CONFIG_UPDATED",
@@ -47,11 +43,6 @@ export class FirebaseRoomController {
 
   await set(this.roomRef, {
    roomId: this.roomId,
-   players: {
-    host: "p1",
-    guest: null
-   },
-   draftConfig: initialConfig,
    events: {}
   });
 
@@ -72,14 +63,12 @@ export class FirebaseRoomController {
 
   this.bind();
 
-  await this.emitEvent(EVENTS.GUEST_JOINED);
-
   const snap = await get(this.roomRef);
   return snap.val();
  }
 
  // =========================
- // EVENT EMITTER
+ // EVENT EMIT
  // =========================
  async emitEvent(type, payload = {}) {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
@@ -94,13 +83,14 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // LIVE SUBSCRIBE (FSM CORE)
+ // SUBSCRIBE
  // =========================
  bind() {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
 
   onValue(eventsRef, (snap) => {
    const eventsObj = snap.val() || {};
+
    const events = Object.values(eventsObj)
     .sort((a, b) => a.ts - b.ts);
 
@@ -109,7 +99,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // FSM REDUCER (event replay)
+ // REPLAY
  // =========================
  replay(events) {
   for (const e of events) {
@@ -119,13 +109,13 @@ export class FirebaseRoomController {
    switch (e.type) {
 
     case EVENTS.CONFIG_UPDATED:
-     this.listeners.draftConfig?.forEach(cb =>
+     this.listeners.draftConfig.forEach(cb =>
       cb(e.payload)
      );
      break;
 
     case EVENTS.GUEST_READY:
-     this.listeners.state?.forEach(cb =>
+     this.listeners.state.forEach(cb =>
       cb({ guestReady: true })
      );
      break;
@@ -140,30 +130,23 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // CONFIG LIVE UPDATE
+ // ACTIONS
  // =========================
- async setDraftConfig(partialConfig) {
-  await this.emitEvent(EVENTS.CONFIG_UPDATED, partialConfig);
+ async sendGuestJoined() {
+  await this.emitEvent(EVENTS.GUEST_JOINED);
  }
 
- // =========================
- // GUEST READY
- // =========================
+ async setDraftConfig(config) {
+  await this.emitEvent(EVENTS.CONFIG_UPDATED, config);
+ }
+
  async setGuestReady() {
   await this.emitEvent(EVENTS.GUEST_READY);
  }
 
- // =========================
- // START GAME (CRITICAL FIX)
- // =========================
- async lockConfigAndStart() {
-  const snap = await get(this.roomRef);
-  const room = snap.val();
-
-  if (!room) return;
-
+ async lockConfigAndStart(config) {
   await this.emitEvent(EVENTS.GAME_STARTED, {
-   config: room.draftConfig,
+   config,
    startedAt: Date.now()
   });
  }
