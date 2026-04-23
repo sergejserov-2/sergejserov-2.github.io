@@ -6,7 +6,7 @@ export class GameFlow {
   services,
   mode = "solo",
   network = null,
-  playerId = "p1" // 🔥 NEW
+  playerId = "p1" // 🔥 НОВОЕ
  }) {
   this.game = game;
   this.generator = generator;
@@ -14,13 +14,11 @@ export class GameFlow {
 
   this.timer = services.timer;
   this.moves = services.moves;
-
   this.roundTimer = services.timer;
 
   this.mode = mode;
   this.network = network;
-
-  this.playerId = playerId; // 🔥
+  this.playerId = playerId;
 
   this.listeners = {};
 
@@ -30,6 +28,8 @@ export class GameFlow {
   this.finishedPlayers = new Set();
 
   this._resolveStreetViewReady = null;
+  this._resolveRoundStart = null;
+
   this._roundFinishing = false;
   this._started = false;
 
@@ -53,6 +53,10 @@ export class GameFlow {
  bindNetwork() {
   if (!this.network) return;
 
+  this.network.onRoundStarted?.((data) => {
+   this.startRoundFromNetwork(data);
+  });
+
   this.network.onGuess?.((data) => {
    this.applyExternalGuess(data);
   });
@@ -67,7 +71,7 @@ export class GameFlow {
  }
 
  // =========================
- // SOLO START
+ // START GAME
  // =========================
  async startGame() {
   if (this.mode === "duel") return;
@@ -84,11 +88,9 @@ export class GameFlow {
   await this.startRound();
  }
 
- // =========================
- // DUEL START
- // =========================
  startGameFromNetwork() {
   if (this._started) return;
+
   this._started = true;
 
   console.log("🔥 START FROM NETWORK");
@@ -104,18 +106,58 @@ export class GameFlow {
  }
 
  // =========================
- // START ROUND
+ // ROUND CORE
  // =========================
- async startRound() {
+ lockRoundUI() {
   this.locked = true;
   this.roundLocked = false;
   this.finishedPlayers.clear();
 
   this.emit("inputLocked");
   this.emit("loadingStarted");
+ }
 
+ async startRound() {
+  this.lockRoundUI();
+
+  // SOLO
+  if (this.mode === "solo") {
+   const location = await this.generator.generate(this.area);
+   return this.startRoundWithLocation(location);
+  }
+
+  // HOST
+  if (this.playerId === "p1") {
+   return this.startRoundAsHost();
+  }
+
+  // GUEST
+  const location = await this.waitForRoundFromNetwork();
+  return this.startRoundWithLocation(location);
+ }
+
+ async startRoundAsHost() {
   const location = await this.generator.generate(this.area);
 
+  this.network?.sendRoundStarted?.({ location });
+
+  return this.startRoundWithLocation(location);
+ }
+
+ waitForRoundFromNetwork() {
+  return new Promise(res => {
+   this._resolveRoundStart = res;
+  });
+ }
+
+ startRoundFromNetwork({ location }) {
+  if (this.playerId === "p1") return; // 🔥 host игнорит своё же событие
+
+  this._resolveRoundStart?.(location);
+  this._resolveRoundStart = null;
+ }
+
+ async startRoundWithLocation(location) {
   this.game.startRound(location);
 
   this.emit("streetViewSetLocation", location);
@@ -159,21 +201,15 @@ export class GameFlow {
  finishGuess(point) {
   if (this.locked || this.roundLocked) return;
 
-  const payload = {
-   playerId: this.playerId,
-   guess: point
-  };
+  const payload = { playerId: this.playerId, guess: point };
 
-  if (this.mode === "duel") {
+ if (this.mode === "duel") {
    this.network?.sendGuess?.(payload);
   }
 
-  this.applyGuess(payload.playerId, point);
+  this.applyGuess(this.playerId, point);
  }
 
- // =========================
- // APPLY GUESS
- // =========================
  applyGuess(playerId, point) {
   if (this.roundLocked) return;
 
@@ -194,16 +230,12 @@ export class GameFlow {
   this.handlePlayerFinished(playerId);
  }
 
- // =========================
- // EXTERNAL
- // =========================
  applyExternalGuess({ playerId, guess }) {
   if (this.locked) return;
-
   this.applyGuess(playerId, guess);
  }
 
-// =========================
+ // =========================
  // DUEL FLOW
  // =========================
  handlePlayerFinished(playerId) {
@@ -215,11 +247,11 @@ export class GameFlow {
   });
 
   this.locked = true;
+
   this.emit("inputLocked");
   this.emit("roundWaiting");
 
-  // 🔥 FIX: вместо game.players
-  if (this.finishedPlayers.size >= 2) {
+  if (this.finishedPlayers.size >= this.game.players.length) {
    this.network?.sendRoundComplete?.();
    this.finishRound("allPlayersFinished");
    return;
@@ -252,7 +284,7 @@ export class GameFlow {
  }
 
  // =========================
- // FINISH ROUND
+ // ROUND END
  // =========================
  finishRound(reason = "manual") {
   if (this._roundFinishing) return;
