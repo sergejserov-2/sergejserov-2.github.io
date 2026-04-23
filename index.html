@@ -242,34 +242,7 @@ input:disabled {
 <script type="module">
 import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 
-let mode = "solo";
-let area = "europe";
-let rounds = 5;
-
 let roomController = null;
-let currentRoom = null;
-
-// =========================
-// HELPERS
-// =========================
-function setStartState(state) {
- const start = document.getElementById("start");
-
- if (state === "idle") {
-  start.textContent = "Начать игру";
-  start.classList.remove("wait", "disabled");
- }
-
- if (state === "waiting") {
-  start.textContent = "Ожидание игрока...";
-  start.classList.add("wait");
- }
-
- if (state === "ready") {
-  start.textContent = "Начать игру";
-  start.classList.remove("wait");
- }
-}
 
 // =========================
 // MODE
@@ -280,62 +253,53 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   document.querySelectorAll("[data-mode]").forEach(x => x.classList.remove("active"));
   b.classList.add("active");
 
-  mode = b.dataset.mode;
+  const mode = b.dataset.mode;
 
   const link = document.getElementById("duelLink");
+  const start = document.getElementById("start");
 
   if (mode === "duel") {
 
-   link.value = "";
-   link.placeholder = "Создание комнаты...";
-   link.disabled = true;
-
-   setStartState("waiting");
+   start.textContent = "Ожидание игрока...";
+   start.classList.add("wait");
+   start.disabled = true;
 
    roomController = new FirebaseRoomController();
 
-   currentRoom = await roomController.createRoom({
-    config: buildConfig()
+   const room = await roomController.createRoom(buildConfig());
+
+   link.value = room.inviteLink;
+
+   roomController.onGuestReady(() => {
+    start.textContent = "START GAME";
+    start.disabled = false;
+    start.classList.remove("wait");
    });
 
-   link.value = currentRoom.inviteLink;
-   link.disabled = false;
-
-   roomController.onStateChange((state) => {
-
-    if (state.guestReady) {
-     setStartState("ready");
-    }
-
-    if (state.started) {
-     window.location.href =
-      /waiting.html?room=${currentRoom.roomId}&role=host;
-    }
+   roomController.onStart(() => {
+    window.location.href = /play.html?room=${room.roomId};
    });
 
   } else {
 
-   link.value = "";
-   link.placeholder = "";
-   link.disabled = true;
-
    roomController = null;
-   currentRoom = null;
 
-   setStartState("idle");
+   start.textContent = "Начать игру";
+   start.disabled = false;
+   start.classList.remove("wait");
   }
  };
 });
 
 // =========================
-// BUILD CONFIG
+// CONFIG
 // =========================
 function buildConfig() {
  return {
-  mode,
-  area,
+  mode: document.querySelector(".active[data-mode]").dataset.mode,
+  area: "europe",
   rules: {
-   rounds,
+   rounds: 5,
    time: -1,
    moves: -1
   }
@@ -343,16 +307,11 @@ function buildConfig() {
 }
 
 // =========================
-// START BUTTON
+// START
 // =========================
 document.getElementById("start").onclick = () => {
-
- const config = buildConfig();
-
- localStorage.setItem("gameConfig", JSON.stringify(config));
-
- if (mode === "duel") {
-  roomController?.startGame();
+ if (roomController) {
+  roomController.startGame();
   return;
  }
 
