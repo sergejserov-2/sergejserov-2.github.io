@@ -1,5 +1,5 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
 const firebaseConfig = {
  apiKey: "AIzaSyBINTgjBBLq7pn-oi6tlAxx...",
@@ -11,11 +11,6 @@ const firebaseConfig = {
  appId: "1:934025050812:web:1c2d15239575857bc32eb9"
 };
 
-// =========================
-// INIT FIREBASE
-// =========================
 const app = initializeApp(firebaseConfig);
 
-// 🔥 ВАЖНО: создаём DB
 export const db = getDatabase(app);
-export const firebaseApp = app;
