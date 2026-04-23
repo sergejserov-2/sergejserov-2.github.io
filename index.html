@@ -251,7 +251,7 @@ let movesEnabled = false;
 let roomController = null;
 
 // =========================
-// BUILD CONFIG
+// CONFIG
 // =========================
 function buildConfig() {
  return {
@@ -266,7 +266,7 @@ function buildConfig() {
 }
 
 // =========================
-// ELEMENTS
+// UI
 // =========================
 const link = document.getElementById("duelLink");
 const start = document.getElementById("start");
@@ -318,26 +318,37 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   });
 
   // =========================
-  // READY STATE (через state stream)
+  // GAME START
   // =========================
-  roomController.onState((state) => {
-   // только UI реакция, без логики FSM
+  roomController.onStart((payload) => {
+   console.log("GAME STARTED:", payload);
 
-   if (state?.guestReady) {
-    start.textContent = "START GAME";
-    start.classList.remove("wait");
-   } else {
-    start.textContent = "Ожидание игрока...";
-    start.classList.add("wait");
-   }
+   window.location.href =
+    /play.html?room=${room.roomId}&role=host;
   });
 
   // =========================
-  // START GAME
+  // ROUND START (optional hook)
   // =========================
-  roomController.onStart(() => {
-   window.location.href = `/play.html?room=${room.roomId}&role=host`;
+  roomController.onRoundStarted((payload) => {
+   console.log("ROUND START:", payload);
   });
+
+  // =========================
+  // GUESS SYNC
+  // =========================
+  roomController.onGuess((payload) => {
+   console.log("GUESS:", payload);
+  });
+
+  // =========================
+  // ROUND COMPLETE
+  // =========================
+  roomController.onRoundComplete(() => {
+   console.log("ROUND COMPLETE");
+  });
+
+  start.textContent = "Ожидание игрока...";
  };
 });
 
@@ -350,7 +361,7 @@ function syncRoom() {
 }
 
 // =========================
-// ROUNDS
+// ROUND SETTINGS
 // =========================
 document.querySelectorAll("[data-rounds]").forEach(b => {
  b.onclick = () => {
@@ -400,12 +411,13 @@ timeOn.onclick = () => {
 
 timeInput.oninput = syncRoom;
 
-// =========================
+    // =========================
 // MOVES
 // =========================
 const movesOff = document.getElementById("movesOff");
 const movesOn = document.getElementById("movesOn");
 const movesInput = document.getElementById("movesInput");
+
 movesOff.onclick = () => {
  movesOff.classList.add("active");
  movesOn.classList.remove("active");
@@ -432,7 +444,7 @@ start.onclick = () => {
  if (mode === "duel") {
   if (!roomController) return;
 
-  // 🔥 только событие в FSM
+  // 🔥 просто сигнал в event-log
   roomController.setGuestReady();
   return;
  }
