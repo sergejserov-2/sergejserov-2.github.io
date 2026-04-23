@@ -1,29 +1,25 @@
-import { getDatabase, ref, push, onChildAdded } from "firebase/database";
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, set, update, onValue } from "firebase/database";
 
 export class FirebaseTransport {
- constructor(roomId) {
-  this.db = getDatabase();
-  this.roomRef = ref(this.db, rooms/${roomId});
-
-  this.listeners = {};
+ constructor() {
+  this.app = initializeApp(window.FIREBASE_CONFIG);
+  this.db = getDatabase(this.app);
  }
 
- emit(event, data) {
-  push(ref(this.db, rooms/${roomId}/events), {
-   event,
-   data,
-   timestamp: Date.now()
-  });
+ async createRoom(roomId, data) {
+  await set(ref(this.db, rooms/${roomId}), data);
  }
 
- on(event, cb) {
-  const eventsRef = ref(this.db, rooms/${roomId}/events);
+ async updateRoom(roomId, data) {
+  await update(ref(this.db, rooms/${roomId}), data);
+ }
 
-  onChildAdded(eventsRef, (snapshot) => {
-   const value = snapshot.val();
-   if (value.event === event) {
-    cb(value.data);
-   }
+ subscribeRoom(roomId, cb) {
+  const roomRef = ref(this.db, rooms/${roomId});
+
+  onValue(roomRef, (snapshot) => {
+   cb(snapshot.val());
   });
  }
 }
