@@ -429,13 +429,14 @@ movesInput.oninput = syncRoom;
 
 // =========================
 // START BUTTON
-// =========================
 start.onclick = () => {
 
  if (mode === "duel") {
   if (!roomController) return;
 
-  roomController.setGuestReady(); // 🔥 триггер FSM
+  // 🔥 ВАЖНО: HOST START
+  roomController.lockConfigAndStart(buildConfig());
+
   return;
  }
 
