@@ -249,9 +249,10 @@ let timeEnabled = false;
 let movesEnabled = false;
 
 let roomController = null;
+let currentRoomId = null;
 
 // =========================
-// CONFIG
+// BUILD CONFIG
 // =========================
 function buildConfig() {
  return {
@@ -266,7 +267,7 @@ function buildConfig() {
 }
 
 // =========================
-// UI
+// ELEMENTS
 // =========================
 const link = document.getElementById("duelLink");
 const start = document.getElementById("start");
@@ -282,8 +283,12 @@ document.querySelectorAll("[data-mode]").forEach(b => {
 
   mode = b.dataset.mode;
 
+  // =========================
+  // SOLO
+  // =========================
   if (mode === "solo") {
    roomController = null;
+   currentRoomId = null;
 
    link.value = "";
    link.disabled = true;
@@ -303,36 +308,35 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   roomController = new FirebaseRoomController();
 
   const room = await roomController.createRoom(buildConfig());
+  currentRoomId = room.roomId;
 
   link.value = room.inviteLink;
   link.disabled = false;
 
-  console.log("ROOM:", room.roomId);
+  // =========================
+  // PLAYER STATE UI
+  // =========================
+  roomController.onPlayers((players) => {
 
-  // =========================
-  // CONFIG
-  // =========================
-  roomController.onDraftConfig((cfg) => {
-   console.log("draftConfig:", cfg);
-  });
+   const guest = players?.guest;
+   const host = players?.host;
 
-  // =========================
-  // GUEST READY
-  // =========================
-  roomController.onGuestReady(() => {
-   console.log("GUEST READY");
+   if (!guest?.connected) {
+    start.textContent = "Ожидание игрока...";
+    start.classList.add("wait");
+    return;
+   }
 
-   start.textContent = "Начать игру";
-   start.classList.remove("wait");
-  });
+   if (!guest?.ready) {
+    start.textContent = "Игрок подключился";
+    start.classList.add("wait");
+    return;
+   }
 
-  // =========================
-  // START GAME
-  // =========================
-  roomController.onStart(({ config }) => {
-   console.log("GAME START");
-
-   window.location.href = `/play.html?room=${room.roomId}&role=host`;
+   if (host?.connected && guest?.ready) {
+    start.textContent = "START GAME";
+    start.classList.remove("wait");
+   }
   });
 
   start.textContent = "Ожидание игрока...";
@@ -427,18 +431,22 @@ movesInput.oninput = syncRoom;
 // =========================
 start.onclick = () => {
 
- if (mode === "duel") {
-  if (!roomController) return;
-
-  console.log("HOST START");
-
-  roomController.lockConfigAndStart(buildConfig());
+ // SOLO
+ if (mode === "solo") {
+  localStorage.setItem("gameConfig", JSON.stringify(buildConfig()));
+  window.location.href = "/play.html";
   return;
  }
 
- localStorage.setItem("gameConfig", JSON.stringify(buildConfig()));
- window.location.href = "/play.html";
+ // DUEL
+ if (!roomController || !currentRoomId) return;
+
+ const role = new URLSearchParams(window.location.search).get("role") || "host";
+
+ // 🔥 CRITICAL FIX: direct navigation, no events
+ window.location.href = `/play.html?room=${currentRoomId}&role=${role}`;
 };
+
 </script>
 </body>
 </html>
