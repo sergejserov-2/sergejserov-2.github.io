@@ -263,44 +263,52 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   document.querySelectorAll("[data-mode]").forEach(x => x.classList.remove("active"));
   b.classList.add("active");
 
-  mode = b.dataset.mode;
+  const mode = b.dataset.mode;
 
   const link = document.getElementById("duelLink");
   const start = document.getElementById("start");
 
-  if (mode === "duel") {
+  // =========================
+  // SOLO
+  // =========================
+  if (mode === "solo") {
 
-   start.textContent = "Ожидание игрока...";
-   start.classList.add("wait");
-   start.disabled = true;
+   if (roomController) {
+    roomController.destroy();
+    roomController = null;
+   }
 
-   roomController = new FirebaseRoomController();
-
-   const room = await roomController.createRoom(buildConfig());
-
-   link.value = room.inviteLink;
-   link.disabled = false;
-
-   roomController.onGuestReady(() => {
-    start.textContent = "START GAME";
-    start.disabled = false;
-    start.classList.remove("wait");
-   });
-
-   roomController.onStart(() => {
-    window.location.href = `/play.html?room=${room.roomId}`;
-   });
-
-  } else {
-
-   roomController = null;
-
-   const start = document.getElementById("start");
+   link.value = "";
+   link.placeholder = "";
+   link.disabled = true;
 
    start.textContent = "Начать игру";
-   start.disabled = false;
-   start.classList.remove("wait");
+   start.classList.remove("wait", "disabled");
+
+   return;
   }
+
+  // =========================
+  // DUEL
+  // =========================
+  start.textContent = "Ожидание игрока...";
+  start.classList.add("wait");
+  start.classList.add("disabled");
+
+  roomController = new FirebaseRoomController();
+
+  const room = await roomController.createRoom(buildConfig());
+
+  link.value = room.inviteLink;
+
+  roomController.onGuestReady(() => {
+   start.textContent = "START GAME";
+   start.classList.remove("wait", "disabled");
+  });
+
+  roomController.onStart(() => {
+   window.location.href = `/play.html?room=${room.roomId}`;
+  });
  };
 });
 
