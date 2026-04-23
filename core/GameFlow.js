@@ -6,7 +6,7 @@ export class GameFlow {
   services,
   mode = "solo",
   network = null,
-  playerId = "p1" // 🔥 НОВОЕ
+  playerId = "p1"
  }) {
   this.game = game;
   this.generator = generator;
@@ -32,6 +32,9 @@ export class GameFlow {
 
   this._roundFinishing = false;
   this._started = false;
+
+  // 🔥 FIX: буфер раунда (главный фикс гостя)
+  this._pendingRoundLocation = null;
 
   this.bindNetwork();
  }
@@ -144,19 +147,38 @@ export class GameFlow {
   return this.startRoundWithLocation(location);
  }
 
+ // =========================
+ // FIX 1: round buffer
+ // =========================
  waitForRoundFromNetwork() {
-  return new Promise(res => {
-   this._resolveRoundStart = res;
+  return new Promise((resolve) => {
+   this._resolveRoundStart = resolve;
+
+   // 🔥 если событие уже пришло раньше
+   if (this._pendingRoundLocation) {
+    resolve(this._pendingRoundLocation);
+    this._pendingRoundLocation = null;
+    this._resolveRoundStart = null;
+   }
   });
  }
 
  startRoundFromNetwork({ location }) {
-  if (this.playerId === "p1") return; // 🔥 host игнорит своё же событие
+  if (this.playerId === "p1") return;
 
-  this._resolveRoundStart?.(location);
+  // 🔥 если guest ещё не ждёт — сохраняем
+  if (!this._resolveRoundStart) {
+   this._pendingRoundLocation = location;
+   return;
+  }
+
+  this._resolveRoundStart(location);
   this._resolveRoundStart = null;
  }
 
+ // =========================
+ // COMMON ROUND START
+ // =========================
  async startRoundWithLocation(location) {
   this.game.startRound(location);
 
@@ -176,7 +198,6 @@ export class GameFlow {
   this.emit("movesUpdated", this.moves.getRemaining());
 
   this.locked = false;
-
   this.emit("inputUnlocked");
   this.emit("roundStarted", this.game.getState());
  }
@@ -201,9 +222,12 @@ export class GameFlow {
  finishGuess(point) {
   if (this.locked || this.roundLocked) return;
 
-  const payload = { playerId: this.playerId, guess: point };
+  const payload = {
+   playerId: this.playerId,
+   guess: point
+  };
 
- if (this.mode === "duel") {
+  if (this.mode === "duel") {
    this.network?.sendGuess?.(payload);
   }
 
