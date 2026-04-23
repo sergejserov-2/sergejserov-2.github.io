@@ -93,6 +93,19 @@
     </div>
 </div>
 
+
+<script type="module">
+  const url = new URL(window.location.href);
+
+  const roomId = url.searchParams.get("room");
+  const mode = roomId ? "duel" : "solo";
+
+  // пробрасываем глобально до Init.js
+  window.__GAME_BOOT = {
+    mode,
+    roomId
+  };
+</script>
 <script type="module" src="./Init.js"></script>
 
 <!-- Google Maps (StreetView остаётся) -->
