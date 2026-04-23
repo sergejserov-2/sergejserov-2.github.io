@@ -266,7 +266,7 @@ function buildConfig() {
 }
 
 // =========================
-// ELEMENTS
+// UI ELEMENTS
 // =========================
 const link = document.getElementById("duelLink");
 const start = document.getElementById("start");
@@ -283,7 +283,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   mode = b.dataset.mode;
 
   // =========================
-  // SOLO
+  // SOLO MODE
   // =========================
   if (mode === "solo") {
 
@@ -299,7 +299,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   }
 
   // =========================
-  // DUEL
+  // DUEL MODE
   // =========================
   start.textContent = "Создание комнаты...";
   start.classList.add("wait");
@@ -311,34 +311,20 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   link.value = room.inviteLink;
   link.disabled = false;
 
+  console.log("🟢 ROOM CREATED:", room.roomId);
+
   // =========================
   // CONFIG SYNC
   // =========================
   roomController.onDraftConfig((cfg) => {
-   console.log("draftConfig:", cfg);
+   console.log("CONFIG:", cfg);
   });
 
   // =========================
-  // STATE (ONLY UI)
-  // =========================
-  roomController.onState((state) => {
-
-   if (!state.guestReady) {
-    start.textContent = "Ожидание игрока...";
-    start.classList.add("wait");
-   }
-
-   if (state.guestReady) {
-    start.textContent = "Начать игру";
-    start.classList.remove("wait");
-   }
-  });
-
-  // =========================
-  // GAME START
+  // GAME START LISTENER (ONLY SOURCE OF TRUTH)
   // =========================
   roomController.onStart((payload) => {
-   console.log("🔥 START EVENT RECEIVED");
+   console.log("🔥 GAME START RECEIVED:", payload);
 
    window.location.href =
     `/play.html?room=${room.roomId}&role=host`;
@@ -349,7 +335,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
 });
 
 // =========================
-// SYNC CONFIG
+// SYNC CONFIG TO ROOM
 // =========================
 function syncRoom() {
  if (mode !== "duel" || !roomController) return;
@@ -357,7 +343,7 @@ function syncRoom() {
 }
 
 // =========================
-// ROUNDS
+// ROUND SELECT
 // =========================
 document.querySelectorAll("[data-rounds]").forEach(b => {
  b.onclick = () => {
@@ -370,7 +356,7 @@ document.querySelectorAll("[data-rounds]").forEach(b => {
 });
 
 // =========================
-// AREA
+// AREA SELECT
 // =========================
 document.querySelectorAll("[data-area]").forEach(b => {
  b.onclick = () => {
@@ -413,15 +399,15 @@ timeInput.oninput = syncRoom;
 const movesOff = document.getElementById("movesOff");
 const movesOn = document.getElementById("movesOn");
 const movesInput = document.getElementById("movesInput");
-    movesOff.onclick = () => {
+
+movesOff.onclick = () => {
  movesOff.classList.add("active");
  movesOn.classList.remove("active");
  movesInput.disabled = true;
  movesEnabled = false;
  syncRoom();
 };
-
-movesOn.onclick = () => {
+    movesOn.onclick = () => {
  movesOn.classList.add("active");
  movesOff.classList.remove("active");
  movesInput.disabled = false;
@@ -432,7 +418,7 @@ movesOn.onclick = () => {
 movesInput.oninput = syncRoom;
 
 // =========================
-// START BUTTON (FIXED)
+// START BUTTON
 // =========================
 start.onclick = () => {
 
