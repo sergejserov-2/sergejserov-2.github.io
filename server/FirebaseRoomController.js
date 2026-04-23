@@ -1,10 +1,26 @@
+// server/FirebaseRoomController.js
+
+import { FirebaseTransport } from "./FirebaseTransport.js";
+
 export class FirebaseRoomController {
- constructor({ transport }) {
-  this.transport = transport;
-  this.listeners = {};
+ constructor() {
+  this.transport = new FirebaseTransport();
+
   this.roomId = null;
+  this.playerId = null;
+
+  this.isHost = false;
+
+  this.listeners = {
+   roomUpdated: [],
+   opponentJoined: [],
+   gameStarted: []
+  };
  }
 
+ // =========================
+ // EVENTS
+ // =========================
  on(event, cb) {
   (this.listeners[event] ||= []).push(cb);
  }
@@ -13,43 +29,97 @@ export class FirebaseRoomController {
   this.listeners[event]?.forEach(cb => cb(data));
  }
 
- createRoom() {
-  const roomId = crypto.randomUUID();
+ // =========================
+ // CREATE ROOM (HOST)
+ // =========================
+ async createRoom() {
+  this.isHost = true;
+
+  const roomId = this._generateRoomId();
+  const playerId = "host";
 
   this.roomId = roomId;
+  this.playerId = playerId;
 
-  this.transport.createRoom(roomId);
-
-  this.transport.onRoomUpdate(roomId, (data) => {
-   this.handleUpdate(data);
+  await this.transport.createRoom(roomId, {
+   status: "waiting",
+   host: playerId,
+   players: {
+    host: true
+   }
   });
 
-  return roomId;
+  this.transport.subscribeRoom(roomId, (data) => {
+   this._handleRoomUpdate(data);
+  });
+
+  return {
+   roomId,
+   inviteLink: ${window.location.origin}?room=${roomId}
+  };
  }
 
- joinRoom(roomId) {
+ // =========================
+ // JOIN ROOM (GUEST)
+ // =========================
+ async joinRoom(roomId) {
+  this.isHost = false;
+
   this.roomId = roomId;
+  this.playerId = this._generatePlayerId();
 
-  this.transport.joinRoom(roomId);
+  await this.transport.updateRoom(roomId, {
+   [players.${this.playerId}]: true
+  });
 
-  this.transport.onRoomUpdate(roomId, (data) => {
-   this.handleUpdate(data);
+  this.transport.subscribeRoom(roomId, (data) => {
+   this._handleRoomUpdate(data);
+  });
+
+  return {
+   roomId,
+   playerId: this.playerId
+  };
+ }
+
+ // =========================
+ // START GAME (ONLY HOST)
+ // =========================
+ async startGame() {
+  if (!this.isHost || !this.roomId) return;
+
+  await this.transport.updateRoom(this.roomId, {
+   status: "started"
   });
  }
 
- startGame() {
-  this.transport.updateRoom(this.roomId, {
-   type: "start"
-  });
+ // =========================
+ // ROOM LISTENER
+ // =========================
+ _handleRoomUpdate(data) {
+  if (!data) return;
+
+  this.emit("roomUpdated", data);
+
+  // игрок присоединился
+  if (data.players && Object.keys(data.players).length > 1) {
+   this.emit("opponentJoined", data.players);
+  }
+
+  // старт игры
+  if (data.status === "started") {
+   this.emit("gameStarted", data);
+  }
  }
 
- handleUpdate(data) {
-  if (data.type === "start") {
-   this.emit("startGame");
-  }
+ // =========================
+ // UTILS
+ // =========================
+ _generateRoomId() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+ }
 
-  if (data.type === "playerJoined") {
-   this.emit("playerJoined", data);
-  }
+ _generatePlayerId() {
+  return "p_" + Math.random().toString(36).substring(2, 8);
  }
 }
