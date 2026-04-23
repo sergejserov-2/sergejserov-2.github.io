@@ -8,11 +8,17 @@ import {
 
 import { db } from "./firebaseApp.js";
 
+// =========================
+// EVENT TYPES
+// =========================
 const EVENTS = {
- GUEST_JOINED: "GUEST_JOINED",
  CONFIG_UPDATED: "CONFIG_UPDATED",
  GUEST_READY: "GUEST_READY",
- GAME_STARTED: "GAME_STARTED"
+ GAME_STARTED: "GAME_STARTED",
+
+ // 🔥 GAMEPLAY
+ GUESS: "GUESS",
+ ROUND_COMPLETE: "ROUND_COMPLETE"
 };
 
 export class FirebaseRoomController {
@@ -25,14 +31,18 @@ export class FirebaseRoomController {
   this.listeners = {
    start: [],
    draftConfig: [],
-   state: []
+   state: [],
+
+   // 🔥 gameplay
+   guess: [],
+   roundComplete: []
   };
 
   this.lastSeenEvents = new Set();
  }
 
  // =========================
- // CREATE ROOM
+ // CREATE ROOM (HOST)
  // =========================
  async createRoom(initialConfig = {}) {
   const roomsRef = ref(this.db, "rooms");
@@ -43,6 +53,7 @@ export class FirebaseRoomController {
 
   await set(this.roomRef, {
    roomId: this.roomId,
+   draftConfig: initialConfig,
    events: {}
   });
 
@@ -68,10 +79,10 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // EVENT EMIT
+ // EMIT EVENT
  // =========================
  async emitEvent(type, payload = {}) {
-  const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
+  const eventsRef = ref(this.db, `rooms/${this.roomId}/events)`;
   const id = push(eventsRef).key;
 
   await set(ref(this.db, `rooms/${this.roomId}/events/${id}`), {
@@ -83,7 +94,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // SUBSCRIBE
+ // SUBSCRIBE (EVENT STREAM)
  // =========================
  bind() {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
@@ -99,7 +110,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // REPLAY
+ // EVENT REPLAY (FSM CORE)
  // =========================
  replay(events) {
   for (const e of events) {
@@ -108,6 +119,9 @@ export class FirebaseRoomController {
 
    switch (e.type) {
 
+    // =========================
+    // LOBBY
+    // =========================
     case EVENTS.CONFIG_UPDATED:
      this.listeners.draftConfig.forEach(cb =>
       cb(e.payload)
@@ -125,17 +139,28 @@ export class FirebaseRoomController {
       cb(e.payload)
      );
      break;
+
+    // =========================
+    // GAMEPLAY
+    // =========================
+    case EVENTS.GUESS:
+     this.listeners.guess.forEach(cb =>
+      cb(e.payload)
+     );
+     break;
+
+    case EVENTS.ROUND_COMPLETE:
+     this.listeners.roundComplete.forEach(cb =>
+      cb()
+     );
+     break;
    }
   }
  }
 
  // =========================
- // ACTIONS
+ // LOBBY ACTIONS
  // =========================
- async sendGuestJoined() {
-  await this.emitEvent(EVENTS.GUEST_JOINED);
- }
-
  async setDraftConfig(config) {
   await this.emitEvent(EVENTS.CONFIG_UPDATED, config);
  }
@@ -144,11 +169,27 @@ export class FirebaseRoomController {
   await this.emitEvent(EVENTS.GUEST_READY);
  }
 
- async lockConfigAndStart(config) {
+ async lockConfigAndStart() {
+  const snap = await get(this.roomRef);
+  const room = snap.val();
+
+  if (!room) return;
+
   await this.emitEvent(EVENTS.GAME_STARTED, {
-   config,
+   config: room.draftConfig,
    startedAt: Date.now()
   });
+ }
+
+ // =========================
+ // GAMEPLAY ACTIONS
+ // =========================
+ async sendGuess(payload) {
+  await this.emitEvent(EVENTS.GUESS, payload);
+ }
+
+ async sendRoundComplete() {
+  await this.emitEvent(EVENTS.ROUND_COMPLETE);
  }
 
  // =========================
@@ -161,8 +202,3 @@ export class FirebaseRoomController {
  onDraftConfig(cb) {
   this.listeners.draftConfig.push(cb);
  }
-
- onState(cb) {
-  this.listeners.state.push(cb);
- }
-}
