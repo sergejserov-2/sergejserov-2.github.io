@@ -9,9 +9,6 @@ import {
 
 import { db } from "./firebaseApp.js";
 
-// =========================
-// ROOM CONTROLLER (STATE ONLY)
-// =========================
 export class FirebaseRoomController {
  constructor() {
   this.db = db;
@@ -19,9 +16,6 @@ export class FirebaseRoomController {
   this.roomId = null;
   this.roomRef = null;
 
-  // =========================
-  // LISTENERS
-  // =========================
   this.listeners = {
    players: [],
    draftConfig: []
@@ -41,9 +35,6 @@ export class FirebaseRoomController {
   await set(this.roomRef, {
    roomId: this.roomId,
 
-   // =========================
-   // STATE TREE
-   // =========================
    players: {
     host: {
      connected: true,
@@ -53,6 +44,12 @@ export class FirebaseRoomController {
      connected: false,
      ready: false
     }
+   },
+
+   // 🔥 ВАЖНО
+   game: {
+    started: false,
+    config: null
    },
 
    draftConfig: initialConfig
@@ -78,7 +75,6 @@ export class FirebaseRoomController {
 
   if (!room) throw new Error("Room not found");
 
-  // mark guest connected
   await update(this.roomRef, {
    "players/guest/connected": true
   });
@@ -89,23 +85,20 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // BIND STATE
+ // BIND
  // =========================
  bind() {
   onValue(this.roomRef, (snap) => {
    const room = snap.val();
    if (!room) return;
 
-   // =========================
-   // PLAYERS STATE
-   // =========================
    this.listeners.players.forEach(cb =>
-    cb(room.players || {})
+    cb({
+     ...room.players,
+     game: room.game // 🔥 прокидываем сюда
+    })
    );
 
-   // =========================
-   // CONFIG STATE
-   // =========================
    this.listeners.draftConfig.forEach(cb =>
     cb(room.draftConfig || {})
    );
@@ -113,7 +106,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // STATE UPDATES
+ // STATE UPDATE
  // =========================
  setDraftConfig(cfg) {
   return update(this.roomRef, {
@@ -124,6 +117,14 @@ export class FirebaseRoomController {
  setGuestReady() {
   return update(this.roomRef, {
    "players/guest/ready": true
+  });
+ }
+
+ // 🔥 СТАРТ ИГРЫ (КЛЮЧ)
+ startGame(config) {
+  return update(this.roomRef, {
+   "game/started": true,
+   "game/config": config
   });
  }
 
