@@ -1,59 +1,64 @@
 export class LocalServer {
- constructor({ gameState }) {
-  this.gameState = gameState;
+ constructor({ game }) {
+  this.game = game;
 
-  this.listeners = [];
+  this.listeners = {};
+
+  this.connected = false;
  }
 
  // =========================
- // SUBSCRIBE
+ // EVENT SYSTEM
  // =========================
-
- onState(cb) {
-  if (typeof cb !== "function") return;
-
-  this.listeners.push(cb);
-
-  // 🔥 сразу отдаём текущее состояние
-  cb(this.gameState.getState());
+ on(event, cb) {
+  (this.listeners[event] ||= []).push(cb);
  }
 
- emitState() {
-  const state = this.gameState.getState();
-
-  this.listeners.forEach(cb => cb(state));
+ emit(event, data) {
+  this.listeners[event]?.forEach(cb => cb(data));
  }
 
  // =========================
- // GAME FLOW (опционально)
+ // LIFECYCLE
  // =========================
+ connect() {
+  this.connected = true;
 
- startGame() {
-  this.gameState.startGame();
-  this.emitState();
+  // 🔥 сразу отправляем текущее состояние
+  this.emit("stateUpdated", this.game.getState());
  }
 
- startRound(location) {
-  this.gameState.startRound(location);
-  this.emitState();
- }
-
- endGame() {
-  this.gameState.endGame();
-  this.emitState();
+ disconnect() {
+  this.connected = false;
  }
 
  // =========================
- // 🔥 MAIN: HANDLE INTENT
+ // GAME ACTIONS
  // =========================
 
- handleGuess(intent) {
-  if (!intent || intent.type !== "guess") return;
+ sendStartGame() {
+  this.game.startGame();
 
-  // 👉 единственная точка мутации
-  this.gameState.setRoundResult(intent);
+  this.emit("stateUpdated", this.game.getState());
+ }
 
-  // 👉 рассылаем обновлённый state
-  this.emitState();
+ sendStartRound(location) {
+  this.game.startRound(location);
+
+  this.emit("stateUpdated", this.game.getState());
+ }
+
+ sendGuess({ playerId, guess }) {
+  if (!this.connected) return;
+
+  const result = this.game.setGuess(playerId, guess);
+  if (!result) return;
+
+  // 🔥 сервер пересобирает state и пушит всем
+  this.emit("stateUpdated", this.game.getState());
+ }
+
+ sendRoundComplete() {
+  this.emit("roundCompleted", this.game.getState());
  }
 }
