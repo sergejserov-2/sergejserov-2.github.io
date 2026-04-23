@@ -4,6 +4,10 @@ export class GameState {
   this.rounds = [];
  }
 
+ // =========================
+ // LIFECYCLE
+ // =========================
+
  startGame() {
   this.status = "active";
   this.rounds = [];
@@ -17,9 +21,33 @@ export class GameState {
   });
  }
 
+ endGame() {
+  this.status = "ended";
+ }
+
+ reset() {
+  this.status = "idle";
+  this.rounds = [];
+ }
+
+ // =========================
+ // ACCESS
+ // =========================
+
  getCurrentRound() {
   return this.rounds[this.rounds.length - 1];
  }
+
+ getState() {
+  return {
+   status: this.status,
+   rounds: this.rounds
+  };
+ }
+
+ // =========================
+ // 🔥 SERVER MUTATIONS ONLY
+ // =========================
 
  setRoundResult(result) {
   const round = this.getCurrentRound();
@@ -40,7 +68,7 @@ export class GameState {
    score: result.score
   };
 
-  // DUEL STORAGE
+  // MULTI
   round.guesses.push(payload);
 
   // SOLO COMPAT
@@ -49,19 +77,14 @@ export class GameState {
   }
  }
 
- endGame() {
-  this.status = "ended";
- }
+ // =========================
+ // 🔥 NEW: APPLY SNAPSHOT (для Firebase)
+ // =========================
 
- getState() {
-  return {
-   status: this.status,
-   rounds: this.rounds
-  };
- }
+ apply(state) {
+  if (!state) return;
 
- reset() {
-  this.status = "idle";
-  this.rounds = [];
+  this.status = state.status ?? this.status;
+  this.rounds = state.rounds ?? [];
  }
 }
