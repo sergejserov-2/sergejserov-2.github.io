@@ -18,6 +18,9 @@ export class Game {
   this.gameState.endGame();
  }
 
+ // =========================
+ // 🔥 NEW: PURE INTENT
+ // =========================
  setGuess(playerId, point) {
   const round = this.gameState.getCurrentRound();
   if (!round) return null;
@@ -36,15 +39,18 @@ export class Game {
 
   const result = this.scoring.calculate(actual, guess);
 
-  // ✅ ЕДИНАЯ ТОЧКА ЗАПИСИ
-  this.gameState.setRoundResult({
+  // ❌ НЕ МУТИРУЕМ STATE
+  // ✅ ВОЗВРАЩАЕМ INTENT
+  return {
+   type: "guess",
+
    playerId,
+
    guess,
+
    distance: result.distance,
    score: result.score
-  });
-
-  return result;
+  };
  }
 
  getState() {
