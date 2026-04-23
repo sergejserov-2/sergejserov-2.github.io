@@ -18,7 +18,7 @@ export async function createDuelApp(config) {
   room,
   role
  });
-
+console.log("calling start");
  app.startGameFromNetwork();
 }
 
