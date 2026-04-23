@@ -143,21 +143,21 @@ export class GameFlow {
  // =========================
  // APPLY LOCAL
  // =========================
- applyGuess(playerId, point) {
-  const result = this.game.setGuess(playerId, point);
-  if (!result) return;
+applyGuess(playerId, point) {
+ const result = this.game.setGuess(playerId, point);
+ if (!result) return;
+ this.game.gameState.setRoundResult(result);
+ this.emit("guessResolved", result);
 
-  this.emit("guessResolved", result);
-
-  if (this.mode === "solo") {
-   this.locked = true;
-   this.emit("inputLocked");
-   this.finishRound("guess");
-   return;
-  }
-
-  this.handlePlayerFinished(playerId);
+ if (this.mode === "solo") {
+  this.locked = true;
+  this.emit("inputLocked");
+  this.finishRound("guess");
+  return;
  }
+
+ this.handlePlayerFinished(playerId);
+}
 
  // =========================
  // APPLY EXTERNAL
