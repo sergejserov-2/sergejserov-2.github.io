@@ -9,37 +9,55 @@ export async function createDuelApp(config) {
  let room;
 
  // =========================
- // JOIN OR CREATE
+ // CREATE OR JOIN
  // =========================
  if (config.roomId) {
   console.log("JOIN ROOM:", config.roomId);
 
-  room = await roomController.joinRoom(config.roomId);
+  await roomController.joinRoom(config.roomId);
 
  } else {
-  room = await roomController.createRoom();
+  room = await roomController.createRoom(config);
 
   console.log("ROOM CREATED:", room.roomId);
   console.log("INVITE LINK:", room.inviteLink);
 
-  // здесь остаётся LOBBY (пока не стартуем игру)
   setupLobby(roomController, room);
   return;
  }
 
  // =========================
- // WAIT START SIGNAL
+ // WAIT FOR START (FSM SAFE)
  // =========================
- await new Promise(resolve => {
-  roomController.onStart(() => resolve());
- });
+ await waitForStart(roomController);
 
  // =========================
  // START GAME
  // =========================
- buildGameApp({
+ return buildGameApp({
   config,
   mode: "duel",
   room: roomController
  });
+}
+
+// =========================
+// SAFE START WAITER
+// =========================
+function waitForStart(roomController) {
+ return new Promise(resolve => {
+  roomController.onStart(() => resolve());
+ });
+}
+
+// =========================
+// LOBBY HOOK (UI LATER)
+// =========================
+function setupLobby(roomController, room) {
+ console.log("LOBBY READY:", room.roomId);
+
+ // UI layer will:
+ // - show invite link
+ // - show live config
+ // - enable start when guestReady
 }
