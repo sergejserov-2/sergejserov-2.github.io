@@ -29,7 +29,7 @@ body {
 }
 
 /* =========================
-   HEADER
+   TITLE
 ========================= */
 
 h2 {
@@ -47,7 +47,7 @@ h2 {
 }
 
 /* =========================
-   CONFIG
+   CONFIG DEBUG
 ========================= */
 
 .config {
@@ -57,6 +57,7 @@ h2 {
     font-size: 12px;
     white-space: pre-wrap;
     margin-bottom: 16px;
+    opacity: 0.9;
 }
 
 /* =========================
@@ -72,13 +73,14 @@ h2 {
     cursor: pointer;
     font-weight: bold;
     transition: 0.2s;
+    user-select: none;
 }
 
 .btn:hover {
     background: #27ae60;
 }
 
-.btn.disabled {
+.btn:disabled {
     background: #555;
     cursor: not-allowed;
 }
@@ -96,6 +98,7 @@ h2 {
     font-size: 12px;
     opacity: 0.7;
 }
+
 </style>
 
 </head>
@@ -106,13 +109,13 @@ h2 {
 
     <h2>⏳ Waiting Room</h2>
 
-    <div class="role" id="role">Role: ...</div>
+    <div class="role" id="role">guest</div>
 
     <div class="config" id="config">Loading config...</div>
 
-    <div class="btn disabled" id="actionBtn">...</div>
+    <div class="btn" id="actionBtn">READY</div>
 
-    <div class="status" id="info"></div>
+    <div class="status" id="info">Click when ready</div>
 
 </div>
 
@@ -123,8 +126,11 @@ import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 // URL
 // =========================
 const url = new URL(window.location.href);
+
 const roomId = url.searchParams.get("room");
-const role = url.searchParams.get("role");
+const role = (url.searchParams.get("role") || "guest")
+ .trim()
+ .toLowerCase();
 
 // =========================
 // UI
@@ -134,7 +140,7 @@ const configEl = document.getElementById("config");
 const btn = document.getElementById("actionBtn");
 const info = document.getElementById("info");
 
-roleEl.textContent = role;
+roleEl.textContent = "guest";
 
 // =========================
 // ROOM
@@ -144,50 +150,58 @@ const room = new FirebaseRoomController();
 await room.joinRoom(roomId);
 
 // =========================
-// LIVE CONFIG (ВАЖНО: DRAFT)
+// STATE
+// =========================
+let guestReady = false;
+
+// =========================
+// CONFIG SYNC
 // =========================
 room.onDraftConfig((draft) => {
  configEl.textContent = JSON.stringify(draft, null, 2);
 });
 
 // =========================
-// START SIGNAL
+// GAME START → REDIRECT
 // =========================
 room.onStart(() => {
- window.location.href = `/play.html?room=${roomId}&role=guest`;
+ console.log("🔥 GAME START → GO PLAY");
+
+ window.location.href =
+  `/play.html?room=${roomId}&role=guest`;
 });
 
 // =========================
-// HOST VIEW
+// UI RENDER
 // =========================
-if (role === "host") {
-
- btn.textContent = "START GAME";
- btn.disabled = true;
-
- room.onGuestReady(() => {
+function render() {
+ if (!guestReady) {
   btn.disabled = false;
-  info.textContent = "Player ready ✔️";
- });
-
- btn.onclick = () => {
-  room.lockConfigAndStart();
- };
-}
-
-// =========================
-// GUEST VIEW
-// =========================
-if (role === "guest") {
-
- btn.textContent = "READY";
-
- btn.onclick = () => {
-  room.setGuestReady();
+  btn.textContent = "READY";
+  info.textContent = "Click when ready";
+ } else {
   btn.disabled = true;
   btn.textContent = "WAITING HOST...";
- };
+  info.textContent = "Waiting for host to start...";
+ }
 }
+
+render();
+
+// =========================
+// READY CLICK
+// =========================
+btn.onclick = async () => {
+ if (guestReady) return;
+
+ console.log("🟢 GUEST READY");
+
+ guestReady = true;
+ render();
+
+ await room.setGuestReady();
+};
+
 </script>
 
 </body>
