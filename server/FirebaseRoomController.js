@@ -1,77 +1,97 @@
-// server/FirebaseRoomController.js
-
-import { ref, set, onValue, update, push, get } from "firebase/database";
-import { db } from "./firebase.js";
+import {
+ getDatabase,
+ ref,
+ set,
+ get,
+ update,
+ onValue,
+ push
+} from "firebase/database";
 
 export class FirebaseRoomController {
- constructor() {
-  this.roomRef = null;
+ constructor(app) {
+  this.db = getDatabase(app);
+
   this.roomId = null;
+  this.roomRef = null;
 
   this.listeners = {
-   ready: [],
-   update: [],
-   start: []
+   config: [],
+   guestReady: [],
+   start: [],
+   update: []
   };
  }
 
  // =========================
  // CREATE ROOM (HOST)
  // =========================
- async createRoom() {
-  const roomRef = push(ref(db, "rooms"));
+ async createRoom(config) {
+  const roomsRef = ref(this.db, "rooms");
 
-  this.roomId = roomRef.key;
-  this.roomRef = roomRef;
+  const newRoom = push(roomsRef);
 
-  const roomData = {
-   players: 1,
-   status: "waiting",
+  this.roomId = newRoom.key;
+  this.roomRef = ref(this.db, rooms/${this.roomId});
+
+  const initialState = {
+   roomId: this.roomId,
+   config,
+   status: "lobby",
+
+   hostReady: false,
+   guestReady: false,
+
+   players: {
+    host: true,
+    guest: false
+   },
+
    createdAt: Date.now()
   };
 
-  await set(roomRef, roomData);
+  await set(this.roomRef, initialState);
 
-  this.listen();
+  this.bind();
 
   return {
    roomId: this.roomId,
-   inviteLink: `${window.location.origin}/play.html?room=${this.roomId}`
+   inviteLink: ${window.location.origin}/waiting.html?room=${this.roomId}&role=guest
   };
  }
 
  // =========================
- // JOIN ROOM (CLIENT)
+ // JOIN ROOM (GUEST / HOST RELOAD)
  // =========================
  async joinRoom(roomId) {
   this.roomId = roomId;
-  this.roomRef = ref(db, `rooms/${roomId}`);
+  this.roomRef = ref(this.db, rooms/${roomId});
+
+  this.bind();
 
   const snap = await get(this.roomRef);
-  if (!snap.exists()) throw new Error("Room not found");
 
-  const data = snap.val();
+  if (!snap.exists()) {
+   throw new Error("Room not found");
+  }
 
-  await update(this.roomRef, {
-   players: (data.players || 1) + 1,
-   status: "ready"
-  });
-
-  this.listen();
+  return snap.val();
  }
 
  // =========================
- // LISTEN ROOM
+ // BIND FIREBASE STREAM
  // =========================
- listen() {
+ bind() {
   onValue(this.roomRef, (snap) => {
    const data = snap.val();
    if (!data) return;
 
    this.listeners.update.forEach(cb => cb(data));
 
-   if (data.status === "ready") {
-    this.listeners.ready.forEach(cb => cb(data));
+   this.listeners.config.forEach(cb => cb(data.config));
+
+   if (data.guestReady) {
+    this.listeners.guestReady.forEach(cb => cb());
    }
 
    if (data.status === "started") {
@@ -81,26 +101,52 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // START GAME (HOST ONLY)
+ // GUEST READY
  // =========================
- async startGame() {
+ async setReady() {
+  if (!this.roomRef) return;
+
   await update(this.roomRef, {
-   status: "started"
+   guestReady: true
   });
  }
 
  // =========================
- // EVENTS
+ // HOST START GAME
  // =========================
- onUpdate(cb) {
-  this.listeners.update.push(cb);
+ async startGame() {
+  if (!this.roomRef) return;
+
+  const snap = await get(this.roomRef);
+  const data = snap.val();
+
+  if (!data.guestReady) {
+   console.warn("Guest not ready yet");
+   return;
+  }
+
+  await update(this.roomRef, {
+   status: "started",
+   startedAt: Date.now()
+  });
  }
 
- onReady(cb) {
-  this.listeners.ready.push(cb);
+ // =========================
+ // LISTENERS API
+ // =========================
+ onConfig(cb) {
+  this.listeners.config.push(cb);
+ }
+
+ onGuestReady(cb) {
+  this.listeners.guestReady.push(cb);
  }
 
  onStart(cb) {
   this.listeners.start.push(cb);
+ }
+
+ onUpdate(cb) {
+  this.listeners.update.push(cb);
  }
 }
