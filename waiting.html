@@ -137,14 +137,12 @@ room.onPlayers?.((players) => {
   status.textContent = "Guest ready ✔️";
  }
 
- if (players?.game?.started && !gameStarted) {
-  gameStarted = true;
+const snap = await room.joinRoom(roomId);
 
-  console.log("🔥 GAME START DETECTED → REDIRECT");
-
-  window.location.href =
-   `/play.html?room=${roomId}&role=guest`;
- }
+if (snap?.players?.game?.started) {
+ window.location.href =
+  /play.html?room=${roomId}&role=guest;
+}
 });
 
 // =========================
