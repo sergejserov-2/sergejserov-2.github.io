@@ -11,84 +11,48 @@ function getRoomId(config) {
 }
 
 export async function createDuelApp(config) {
- console.log("🟢 [DUEL] ENTER createDuelApp");
- console.log("🟢 [DUEL] CONFIG:", config);
+ console.log("🟢 [DUEL] ENTER");
 
  const roomController = new FirebaseRoomController();
  const role = getRole();
  const roomId = getRoomId(config);
 
- console.log("🟡 [DUEL] ROLE:", role);
- console.log("🟡 [DUEL] ROOM_ID:", roomId);
-
  let room;
 
- // =========================
- // JOIN OR CREATE
- // =========================
  if (roomId) {
-  console.log("🟡 [DUEL] JOIN FLOW");
+  console.log("🟡 JOIN ROOM", roomId);
 
   room = await roomController.joinRoom(roomId);
 
-  console.log("🟢 [DUEL] JOINED ROOM:", room);
-
   if (role === "guest") {
-   console.log("🟡 [DUEL] GUEST → setGuestReady()");
+   console.log("🟡 GUEST READY");
    await roomController.setGuestReady();
-   console.log("🟢 [DUEL] GUEST READY SENT");
   }
 
  } else {
-  console.log("🟡 [DUEL] CREATE FLOW");
-
   room = await roomController.createRoom(config);
-
-  console.log("🟢 [DUEL] ROOM CREATED:", room.roomId);
-  console.log("🟢 [DUEL] INVITE LINK:", room.inviteLink);
+  console.log("🟢 CREATED ROOM", room.roomId);
  }
 
- // =========================
- // WAIT START (FIXED)
- // =========================
- console.log("🟡 [DUEL] WAITING FOR START EVENT...");
+ console.log("🟡 WAIT START");
 
- const gameConfig = await waitForStart(roomController, config);
+ const gameConfig = await waitForStart(roomController);
 
- console.log("🟢 [DUEL] START RECEIVED");
- console.log("🟢 [DUEL] GAME CONFIG:", gameConfig);
+ console.log("🟢 START RECEIVED");
 
- // =========================
- // BUILD GAME APP
- // =========================
- console.log("🟡 [DUEL] CALL buildGameApp");
-
- const app = buildGameApp({
+ return buildGameApp({
   config: gameConfig,
   mode: "duel",
   room: roomController,
   role
  });
-
- console.log("🟢 [DUEL] buildGameApp DONE");
-
- return app;
 }
 
-// =========================
-// SAFE START GATE (NO UNSUB BUG)
-// =========================
-function waitForStart(roomController, fallbackConfig) {
+function waitForStart(roomController) {
  return new Promise(resolve => {
-
-  console.log("🟡 [WAIT] Subscribing to onStart...");
-
   roomController.onStart((payload) => {
-   console.log("🔥 [WAIT] GAME_STARTED EVENT RECEIVED");
-   console.log("🔥 [WAIT] PAYLOAD:", payload);
-
-   resolve(payload?.config || fallbackConfig);
+   console.log("🔥 GAME START EVENT");
+   resolve(payload.config);
   });
-
  });
 }
