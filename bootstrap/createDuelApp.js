@@ -18,8 +18,6 @@ console.log("Entry Duel");
   room,
   role
  });
-console.log("calling start");
- app.startGameFromNetwork();
 }
 
 function waitForStart(room, snapshot) {
