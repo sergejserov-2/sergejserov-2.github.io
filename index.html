@@ -351,15 +351,6 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
     start.disabled = false;
    }
 
-   // игра уже стартовала (на всякий)
-   if (started) {
-    console.log("🔥 REDIRECT HOST → GAME");
-
-    window.location.href =
-    `/play.html?room=${room.roomId}&role=host`;
-   }
-  });
-
   start.textContent = "Ожидание игрока...";
  };
 });
