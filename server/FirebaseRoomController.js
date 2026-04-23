@@ -56,7 +56,7 @@ export class FirebaseRoomController {
 
   return {
    roomId: this.roomId,
-   inviteLink: ${window.location.origin}/waiting.html?room=${this.roomId}&role=guest
+   inviteLink: `${window.location.origin}/waiting.html?room=${this.roomId}&role=guest`
   };
  }
 
@@ -65,7 +65,7 @@ export class FirebaseRoomController {
  // =========================
  async joinRoom(roomId) {
   this.roomId = roomId;
-  this.roomRef = ref(this.db, rooms/${roomId});
+  this.roomRef = ref(this.db, `rooms/${roomId}`);
 
   this.bind();
 
