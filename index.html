@@ -238,7 +238,6 @@ input:disabled {
     <div class="start" id="start">Начать игру</div>
 
 </div>
-
 <script type="module">
 import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 
@@ -250,7 +249,6 @@ let timeEnabled = false;
 let movesEnabled = false;
 
 let roomController = null;
-let currentRoom = null;
 
 // =========================
 // BUILD CONFIG
@@ -285,52 +283,45 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   mode = b.dataset.mode;
 
   // =========================
-  // SOLO MODE
+  // SOLO
   // =========================
   if (mode === "solo") {
 
-   // cleanup room
    if (roomController) {
-    roomController.destroy?.();
     roomController = null;
    }
 
-   currentRoom = null;
-
    link.value = "";
-   link.placeholder = "";
    link.disabled = true;
 
    start.textContent = "Начать игру";
    start.classList.remove("wait");
-   start.classList.remove("disabled");
 
    return;
   }
 
   // =========================
-  // DUEL MODE
+  // DUEL
   // =========================
   start.textContent = "Создание комнаты...";
   start.classList.add("wait");
-  start.classList.add("disabled");
 
   roomController = new FirebaseRoomController();
 
-  const config = buildConfig();
-
-  const room = await roomController.createRoom(config);
-  currentRoom = room;
+  const room = await roomController.createRoom(buildConfig());
 
   link.value = room.inviteLink;
   link.disabled = false;
 
-  // live config sync
-  roomController.onConfig(() => {});
+  // LIVE CONFIG SYNC (ВАЖНО)
+  roomController.onDraftConfig((cfg) => {
+   // если надо — сюда потом можно привязать UI отображение в лобби
+   console.log("draftConfig:", cfg);
+  });
 
   roomController.onGuestReady(() => {
    start.textContent = "START GAME";
-   start.classList.remove("disabled");
+   start.classList.remove("wait");
   });
 
   roomController.onStart(() => {
@@ -342,46 +333,103 @@ document.querySelectorAll("[data-mode]").forEach(b => {
 });
 
 // =========================
-// RULES CHANGE → LIVE SYNC
+// SYNC ROOM CONFIG
 // =========================
 function syncRoom() {
  if (mode !== "duel" || !roomController) return;
+
  roomController.setDraftConfig(buildConfig());
 }
 
-// rounds
+// =========================
+// ROUNDS
+// =========================
 document.querySelectorAll("[data-rounds]").forEach(b => {
  b.onclick = () => {
   document.querySelectorAll("[data-rounds]").forEach(x => x.classList.remove("active"));
   b.classList.add("active");
+
   rounds = +b.dataset.rounds;
   syncRoom();
  };
 });
 
-// area
+// =========================
+// AREA
+// =========================
 document.querySelectorAll("[data-area]").forEach(b => {
  b.onclick = () => {
   document.querySelectorAll("[data-area]").forEach(x => x.classList.remove("active"));
   b.classList.add("active");
+
   area = b.dataset.area;
   syncRoom();
  };
 });
 
 // =========================
-// START BUTTON
+// TIMER / MOVES FIX (ВАЖНО)
+// =========================
+const timeOff = document.getElementById("timeOff");
+const timeOn = document.getElementById("timeOn");
+const timeInput = document.getElementById("timeInput");
+
+timeOff.onclick = () => {
+ timeOff.classList.add("active");
+ timeOn.classList.remove("active");
+ timeInput.disabled = true;
+ timeEnabled = false;
+ syncRoom();
+};
+
+timeOn.onclick = () => {
+ timeOn.classList.add("active");
+ timeOff.classList.remove("active");
+ timeInput.disabled = false;
+ timeEnabled = true;
+ syncRoom();
+};
+
+timeInput.oninput = syncRoom;
+
+// MOVES
+const movesOff = document.getElementById("movesOff");
+const movesOn = document.getElementById("movesOn");
+const movesInput = document.getElementById("movesInput");
+
+movesOff.onclick = () => {
+ movesOff.classList.add("active");
+ movesOn.classList.remove("active");
+ movesInput.disabled = true;
+ movesEnabled = false;
+ syncRoom();
+};
+
+movesOn.onclick = () => {
+ movesOn.classList.add("active");
+ movesOff.classList.remove("active");
+ movesInput.disabled = false;
+ movesEnabled = true;
+ syncRoom();
+};
+
+movesInput.oninput = syncRoom;
+// =========================
+// START
 // =========================
 start.onclick = () => {
 
  if (mode === "duel") {
-  roomController?.startGame();
+  if (!roomController) return;
+
+  roomController.lockConfigAndStart();
   return;
  }
 
  localStorage.setItem("gameConfig", JSON.stringify(buildConfig()));
  window.location.href = "/play.html";
 };
+
 </script>
 </body>
 </html>
