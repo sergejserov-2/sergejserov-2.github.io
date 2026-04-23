@@ -18,9 +18,7 @@ export class GameFlow {
 
   this.locked = false;
 
-  // =========================
   // DUEL
-  // =========================
   this.mode = mode;
   this.network = network;
 
@@ -46,7 +44,7 @@ export class GameFlow {
  }
 
  // =========================
- // NETWORK BIND
+ // NETWORK
  // =========================
  bindNetwork() {
   if (!this.network) return;
@@ -61,7 +59,7 @@ export class GameFlow {
  }
 
  // =========================
- // GAME START
+ // START GAME
  // =========================
  async startGame() {
   this.finishedPlayers.clear();
@@ -74,7 +72,7 @@ export class GameFlow {
  }
 
  // =========================
- // ROUND START
+ // START ROUND
  // =========================
  async startRound() {
   this.locked = true;
@@ -94,7 +92,6 @@ export class GameFlow {
 
   this.emit("loadingFinished");
 
-  // основной таймер
   this.timer.start(
    this.game.config.rules.time,
    () => this.finishRound("timeout"),
@@ -111,7 +108,7 @@ export class GameFlow {
  }
 
  // =========================
- // STREET VIEW READY
+ // STREET VIEW
  // =========================
  waitForStreetViewReady() {
   return new Promise(res => {
@@ -125,11 +122,12 @@ export class GameFlow {
  }
 
  // =========================
- // LOCAL GUESS
+ // GUESS (LOCAL ENTRY POINT)
  // =========================
  finishGuess(point, playerId = "p1") {
   if (this.locked || this.roundLocked) return;
 
+  // DUEL → отправляем в сеть
   if (this.mode === "duel") {
    this.network?.sendGuess({
     playerId,
@@ -141,32 +139,36 @@ export class GameFlow {
  }
 
  // =========================
- // APPLY LOCAL
+ // APPLY GUESS (SINGLE SOURCE OF TRUTH)
  // =========================
-applyGuess(playerId, point) {
- const result = this.game.setGuess(playerId, point);
- if (!result) return;
- this.game.applyResult(result);
- this.emit("guessResolved", result);
- if (this.mode === "solo") {
-  this.locked = true;
-  this.emit("inputLocked");
-  this.finishRound("guess");
-  return;
+ applyGuess(playerId, point) {
+  const result = this.game.setGuess(playerId, point);
+  if (!result) return;
+
+  // 🔥 ЕДИНСТВЕННОЕ место записи результата
+  this.game.applyResult(result);
+
+  this.emit("guessResolved", result);
+
+  if (this.mode === "solo") {
+   this.locked = true;
+   this.emit("inputLocked");
+   this.finishRound("guess");
+   return;
+  }
+
+  this.handlePlayerFinished(playerId);
  }
 
- this.handlePlayerFinished(playerId);
-}
-
  // =========================
- // APPLY EXTERNAL
+ // NETWORK IN
  // =========================
  applyExternalGuess({ playerId, guess }) {
   this.applyGuess(playerId, guess);
  }
 
  // =========================
- // PLAYER FINISHED
+ // DUEL FLOW
  // =========================
  handlePlayerFinished(playerId) {
   this.finishedPlayers.add(playerId);
@@ -181,14 +183,12 @@ applyGuess(playerId, point) {
   this.emit("inputLocked");
   this.emit("roundWaiting");
 
-  // все закончили
   if (this.finishedPlayers.size >= this.game.players.length) {
    this.network?.sendRoundComplete?.();
    this.finishRound("allPlayersFinished");
    return;
   }
 
-  // старт таймера ожидания
   if (!this.roundLocked) {
    this.roundLocked = true;
 
@@ -212,7 +212,6 @@ applyGuess(playerId, point) {
 
   if (!ok || this.moves.isLocked()) {
    this.emit("movesLocked");
-   return;
   }
  }
 
@@ -237,12 +236,11 @@ applyGuess(playerId, point) {
   if (isLast) {
    this.game.endGame();
    this.emit("gameEnded", this.game.getState());
-   return;
   }
  }
 
  // =========================
- // SYNC COMPLETE
+ // SYNC
  // =========================
  syncRoundComplete() {
   if (!this.roundLocked) return;
