@@ -6,11 +6,22 @@ import {
  update,
  onValue,
  push,
- get,
- off
+ get
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
 import { db } from "./firebaseApp.js";
+
+// =========================
+// ROOM FSM STATES
+// =========================
+const ROOM_STATE = {
+ CREATED: "CREATED",
+ WAITING_FOR_GUEST: "WAITING_FOR_GUEST",
+ GUEST_CONNECTED: "GUEST_CONNECTED",
+ CONFIGURING: "CONFIGURING",
+ READY_TO_START: "READY_TO_START",
+ STARTED: "STARTED"
+};
 
 export class FirebaseRoomController {
  constructor() {
@@ -19,21 +30,18 @@ export class FirebaseRoomController {
   this.roomId = null;
   this.roomRef = null;
 
-  // internal unsubscribe guard
-  this.unsubscribe = null;
+  this.lastState = null;
 
   this.listeners = {
-   guestReady: [],
-   start: [],
+   state: [],
    config: [],
-   state: []
+   guestReady: [],
+   start: []
   };
-
-  this.lastState = null;
  }
 
  // =========================
- // CREATE ROOM (HOST)
+ // CREATE ROOM
  // =========================
  async createRoom(config) {
   const roomsRef = ref(this.db, "rooms");
@@ -45,11 +53,13 @@ export class FirebaseRoomController {
   const initialState = {
    roomId: this.roomId,
 
-   // CONFIG (LIVE DRAFT)
-   config,
+   state: ROOM_STATE.WAITING_FOR_GUEST,
 
-   // FSM
-   state: "WAITING", // WAITING | READY | STARTED
+   configLive: config,
+   configFrozen: null,
+
+   hostId: "host",
+   guestId: null,
 
    guestReady: false,
    started: false,
@@ -74,55 +84,43 @@ export class FirebaseRoomController {
   this.roomId = roomId;
   this.roomRef = ref(this.db, `rooms/${roomId}`);
 
+  const snap = await get(this.roomRef);
+  const state = snap.val();
+
+  if (!state) throw new Error("Room not found");
+
+  // attach guest
+  await update(this.roomRef, {
+   guestId: "guest",
+   state: ROOM_STATE.GUEST_CONNECTED
+  });
+
   this.bind();
 
-  const snap = await get(this.roomRef);
-  return snap.val();
+  return state;
  }
 
  // =========================
- // BIND (IMPORTANT FIXED)
+ // LIVE STATE LISTENER
  // =========================
  bind() {
-  if (!this.roomRef) return;
-
-  // prevent duplicate listeners
-  off(this.roomRef);
-
   onValue(this.roomRef, (snap) => {
    const state = snap.val();
    if (!state) return;
 
    this.lastState = state;
 
-   // global state
+   // config live sync (ONLY before start)
+   this.listeners.config.forEach(cb => cb(state.configLive));
+
    this.listeners.state.forEach(cb => cb(state));
 
-   // live config (IMPORTANT: always live)
-   this.listeners.config.forEach(cb => cb(state.config));
-
-   // guest ready event (fire once logic handled externally)
    if (state.guestReady) {
     this.listeners.guestReady.forEach(cb => cb(state));
    }
 
-   // start event
    if (state.started) {
     this.listeners.start.forEach(cb => cb(state));
-   }
-  });
- }
-
- // =========================
- // HOST: UPDATE CONFIG (LIVE DRAFT)
- // =========================
- async updateConfig(partialConfig) {
-  if (!this.roomRef) return;
-
-  await update(this.roomRef, {
-   config: {
-    ...this.lastState?.config,
-    ...partialConfig
    }
   });
  }
@@ -133,32 +131,68 @@ export class FirebaseRoomController {
  async setGuestReady() {
   if (!this.roomRef) return;
 
+  const state = this.lastState;
+  if (!state) return;
+
+  if (state.started) return;
+
+  const nextState =
+   state.guestId
+    ? ROOM_STATE.READY_TO_START
+    : state.state;
+
   await update(this.roomRef, {
    guestReady: true,
-   state: "READY"
+   state: nextState
   });
  }
 
  // =========================
- // HOST START GAME
+ // START GAME (HOST ONLY)
  // =========================
  async startGame() {
-  const snap = await get(this.roomRef);
-  const state = snap.val();
-
+  const state = this.lastState;
   if (!state) return;
+
   if (!state.guestReady) return;
 
   await update(this.roomRef, {
    started: true,
-   state: "STARTED",
+   state: ROOM_STATE.STARTED,
+   configFrozen: state.configLive,
    startedAt: Date.now()
+  });
+ }
+
+ // =========================
+ // UPDATE CONFIG (LIVE BEFORE START)
+ // =========================
+ async updateConfig(patch) {
+  const state = this.lastState;
+  if (!state) return;
+
+  if (state.started) return;
+
+  await update(this.roomRef, {
+   configLive: {
+    ...state.configLive,
+    ...patch
+   },
+   state: ROOM_STATE.CONFIGURING
   });
  }
 
  // =========================
  // EVENTS API
  // =========================
+ onState(cb) {
+  this.listeners.state.push(cb);
+ }
+
+ onConfig(cb) {
+  this.listeners.config.push(cb);
+ }
+
  onGuestReady(cb) {
   this.listeners.guestReady.push(cb);
  }
@@ -167,11 +201,8 @@ export class FirebaseRoomController {
   this.listeners.start.push(cb);
  }
 
- onConfig(cb) {
-  this.listeners.config.push(cb);
- }
-
- onState(cb) {
-  this.listeners.state.push(cb);
+ // optional helper
+ getCurrentState() {
+  return Promise.resolve(this.lastState);
  }
 }
