@@ -14,10 +14,7 @@ import { db } from "./firebaseApp.js";
 const EVENTS = {
  CONFIG_UPDATED: "CONFIG_UPDATED",
  GUEST_READY: "GUEST_READY",
- GAME_STARTED: "GAME_STARTED",
- ROUND_STARTED: "ROUND_STARTED",
- GUESS: "GUESS",
- ROUND_COMPLETE: "ROUND_COMPLETE"
+ GAME_STARTED: "GAME_STARTED"
 };
 
 export class FirebaseRoomController {
@@ -31,16 +28,10 @@ export class FirebaseRoomController {
   this.listeners = {
    start: [],
    draftConfig: [],
-   roundStarted: [],
-   guess: [],
-   roundComplete: []
+   guestReady: []
   };
 
-  // защита от повторной обработки
-  this.seen = new Set();
-
-  // локально (только для UI ожидания)
-  this.guestReady = false;
+  this.lastSeen = new Set();
  }
 
  // =========================
@@ -63,8 +54,7 @@ export class FirebaseRoomController {
 
   return {
    roomId: this.roomId,
-   inviteLink:
-    `${window.location.origin}/waiting.html?room=${this.roomId}&role=guest`
+   inviteLink: `${window.location.origin}/waiting.html?room=${this.roomId}&role=guest`
   };
  }
 
@@ -97,7 +87,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // SUBSCRIBE
+ // BIND EVENTS
  // =========================
  bind() {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
@@ -107,9 +97,8 @@ export class FirebaseRoomController {
    const events = Object.values(data).sort((a, b) => a.ts - b.ts);
 
    for (const e of events) {
-
-    if (this.seen.has(e.id)) continue;
-    this.seen.add(e.id);
+    if (this.lastSeen.has(e.id)) continue;
+    this.lastSeen.add(e.id);
 
     switch (e.type) {
 
@@ -120,8 +109,9 @@ export class FirebaseRoomController {
       break;
 
      case EVENTS.GUEST_READY:
-      this.guestReady = true;
-      this.emitState();
+      this.listeners.guestReady.forEach(cb =>
+       cb(e.payload)
+      );
       break;
 
      case EVENTS.GAME_STARTED:
@@ -129,37 +119,9 @@ export class FirebaseRoomController {
        cb(e.payload)
       );
       break;
-
-     case EVENTS.ROUND_STARTED:
-      this.listeners.roundStarted.forEach(cb =>
-       cb(e.payload)
-      );
-      break;
-
-     case EVENTS.GUESS:
-      this.listeners.guess.forEach(cb =>
-       cb(e.payload)
-      );
-      break;
-
-     case EVENTS.ROUND_COMPLETE:
-      this.listeners.roundComplete.forEach(cb =>
-       cb()
-      );
-      break;
     }
    }
   });
- }
-
- // =========================
- // STATE (minimal only guestReady)
- // =========================
- emitState() {
-  // не ломаем архитектуру — только флаг ожидания
-  this.listeners.state?.forEach(cb =>
-   cb({ guestReady: this.guestReady })
-  );
  }
 
  // =========================
@@ -177,22 +139,7 @@ export class FirebaseRoomController {
   return this.emitEvent(EVENTS.GAME_STARTED, {
    config,
    startedAt: Date.now()
-   await update(this.roomRef, {
-   started: true
-   });
   });
- }
-
- sendRoundStarted(payload) {
-  return this.emitEvent(EVENTS.ROUND_STARTED, payload);
- }
-
- sendGuess(payload) {
-  return this.emitEvent(EVENTS.GUESS, payload);
- }
-
- sendRoundComplete() {
-  return this.emitEvent(EVENTS.ROUND_COMPLETE);
  }
 
  // =========================
@@ -205,20 +152,8 @@ export class FirebaseRoomController {
  onDraftConfig(cb) {
   this.listeners.draftConfig.push(cb);
  }
-onRoundStarted(cb) {
-  this.listeners.roundStarted.push(cb);
- }
 
- onGuess(cb) {
-  this.listeners.guess.push(cb);
- }
-
- onRoundComplete(cb) {
-  this.listeners.roundComplete.push(cb);
- }
-
- onState(cb) {
-  this.listeners.state.push(cb);
-  cb({ guestReady: this.guestReady });
+ onGuestReady(cb) {
+  this.listeners.guestReady.push(cb);
  }
 }
