@@ -189,7 +189,8 @@ export function buildGameApp({ config, mode, room, role }) {
  // =========================
 if (mode === "solo") {
  gameFlow.startGame();
-}
+};
+ 
 
  return gameFlow;
 }
