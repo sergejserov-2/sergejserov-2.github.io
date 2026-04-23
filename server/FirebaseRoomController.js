@@ -1,13 +1,13 @@
 import {
- getDatabase,
  ref,
  set,
  update,
  onValue,
  push,
  get
-} from "firebase/database";
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
+import { db } from "./firebaseApp.js";
 import { firebaseApp } from "./FirebaseApp.js";
 
 export class FirebaseRoomController {
