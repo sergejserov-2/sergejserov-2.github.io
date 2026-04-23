@@ -8,15 +8,11 @@ import {
 
 import { db } from "./firebaseApp.js";
 
-// =========================
-// EVENT TYPES
-// =========================
 const EVENTS = {
  CONFIG_UPDATED: "CONFIG_UPDATED",
  GUEST_READY: "GUEST_READY",
  GAME_STARTED: "GAME_STARTED",
-
- // 🔥 GAMEPLAY
+ ROUND_STARTED: "ROUND_STARTED",
  GUESS: "GUESS",
  ROUND_COMPLETE: "ROUND_COMPLETE"
 };
@@ -31,18 +27,16 @@ export class FirebaseRoomController {
   this.listeners = {
    start: [],
    draftConfig: [],
-   state: [],
-
-   // 🔥 gameplay
+   roundStarted: [],
    guess: [],
    roundComplete: []
   };
 
-  this.lastSeenEvents = new Set();
+  this.lastSeen = new Set();
  }
 
  // =========================
- // CREATE ROOM (HOST)
+ // CREATE
  // =========================
  async createRoom(initialConfig = {}) {
   const roomsRef = ref(this.db, "rooms");
@@ -66,7 +60,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // JOIN ROOM
+ // JOIN
  // =========================
  async joinRoom(roomId) {
   this.roomId = roomId;
@@ -79,10 +73,10 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // EMIT EVENT
+ // EMIT
  // =========================
  async emitEvent(type, payload = {}) {
-  const eventsRef = ref(this.db, `rooms/${this.roomId}/events)`;
+  const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
   const id = push(eventsRef).key;
 
   await set(ref(this.db, `rooms/${this.roomId}/events/${id}`), {
@@ -94,106 +88,74 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // SUBSCRIBE (EVENT STREAM)
+ // BIND
  // =========================
  bind() {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
 
   onValue(eventsRef, (snap) => {
-   const eventsObj = snap.val() || {};
+   const data = snap.val() || {};
+   const events = Object.values(data).sort((a, b) => a.ts - b.ts);
 
-   const events = Object.values(eventsObj)
-    .sort((a, b) => a.ts - b.ts);
+   for (const e of events) {
+    if (this.lastSeen.has(e.id)) continue;
+    this.lastSeen.add(e.id);
 
-   this.replay(events);
-  });
- }
+    switch (e.type) {
 
- // =========================
- // EVENT REPLAY (FSM CORE)
- // =========================
- replay(events) {
-  for (const e of events) {
-   if (this.lastSeenEvents.has(e.id)) continue;
-   this.lastSeenEvents.add(e.id);
+     case EVENTS.CONFIG_UPDATED:
+      this.listeners.draftConfig.forEach(cb => cb(e.payload));
+      break;
 
-   switch (e.type) {
+     case EVENTS.GAME_STARTED:
+      this.listeners.start.forEach(cb => cb(e.payload));
+      break;
 
-    // =========================
-    // LOBBY
-    // =========================
-    case EVENTS.CONFIG_UPDATED:
-     this.listeners.draftConfig.forEach(cb =>
-      cb(e.payload)
-     );
-     break;
+     case EVENTS.ROUND_STARTED:
+      this.listeners.roundStarted.forEach(cb => cb(e.payload));
+      break;
 
-    case EVENTS.GUEST_READY:
-     this.listeners.state.forEach(cb =>
-      cb({ guestReady: true })
-     );
-     break;
+     case EVENTS.GUESS:
+      this.listeners.guess.forEach(cb => cb(e.payload));
+      break;
 
-    case EVENTS.GAME_STARTED:
-     this.listeners.start.forEach(cb =>
-      cb(e.payload)
-     );
-     break;
-
-    // =========================
-    // GAMEPLAY
-    // =========================
-    case EVENTS.GUESS:
-     this.listeners.guess.forEach(cb =>
-      cb(e.payload)
-     );
-     break;
-
-    case EVENTS.ROUND_COMPLETE:
-     this.listeners.roundComplete.forEach(cb =>
-      cb()
-     );
-     break;
+     case EVENTS.ROUND_COMPLETE:
+      this.listeners.roundComplete.forEach(cb => cb());
+      break;
+    }
    }
-  }
- }
-
- // =========================
- // LOBBY ACTIONS
- // =========================
- async setDraftConfig(config) {
-  await this.emitEvent(EVENTS.CONFIG_UPDATED, config);
- }
-
- async setGuestReady() {
-  await this.emitEvent(EVENTS.GUEST_READY);
- }
-
- async lockConfigAndStart() {
-  const snap = await get(this.roomRef);
-  const room = snap.val();
-
-  if (!room) return;
-
-  await this.emitEvent(EVENTS.GAME_STARTED, {
-   config: room.draftConfig,
-   startedAt: Date.now()
   });
  }
 
  // =========================
- // GAMEPLAY ACTIONS
+ // API
  // =========================
- async sendGuess(payload) {
-  await this.emitEvent(EVENTS.GUESS, payload);
+ setDraftConfig(cfg) {
+  return this.emitEvent(EVENTS.CONFIG_UPDATED, cfg);
  }
 
- async sendRoundComplete() {
-  await this.emitEvent(EVENTS.ROUND_COMPLETE);
+ setGuestReady() {
+  return this.emitEvent(EVENTS.GUEST_READY);
+ }
+
+ lockConfigAndStart(config) {
+  return this.emitEvent(EVENTS.GAME_STARTED, { config });
+ }
+
+ sendRoundStarted(payload) {
+  return this.emitEvent(EVENTS.ROUND_STARTED, payload);
+ }
+
+ sendGuess(payload) {
+  return this.emitEvent(EVENTS.GUESS, payload);
+ }
+
+ sendRoundComplete() {
+  return this.emitEvent(EVENTS.ROUND_COMPLETE);
  }
 
  // =========================
- // LISTENERS
+ // LISTEN
  // =========================
  onStart(cb) {
   this.listeners.start.push(cb);
@@ -202,3 +164,16 @@ export class FirebaseRoomController {
  onDraftConfig(cb) {
   this.listeners.draftConfig.push(cb);
  }
+
+ onRoundStarted(cb) {
+  this.listeners.roundStarted.push(cb);
+ }
+
+ onGuess(cb) {
+  this.listeners.guess.push(cb);
+ }
+
+ onRoundComplete(cb) {
+  this.listeners.roundComplete.push(cb);
+ }
+}
