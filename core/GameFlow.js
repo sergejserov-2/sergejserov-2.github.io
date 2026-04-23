@@ -1,8 +1,9 @@
 export class GameFlow {
- constructor({ game, generator, area, services, mode = "solo" }) {
+ constructor({ game, generator, area, services, server, mode = "solo" }) {
   this.game = game;
   this.generator = generator;
   this.area = area;
+  this.server = server;
 
   this.timer = services.timer;
   this.moves = services.moves;
@@ -17,10 +18,14 @@ export class GameFlow {
   this.roundLocked = false;
   this.finishedPlayers = new Set();
 
-  // 🔥 отдельный таймер раунда (reuse сервиса)
   this.roundTimer = services.timer;
 
   this._resolveStreetViewReady = null;
+
+  // 🔥 ПОДПИСКА НА СЕРВЕР
+  this.server.onState((state) => {
+   this.applyState(state);
+  });
  }
 
  // =========================
@@ -38,9 +43,7 @@ export class GameFlow {
  // APPLY EXTERNAL STATE
  // =========================
  applyState(state) {
-  this.game.gameState.status = state.status;
-  this.game.gameState.rounds = state.rounds;
-
+  this.game.gameState.apply(state);
   this.emit("stateApplied", state);
  }
 
@@ -51,7 +54,8 @@ export class GameFlow {
   this.finishedPlayers.clear();
   this.roundLocked = false;
 
-  this.game.startGame();
+  this.server.startGame();
+
   this.emit("gameStarted", this.game.getState());
 
   await this.startRound();
@@ -70,7 +74,9 @@ export class GameFlow {
 
   const location = await this.generator.generate(this.area);
 
-  this.game.startRound(location);
+  // ❗ теперь через server
+  this.server.startRound(location);
+
   this.emit("streetViewSetLocation", location);
 
   await this.waitForStreetViewReady();
@@ -112,10 +118,13 @@ export class GameFlow {
  finishGuess(point, playerId = "p1") {
   if (this.locked || this.roundLocked) return;
 
-  const result = this.game.setGuess(playerId, point);
-  if (!result) return;
+  const intent = this.game.setGuess(playerId, point);
+  if (!intent) return;
 
-  this.emit("guessResolved", result);
+  // 🔥 ВМЕСТО МУТАЦИИ → В СЕРВЕР
+  this.server.handleGuess(intent);
+
+  this.emit("guessResolved", intent);
 
   // =========================
   // SOLO MODE
@@ -137,7 +146,6 @@ export class GameFlow {
    state: this.game.getState()
   });
 
-  // 🔒 блокируем только текущего игрока
   this.locked = true;
 
   this.emit("inputLocked");
@@ -146,17 +154,11 @@ export class GameFlow {
    state: this.game.getState()
   });
 
-  // =========================
-  // ВСЕ ИГРОКИ ЗАКОНЧИЛИ
-  // =========================
   if (this.finishedPlayers.size >= this.game.players.length) {
    this.finishRound("allPlayersFinished");
    return;
   }
 
-  // =========================
-  // 🔥 СТАРТ 10 СЕК ТАЙМЕРА
-  // =========================
   if (!this.roundLocked) {
    this.roundLocked = true;
 
@@ -184,13 +186,12 @@ export class GameFlow {
   }
  }
 
-// =========================
+ // =========================
  // ROUND END
  // =========================
  finishRound(reason = "manual") {
   this.timer.clear();
   this.roundTimer.clear();
-
   this.locked = true;
 
   this.emit("inputLocked");
@@ -200,11 +201,10 @@ export class GameFlow {
   const isLast =
    state.rounds.length >= this.game.config.rules.rounds;
 
-  // ✅ ФИКС БАГА
   this.emit("roundResultShown", { state, reason });
 
   if (isLast) {
-   this.game.endGame();
+   this.server.endGame(); // 🔥 через сервер
    this.emit("gameEnded", this.game.getState());
    return;
   }
