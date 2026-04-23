@@ -327,7 +327,7 @@ roomController.onState((state) => {
 });
 
   roomController.onStart(() => {
-   window.location.href = `/play.html?room=${room.roomId}`;
+   window.location.href = `/play.html?room=${room.roomId}&role=host`;
   });
 
   start.textContent = "Ожидание игрока...";
