@@ -26,7 +26,7 @@ export async function init() {
 
  const config = getConfig();
 
- const mode = boot?.mode || config.mode;
+const mode = roomId ? "duel" : (boot?.mode || config.mode);
  const roomId = boot?.roomId || null;
 
  // =========================
