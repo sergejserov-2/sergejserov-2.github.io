@@ -6,58 +6,50 @@ export async function createDuelApp(config) {
 
  const roomController = new FirebaseRoomController();
 
- let roomId = config.roomId || null;
+ let roomId;
 
  // =========================
  // CREATE OR JOIN
  // =========================
- if (!roomId) {
+ if (config.roomId) {
+  console.log("JOIN ROOM:", config.roomId);
+
+  roomId = config.roomId;
+  await roomController.joinRoom(roomId);
+
+ } else {
   const room = await roomController.createRoom(config);
+
+  roomId = room.roomId;
 
   console.log("ROOM CREATED:", room.roomId);
   console.log("INVITE LINK:", room.inviteLink);
 
   setupLobby(roomController, room);
 
-  return;
+  // ❌ больше НЕТ waitForStart
+  // UI сам слушает onStart
  }
 
- console.log("JOIN ROOM:", roomId);
-
- const initialState = await roomController.joinRoom(roomId);
-
  // =========================
- // WAIT FOR FSM START
+ // BUILD GAME IMMEDIATELY
  // =========================
- await waitForGameStart(roomController);
-
- // =========================
- // GET FINAL STATE
- // =========================
- const finalState = await roomController.getFinalState?.() 
-  || initialState;
-
- // =========================
- // START GAME
- // =========================
- return buildGameApp({
-  config: finalState.config, // 🔥 ВАЖНО: только LOCKED config
+ const game = buildGameApp({
+  config,
   mode: "duel",
   room: roomController
  });
-}
 
-// =========================
-// FSM SAFE WAITER
-// =========================
-function waitForGameStart(roomController) {
- return new Promise(resolve => {
-  roomController.onState((state) => {
-   if (state.state === "STARTED" && state.config) {
-    resolve(state);
-   }
-  });
+ // =========================
+ // BOOTSTRAP CONTROL BRIDGE
+ // =========================
+ roomController.onStart((payload) => {
+  console.log("🔥 GAME START EVENT RECEIVED");
+
+  game.flow.startGameFromNetwork?.(payload);
  });
+
+ return game;
 }
 
 // =========================
@@ -65,9 +57,4 @@ function waitForGameStart(roomController) {
 // =========================
 function setupLobby(roomController, room) {
  console.log("LOBBY READY:", room.roomId);
-
- // UI:
- // - invite link
- // - live draft config
- // - guestReady / start button enable
 }
