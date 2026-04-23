@@ -53,6 +53,10 @@ export class Game {
   };
  }
 
+applyResult(result) {
+  this.gameState.setRoundResult(result);
+}
+ 
  getState() {
   return this.gameState.getState();
  }
