@@ -6,91 +6,135 @@
 
 <style>
 body {
- margin: 0;
- background: #0f1115;
- color: white;
- font-family: Arial;
- display: flex;
- justify-content: center;
- align-items: center;
- height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f1115;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
 }
+
+/* =========================
+   BOX
+========================= */
 
 .box {
- width: 420px;
- background: #161a22;
- padding: 20px;
- border-radius: 12px;
+    width: 520px;
+    background: #161a22;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
+
+/* =========================
+   HEADER
+========================= */
 
 h2 {
- margin: 0 0 10px;
+    margin: 0 0 12px;
 }
 
-pre {
- background: #0f1115;
- padding: 10px;
- border-radius: 8px;
- font-size: 12px;
- overflow: auto;
+/* =========================
+   ROLE
+========================= */
+
+.role {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-bottom: 12px;
 }
+
+/* =========================
+   CONFIG
+========================= */
+
+.config {
+    background: #0f1115;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    white-space: pre-wrap;
+    margin-bottom: 16px;
+}
+
+/* =========================
+   BUTTON
+========================= */
 
 .btn {
- margin-top: 12px;
- padding: 10px;
- background: #2a2f3a;
- border-radius: 8px;
- text-align: center;
- cursor: pointer;
- user-select: none;
+    width: 100%;
+    padding: 12px;
+    text-align: center;
+    border-radius: 10px;
+    background: #2ecc71;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
 }
 
-.btn.active {
- background: #4ea1ff;
+.btn:hover {
+    background: #27ae60;
 }
 
 .btn.disabled {
- opacity: 0.4;
- pointer-events: none;
+    background: #555;
+    cursor: not-allowed;
 }
 
+.btn.wait {
+    background: #f39c12;
+}
+
+/* =========================
+   STATUS
+========================= */
+
 .status {
- margin-top: 10px;
- font-size: 12px;
- opacity: 0.7;
+    margin-top: 10px;
+    font-size: 12px;
+    opacity: 0.7;
 }
 </style>
+
 </head>
 
 <body>
 
 <div class="box">
- <h2>🕹 Waiting Room</h2>
 
- <div class="status" id="role"></div>
+    <h2>⏳ Waiting Room</h2>
 
- <pre id="config"></pre>
+    <div class="role" id="role">Role: ...</div>
 
- <div class="btn" id="actionBtn"></div>
+    <div class="config" id="config">Loading config...</div>
 
- <div class="status" id="info"></div>
+    <div class="btn disabled" id="actionBtn">...</div>
+
+    <div class="status" id="info"></div>
+
 </div>
 
 <script type="module">
 import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 
 // =========================
-// PARAMS
+// URL
 // =========================
 const url = new URL(window.location.href);
 const roomId = url.searchParams.get("room");
+const role = url.searchParams.get("role"); // host | guest
 
 // =========================
 // UI
 // =========================
-const btn = document.getElementById("actionBtn");
+const roleEl = document.getElementById("role");
 const configEl = document.getElementById("config");
+const btn = document.getElementById("actionBtn");
 const info = document.getElementById("info");
+
+roleEl.textContent = Role: ${role};
 
 // =========================
 // ROOM
@@ -100,28 +144,62 @@ const room = new FirebaseRoomController();
 await room.joinRoom(roomId);
 
 // =========================
-// CONFIG
+// LIVE CONFIG (HOST EDITS IN REALTIME)
 // =========================
 room.onConfig((config) => {
  configEl.textContent = JSON.stringify(config, null, 2);
 });
 
 // =========================
-// READY
+// STATE
 // =========================
-btn.textContent = "READY";
-
-btn.onclick = () => {
- room.setGuestReady();
- btn.textContent = "WAITING HOST...";
- btn.disabled = true;
-};
+let guestReady = false;
+let started = false;
 
 // =========================
-// START GAME
+// HOST
+// =========================
+if (role === "host") {
+
+ btn.textContent = "START GAME";
+ btn.classList.add("disabled");
+
+ info.textContent = "Waiting for player...";
+
+ room.onGuestReady(() => {
+  guestReady = true;
+  btn.classList.remove("disabled");
+  btn.classList.add("wait");
+  info.textContent = "Player ready ✔";
+ });
+
+ btn.onclick = () => {
+  if (!guestReady) return;
+  room.startGame();
+ };
+}
+
+// =========================
+// GUEST
+// =========================
+if (role === "guest") {
+
+ btn.textContent = "READY";
+
+ btn.onclick = () => {
+  room.setGuestReady();
+  btn.classList.add("disabled");
+  btn.textContent = "WAITING HOST...";
+  info.textContent = "You are ready ✔";
+ };
+}
+
+// =========================
+// START SIGNAL
 // =========================
 room.onStart(() => {
- window.location.href = `/play.html?room=${roomId}`;
+ started = true;
+ `window.location.href = /play.html?room=${roomId}`;
 });
 </script>
 
