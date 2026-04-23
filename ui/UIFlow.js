@@ -61,7 +61,7 @@ export class UIFlow {
    this.roundOverviewUI?.clear();
    this.gameOverviewUI?.clear();
 
-   this.staticUI.stopRoundTimer?.();
+   this.staticUI.stopRoundDelay?.();
 
    this.staticUI.updateHUD(
     this.uiBuilder.formatGameVM(state)
@@ -100,34 +100,38 @@ export class UIFlow {
   });
 
   // =========================
-  // 🧠 MULTIPLAYER
+  // WAITING (DUEL)
   // =========================
-
-  // 🔥 игрок сделал guess → waiting экран
   this.gameFlow.on("roundWaiting", () => {
-   this.screenManager.show("waiting"); // пока используем loading как waiting
+   this.screenManager.show("waiting");
   });
 
-  // 🔥 таймер ожидания других игроков
   this.gameFlow.on("roundTimerTick", (t) => {
    this.staticUI.updateRoundTimer?.(t);
   });
 
   // =========================
-  // ROUND RESULT
+  // ROUND RESULT (GUESS ONLY PIPELINE)
   // =========================
-  this.gameFlow.on("roundResultShown", ({ state }) => {
+  this.gameFlow.on("roundResultShown", (payload) => {
+   const { state } = payload;
+
    this.screenManager.show("roundResult");
 
    const vm = this.uiBuilder.formatRoundVM(state);
+
+   // 1. UI FIRST
    this.staticUI.showRoundResult(vm);
 
-   const rounds = state.rounds || [];
-   const round = rounds[rounds.length - 1];
+   const round = state.rounds?.at(-1);
    if (!round) return;
 
-   this.roundOverviewUI.render(round);
+   // 2. MAP RENDER AFTER UI FRAME
+   requestAnimationFrame(() => {
+    this.roundOverviewUI.render(round);
+   });
 
+   // 3. DELAY TIMER START LAST
    this.staticUI.startRoundDelay(10000, () => {
     this.gameFlow.nextRound();
    });
@@ -142,11 +146,12 @@ export class UIFlow {
    const vm = this.uiBuilder.formatGameResultVM(state);
    this.staticUI.showGameResult(vm);
 
-   const rounds = state.rounds || [];
-   const last = rounds[rounds.length - 1];
+   const last = state.rounds?.at(-1);
 
    if (last) {
-    this.gameOverviewUI.render(last);
+    requestAnimationFrame(() => {
+     this.gameOverviewUI.render(last);
+    });
    }
 
    this.bindGameResultButtons();
@@ -166,11 +171,11 @@ export class UIFlow {
   const playAgain = root.querySelector(".play-again-button");
   const home = root.querySelector(".home-button");
 
-  playAgain?.addEventListener("click", () => {
+  playAgain.addEventListener("click", () => {
    this.gameFlow.startGame();
   });
 
-  home?.addEventListener("click", () => {
+ home.addEventListener("click", () => {
    window.location.href = "index.html";
   });
  }
