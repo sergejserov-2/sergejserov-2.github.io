@@ -127,4 +127,28 @@ export class FirebaseRoomController {
  onDraftConfig(cb) {
   this.listeners.draftConfig.push(cb);
  }
+
+// =========================
+// ROUND STATE
+// =========================
+setRound(round) {
+ return update(this.roomRef, {
+  "game/round": round
+ });
+}
+
+onRound(cb) {
+ this.listeners.round ??= [];
+
+ this.listeners.round.push(cb);
+
+ onValue(ref(this.db, `rooms/${this.roomId}/game/round`), (snap) => {
+  cb(snap.val());
+ });
+}
+
+
+
+
+ 
 }
