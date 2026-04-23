@@ -155,8 +155,8 @@ export async function init() {
  const screenManager = new ScreenManager({
   root: screensEl
  });
-
-const roundOverviewUI = new MapOverviewUI({
+ 
+ const roundOverviewUI = new MapOverviewUI({
   adapter: mapAdapter,
   element: roundOverviewMapEl,
   uiBuilder
