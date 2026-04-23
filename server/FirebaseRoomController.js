@@ -8,7 +8,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
 import { db } from "./firebaseApp.js";
-import { firebaseApp } from "./FirebaseApp.js";
+import { firebaseApp } from "./firebaseApp.js";
 
 export class FirebaseRoomController {
  constructor() {
