@@ -441,10 +441,7 @@ start.onclick = () => {
  // DUEL
  if (!roomController || !currentRoomId) return;
 
- const role = new URLSearchParams(window.location.search).get("role") || "host";
-
- // 🔥 CRITICAL FIX: direct navigation, no events
- window.location.href = `/play.html?room=${currentRoomId}&role=${role}`;
+ window.location.href = `/play.html?room=${currentRoomId}&role=host`;
 };
 
 </script>
