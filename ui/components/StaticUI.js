@@ -143,7 +143,7 @@ export class StaticUI {
  // TIMER BAR
  // =========================
 
- startRoundDelay(duration, onFinish) {
+startRoundDelay(duration, onFinish) {
   this.stopRoundDelay();
 
   const bar = this.roundRoot?.querySelector(".round-timer-bar");
@@ -157,4 +157,26 @@ export class StaticUI {
   const animate = (now) => {
    const progress = Math.max(0, 1 - (now - start) / duration);
 
-   bar.style.transform = `scale
+   bar.style.transform = `scaleX(${progress})`;
+
+   if (progress > 0) {
+    this.delayFrame = requestAnimationFrame(animate);
+   } else {
+    this.stopRoundDelay();
+    onFinish?.();
+   }
+  };
+
+  this.delayFrame = requestAnimationFrame(animate);
+ }
+
+ stopRoundDelay() {
+  if (this.delayFrame) {
+   cancelAnimationFrame(this.delayFrame);
+   this.delayFrame = null;
+  }
+
+  const bar = this.roundRoot?.querySelector(".round-timer-bar");
+  if (bar) bar.style.transform = "scaleX(0)";
+ }
+}
