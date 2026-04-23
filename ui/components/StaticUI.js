@@ -17,7 +17,6 @@ export class StaticUI {
  // =========================
  // HUD
  // =========================
-
  updateHUD(vm = {}) {
   if (this.roundEl) {
    this.roundEl.textContent = `Раунд: ${vm.round} / ${vm.roundLimit}`;
@@ -35,39 +34,34 @@ export class StaticUI {
 
  updateMoves(value) {
   const el = this.hudElement.querySelector(".moves-left b");
-  if (!el) return;
-  el.textContent = value === -1 ? "∞" : `Ходы: ${value}`;
+  if (el) el.textContent = `Ходы: ${value}`;
  }
 
  // =========================
  // ROUND RESULT
  // =========================
-
  showRoundResult(vm = {}) {
   const root = this.roundRoot;
   if (!root) return;
 
   const container = root.querySelector(".players-score");
-  const guesses = vm.guesses || [];
 
-  this.renderPlayerBars(container, guesses);
+  this.renderPlayerBars(container, vm.guesses || []);
  }
 
  // =========================
  // GAME RESULT
  // =========================
-
  showGameResult(vm = {}) {
   const root = this.gameRoot;
   if (!root) return;
 
   const container = root.querySelector(".players-score");
 
-  const players = vm.players || {};
-
-  const list = Object.entries(players).map(([playerId, data]) => ({
+  const list = Object.entries(vm.players || {}).map(([playerId, data]) => ({
    playerId,
-   score: data.score || 0
+   score: data.score || 0,
+   distance: 0
   }));
 
   this.renderPlayerBars(container, list);
@@ -76,9 +70,8 @@ export class StaticUI {
  }
 
  // =========================
- // PLAYER BARS (без текстов вне бара)
+ // PLAYER BARS
  // =========================
-
  renderPlayerBars(container, list = []) {
   if (!container) return;
 
@@ -100,25 +93,11 @@ export class StaticUI {
    const el = document.createElement("div");
    el.className = "player-score";
 
-   el.style.position = "relative";
-   el.style.margin = "8px 0";
-   el.style.padding = "10px";
-   el.style.borderRadius = "8px";
-   el.style.overflow = "hidden";
-   el.style.background = "rgba(255,255,255,0.08)";
-
    el.innerHTML = `
-    <div style="
-      position: relative;
-      z-index: 2;
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: white;
-    ">
-      <span>Игрок: ${p.playerId}</span>
-      <span>Точка на расстоянии ${distance.toFixed(1)} км</span>
-      <span>${score} / ${MAX_SCORE}</span>
+    <div style="display:flex;justify-content:space-between;color:white;font-size:13px;">
+     <span>${p.playerId}</span>
+     <span>${distance.toFixed(1)} km</span>
+     <span>${score} / ${MAX_SCORE}</span>
     </div>
 
     <div class="fill"></div>
@@ -133,7 +112,13 @@ export class StaticUI {
    fill.style.width = `${percent}%`;
    fill.style.background = color;
    fill.style.opacity = "0.35";
-   fill.style.transition = "width 0.4s ease";
+
+   el.style.position = "relative";
+   el.style.overflow = "hidden";
+   el.style.padding = "10px";
+   el.style.margin = "8px 0";
+   el.style.borderRadius = "8px";
+   el.style.background = "rgba(255,255,255,0.08)";
 
    wrap.appendChild(el);
   });
@@ -144,19 +129,12 @@ export class StaticUI {
  // =========================
  // ROUND TIMER BAR (FIXED)
  // =========================
-
  startRoundDelay(duration, onFinish) {
   this.stopRoundDelay();
 
-  // 🔥 ВАЖНО: ищем каждый раз заново
   const bar = this.roundRoot?.querySelector(".round-timer-bar");
+  if (!bar) return;
 
-  if (!bar) {
-   console.warn("round-timer-bar not found in DOM");
-   return;
-  }
-
-  bar.style.transition = "none";
   bar.style.transform = "scaleX(1)";
 
   const start = performance.now();
@@ -184,8 +162,6 @@ export class StaticUI {
   }
 
   const bar = this.roundRoot?.querySelector(".round-timer-bar");
-  if (bar) {
-   bar.style.transform = "scaleX(0)";
-  }
+  if (bar) bar.style.transform = "scaleX(0)";
  }
 }
