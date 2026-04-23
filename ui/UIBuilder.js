@@ -50,11 +50,12 @@ export class UIBuilder {
  // =========================
  // HUD
  // =========================
+
  formatGameVM(state) {
   const rounds = state.rounds || [];
 
-  const totalScore = rounds.reduce((s, r) => {
-   return s + (r.guesses?.reduce((a, g) => a + (g.score || 0), 0) || 0);
+  const totalScore = rounds.reduce((sum, r) => {
+   return sum + (r.guesses || []).reduce((a, g) => a + (g.score || 0), 0);
   }, 0);
 
   return {
@@ -67,41 +68,40 @@ export class UIBuilder {
  }
 
  // =========================
- // ROUND (🔥 ВАЖНО)
+ // ROUND
  // =========================
+
  formatRoundVM(state) {
   const round = state.rounds.at(-1);
 
   return {
-   actual: round?.actualLocation || null,
-
-   guesses: (round?.guesses || []).map(g => ({
-    playerId: g.playerId,
-    lat: g.lat,
-    lng: g.lng,
-    distance: g.distance || 0,
-    score: g.score || 0
-   }))
+   actual: round?.actualLocation,
+   guesses: round?.guesses || []
   };
  }
 
  // =========================
  // GAME RESULT
  // =========================
+
  formatGameResultVM(state) {
   const rounds = state.rounds || [];
 
   const players = {};
 
-  rounds.forEach(r => {
-   (r.guesses || []).forEach(g => {
+  for (const r of rounds) {
+   for (const g of (r.guesses || [])) {
     if (!players[g.playerId]) {
      players[g.playerId] = { score: 0 };
     }
-    players[g.playerId].score += g.score || 0;
-   });
-  });
 
-  return { players, rounds };
+    players[g.playerId].score += g.score || 0;
+   }
+  }
+
+  return {
+   players,
+   rounds
+  };
  }
 }
