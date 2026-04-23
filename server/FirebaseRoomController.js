@@ -3,20 +3,15 @@ import {
  set,
  onValue,
  push,
- get
+ get,
+ update
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
 import { db } from "./firebaseApp.js";
 
 // =========================
-// EVENTS
+// ROOM CONTROLLER (STATE ONLY)
 // =========================
-const EVENTS = {
- CONFIG_UPDATED: "CONFIG_UPDATED",
- GUEST_READY: "GUEST_READY",
- GAME_STARTED: "GAME_STARTED"
-};
-
 export class FirebaseRoomController {
  constructor() {
   this.db = db;
@@ -24,14 +19,13 @@ export class FirebaseRoomController {
   this.roomId = null;
   this.roomRef = null;
 
-  // listeners
+  // =========================
+  // LISTENERS
+  // =========================
   this.listeners = {
-   start: [],
-   draftConfig: [],
-   guestReady: []
+   players: [],
+   draftConfig: []
   };
-
-  this.lastSeen = new Set();
  }
 
  // =========================
@@ -46,8 +40,22 @@ export class FirebaseRoomController {
 
   await set(this.roomRef, {
    roomId: this.roomId,
-   draftConfig: initialConfig,
-   events: {}
+
+   // =========================
+   // STATE TREE
+   // =========================
+   players: {
+    host: {
+     connected: true,
+     ready: false
+    },
+    guest: {
+     connected: false,
+     ready: false
+    }
+   },
+
+   draftConfig: initialConfig
   });
 
   this.bind();
@@ -65,95 +73,68 @@ export class FirebaseRoomController {
   this.roomId = roomId;
   this.roomRef = ref(this.db, `rooms/${roomId}`);
 
+  const snap = await get(this.roomRef);
+  const room = snap.val();
+
+  if (!room) throw new Error("Room not found");
+
+  // mark guest connected
+  await update(this.roomRef, {
+   "players/guest/connected": true
+  });
+
   this.bind();
 
-  const snap = await get(this.roomRef);
-  return snap.val();
+  return room;
  }
 
  // =========================
- // EMIT EVENT
- // =========================
- async emitEvent(type, payload = {}) {
-  const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
-  const id = push(eventsRef).key;
-
-  await set(ref(this.db, `rooms/${this.roomId}/events/${id}`), {
-   id,
-   type,
-   payload,
-   ts: Date.now()
-  });
- }
-
- // =========================
- // BIND EVENTS
+ // BIND STATE
  // =========================
  bind() {
-  const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
+  onValue(this.roomRef, (snap) => {
+   const room = snap.val();
+   if (!room) return;
 
-  onValue(eventsRef, (snap) => {
-   const data = snap.val() || {};
-   const events = Object.values(data).sort((a, b) => a.ts - b.ts);
+   // =========================
+   // PLAYERS STATE
+   // =========================
+   this.listeners.players.forEach(cb =>
+    cb(room.players || {})
+   );
 
-   for (const e of events) {
-    if (this.lastSeen.has(e.id)) continue;
-    this.lastSeen.add(e.id);
-
-    switch (e.type) {
-
-     case EVENTS.CONFIG_UPDATED:
-      this.listeners.draftConfig.forEach(cb =>
-       cb(e.payload)
-      );
-      break;
-
-     case EVENTS.GUEST_READY:
-      this.listeners.guestReady.forEach(cb =>
-       cb(e.payload)
-      );
-      break;
-
-     case EVENTS.GAME_STARTED:
-      this.listeners.start.forEach(cb =>
-       cb(e.payload)
-      );
-      break;
-    }
-   }
+   // =========================
+   // CONFIG STATE
+   // =========================
+   this.listeners.draftConfig.forEach(cb =>
+    cb(room.draftConfig || {})
+   );
   });
  }
 
  // =========================
- // API
+ // STATE UPDATES
  // =========================
  setDraftConfig(cfg) {
-  return this.emitEvent(EVENTS.CONFIG_UPDATED, cfg);
+  return update(this.roomRef, {
+   draftConfig: cfg
+  });
  }
 
  setGuestReady() {
-  return this.emitEvent(EVENTS.GUEST_READY);
- }
-
- lockConfigAndStart(config) {
-  return this.emitEvent(EVENTS.GAME_STARTED, {
-   config,
-   startedAt: Date.now()
+  return update(this.roomRef, {
+   "players/guest/ready": true
   });
  }
 
  // =========================
  // LISTENERS
  // =========================
- onStart(cb) {
-  this.listeners.start.push(cb);
+ onPlayers(cb) {
+  this.listeners.players.push(cb);
  }
 
  onDraftConfig(cb) {
   this.listeners.draftConfig.push(cb);
- }
-
- onGuestReady(cb) {
-  this.listeners.guestReady.push(cb);
  }
 }
