@@ -319,25 +319,29 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   });
 
   // =========================
-  // STATE (FSM)
+  // STATE (ONLY UI)
   // =========================
   roomController.onState((state) => {
 
-   if (state.guestReady && !state.started) {
-    start.textContent = "Начать игру";
-    start.classList.remove("wait");
-   }
-
    if (!state.guestReady) {
     start.textContent = "Ожидание игрока...";
+    start.classList.add("wait");
+   }
+
+   if (state.guestReady) {
+    start.textContent = "Начать игру";
+    start.classList.remove("wait");
    }
   });
 
   // =========================
-  // GAME START EVENT
+  // GAME START
   // =========================
-  roomController.onStart(() => {
-   window.location.href = `/play.html?room=${room.roomId}&role=host`;
+  roomController.onStart((payload) => {
+   console.log("🔥 START EVENT RECEIVED");
+
+   window.location.href =
+    `/play.html?room=${room.roomId}&role=host`;
   });
 
   start.textContent = "Ожидание игрока...";
@@ -409,7 +413,7 @@ timeInput.oninput = syncRoom;
 const movesOff = document.getElementById("movesOff");
 const movesOn = document.getElementById("movesOn");
 const movesInput = document.getElementById("movesInput");
-movesOff.onclick = () => {
+    movesOff.onclick = () => {
  movesOff.classList.add("active");
  movesOn.classList.remove("active");
  movesInput.disabled = true;
@@ -428,21 +432,16 @@ movesOn.onclick = () => {
 movesInput.oninput = syncRoom;
 
 // =========================
-// START BUTTON
+// START BUTTON (FIXED)
+// =========================
 start.onclick = () => {
 
  if (mode === "duel") {
   if (!roomController) return;
 
-  // 🔥 ВАЖНО: HOST START
-roomController.onState((state) => {
- if (state.guestReady && !state.started) {
-  console.log("🔥 AUTO START TRIGGER");
+  console.log("🔥 HOST START CLICK");
 
   roomController.lockConfigAndStart(buildConfig());
- }
-});
-
   return;
  }
 
