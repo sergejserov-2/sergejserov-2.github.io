@@ -70,7 +70,7 @@ export class FirebaseRoomController {
  // =========================
  async joinRoom(roomId) {
  this.roomId = roomId;
- this.roomRef = ref(this.db, rooms/${roomId});
+ this.roomRef = ref(this.db, `rooms/${roomId}`);
 
  this.bind();
 
