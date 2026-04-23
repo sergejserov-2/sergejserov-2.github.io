@@ -16,10 +16,10 @@ export class FirebaseRoomController {
   this.roomRef = null;
 
   this.listeners = {
-   config: [],
    guestReady: [],
    start: [],
-   update: []
+   config: [],
+   state: []
   };
  }
 
@@ -28,24 +28,17 @@ export class FirebaseRoomController {
  // =========================
  async createRoom(config) {
   const roomsRef = ref(this.db, "rooms");
-
   const newRoom = push(roomsRef);
 
   this.roomId = newRoom.key;
-  this.roomRef = ref(this.db, rooms/${this.roomId});
+  this.roomRef = ref(this.db, `rooms/${this.roomId}`);
 
   const initialState = {
    roomId: this.roomId,
    config,
-   status: "lobby",
 
-   hostReady: false,
    guestReady: false,
-
-   players: {
-    host: true,
-    guest: false
-   },
+   started: false,
 
    createdAt: Date.now()
   };
@@ -61,7 +54,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // JOIN ROOM (GUEST / HOST RELOAD)
+ // JOIN ROOM (GUEST)
  // =========================
  async joinRoom(roomId) {
   this.roomId = roomId;
@@ -70,32 +63,31 @@ export class FirebaseRoomController {
   this.bind();
 
   const snap = await get(this.roomRef);
-
-  if (!snap.exists()) {
-   throw new Error("Room not found");
-  }
-
   return snap.val();
  }
 
  // =========================
- // BIND FIREBASE STREAM
+ // FIREBASE BIND
  // =========================
  bind() {
   onValue(this.roomRef, (snap) => {
-   const data = snap.val();
-   if (!data) return;
+   const state = snap.val();
+   if (!state) return;
 
-   this.listeners.update.forEach(cb => cb(data));
+   // full state
+   this.listeners.state.forEach(cb => cb(state));
 
-   this.listeners.config.forEach(cb => cb(data.config));
+   // config
+   this.listeners.config.forEach(cb => cb(state.config));
 
-   if (data.guestReady) {
+   // guest ready
+   if (state.guestReady) {
     this.listeners.guestReady.forEach(cb => cb());
    }
 
-   if (data.status === "started") {
-    this.listeners.start.forEach(cb => cb(data));
+   // start game
+   if (state.started) {
+    this.listeners.start.forEach(cb => cb(state));
    }
   });
  }
@@ -103,7 +95,7 @@ export class FirebaseRoomController {
  // =========================
  // GUEST READY
  // =========================
- async setReady() {
+ async setGuestReady() {
   if (!this.roomRef) return;
 
   await update(this.roomRef, {
@@ -115,29 +107,20 @@ export class FirebaseRoomController {
  // HOST START GAME
  // =========================
  async startGame() {
-  if (!this.roomRef) return;
-
   const snap = await get(this.roomRef);
-  const data = snap.val();
+  const state = snap.val();
 
-  if (!data.guestReady) {
-   console.warn("Guest not ready yet");
-   return;
-  }
+  if (!state?.guestReady) return;
 
   await update(this.roomRef, {
-   status: "started",
+   started: true,
    startedAt: Date.now()
   });
  }
 
  // =========================
- // LISTENERS API
+ // EVENTS API
  // =========================
- onConfig(cb) {
-  this.listeners.config.push(cb);
- }
-
  onGuestReady(cb) {
   this.listeners.guestReady.push(cb);
  }
@@ -146,7 +129,11 @@ export class FirebaseRoomController {
   this.listeners.start.push(cb);
  }
 
- onUpdate(cb) {
-  this.listeners.update.push(cb);
+ onConfig(cb) {
+  this.listeners.config.push(cb);
+ }
+
+ onState(cb) {
+  this.listeners.state.push(cb);
  }
 }
