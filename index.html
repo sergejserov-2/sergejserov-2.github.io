@@ -251,7 +251,7 @@ let movesEnabled = false;
 let roomController = null;
 
 // =========================
-// BUILD CONFIG
+// CONFIG
 // =========================
 function buildConfig() {
  return {
@@ -266,7 +266,7 @@ function buildConfig() {
 }
 
 // =========================
-// ELEMENTS
+// UI
 // =========================
 const link = document.getElementById("duelLink");
 const start = document.getElementById("start");
@@ -282,11 +282,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
 
   mode = b.dataset.mode;
 
-  // =========================
-  // SOLO
-  // =========================
   if (mode === "solo") {
-
    roomController = null;
 
    link.value = "";
@@ -311,51 +307,35 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   link.value = room.inviteLink;
   link.disabled = false;
 
-  console.log("🟢 ROOM:", room.roomId);
+  console.log("ROOM:", room.roomId);
 
   // =========================
-  // CONFIG SYNC
+  // CONFIG
   // =========================
   roomController.onDraftConfig((cfg) => {
-   console.log("CONFIG:", cfg);
+   console.log("draftConfig:", cfg);
   });
 
   // =========================
-  // STATE (LOCAL DERIVED STATE)
+  // GUEST READY
   // =========================
-  roomController.onState((state) => {
+  roomController.onGuestReady(() => {
+   console.log("GUEST READY");
 
-   console.log("STATE:", state);
-
-   if (state.guestReady && !state.started) {
-    start.textContent = "Начать игру";
-    start.classList.remove("wait");
-    start.disabled = false;
-   }
-
-   if (!state.guestReady) {
-    start.textContent = "Ожидание игрока...";
-    start.disabled = true;
-   }
-
-   if (state.started) {
-    start.textContent = "Запуск...";
-    start.disabled = true;
-   }
+   start.textContent = "Начать игру";
+   start.classList.remove("wait");
   });
 
   // =========================
-  // START GAME EVENT
+  // START GAME
   // =========================
-  roomController.onStart((payload) => {
-   console.log("🔥 START RECEIVED:", payload);
+  roomController.onStart(({ config }) => {
+   console.log("GAME START");
 
-   window.location.href =
-    `/play.html?room=${room.roomId}&role=host`;
+   window.location.href = `/play.html?room=${room.roomId}&role=host`;
   });
 
   start.textContent = "Ожидание игрока...";
-  start.disabled = true;
  };
 });
 
@@ -368,7 +348,7 @@ function syncRoom() {
 }
 
 // =========================
-// ROUND SELECT
+// ROUNDS
 // =========================
 document.querySelectorAll("[data-rounds]").forEach(b => {
  b.onclick = () => {
@@ -381,7 +361,7 @@ document.querySelectorAll("[data-rounds]").forEach(b => {
 });
 
 // =========================
-// AREA SELECT
+// AREA
 // =========================
 document.querySelectorAll("[data-area]").forEach(b => {
  b.onclick = () => {
@@ -417,6 +397,7 @@ timeOn.onclick = () => {
 };
 
 timeInput.oninput = syncRoom;
+
 // =========================
 // MOVES
 // =========================
@@ -431,7 +412,6 @@ movesOff.onclick = () => {
  movesEnabled = false;
  syncRoom();
 };
-
 movesOn.onclick = () => {
  movesOn.classList.add("active");
  movesOff.classList.remove("active");
@@ -450,7 +430,7 @@ start.onclick = () => {
  if (mode === "duel") {
   if (!roomController) return;
 
-  console.log("🔥 HOST START CLICK");
+  console.log("HOST START");
 
   roomController.lockConfigAndStart(buildConfig());
   return;
