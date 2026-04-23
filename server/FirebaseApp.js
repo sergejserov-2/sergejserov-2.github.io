@@ -1,13 +1,17 @@
-import { initializeApp } from "firebase/app";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-const firebaseConfig = {
- apiKey: "YOUR_API_KEY",
- authDomain: "YOUR_PROJECT.firebaseapp.com",
- databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
- projectId: "YOUR_PROJECT",
- storageBucket: "YOUR_PROJECT.appspot.com",
- messagingSenderId: "XXX",
- appId: "XXX"
-};
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBINTgjBBLq7pn-oi6tlxAqSgb0spkPSIs",
+    authDomain: "mini-game-by-loc.firebaseapp.com",
+    databaseURL: "https://mini-game-by-loc-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "mini-game-by-loc",
+    storageBucket: "mini-game-by-loc.firebasestorage.app",
+    messagingSenderId: "934025050812",
+    appId: "1:934025050812:web:1c2d15239575857bc32eb9"
+  };
 
-export const firebaseApp = initializeApp(firebaseConfig);
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
