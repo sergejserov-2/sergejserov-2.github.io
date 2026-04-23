@@ -124,7 +124,7 @@ import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 // =========================
 const url = new URL(window.location.href);
 const roomId = url.searchParams.get("room");
-const role = url.searchParams.get("role"); // host | guest
+const role = url.searchParams.get("role");
 
 // =========================
 // UI
@@ -134,7 +134,7 @@ const configEl = document.getElementById("config");
 const btn = document.getElementById("actionBtn");
 const info = document.getElementById("info");
 
-roleEl.textContent = Role: ${role};
+roleEl.textContent = role;
 
 // =========================
 // ROOM
@@ -144,43 +144,39 @@ const room = new FirebaseRoomController();
 await room.joinRoom(roomId);
 
 // =========================
-// LIVE CONFIG (HOST EDITS IN REALTIME)
+// LIVE CONFIG (ВАЖНО: DRAFT)
 // =========================
-room.onConfig((config) => {
- configEl.textContent = JSON.stringify(config, null, 2);
+room.onDraftConfig((draft) => {
+ configEl.textContent = JSON.stringify(draft, null, 2);
 });
 
 // =========================
-// STATE
+// START SIGNAL
 // =========================
-let guestReady = false;
-let started = false;
+room.onStart(() => {
+ window.location.href = `/play.html?room=${roomId}`;
+});
 
 // =========================
-// HOST
+// HOST VIEW
 // =========================
 if (role === "host") {
 
  btn.textContent = "START GAME";
- btn.classList.add("disabled");
-
- info.textContent = "Waiting for player...";
+ btn.disabled = true;
 
  room.onGuestReady(() => {
-  guestReady = true;
-  btn.classList.remove("disabled");
-  btn.classList.add("wait");
-  info.textContent = "Player ready ✔";
+  btn.disabled = false;
+  info.textContent = "Player ready ✔️";
  });
 
  btn.onclick = () => {
-  if (!guestReady) return;
-  room.startGame();
+  room.lockConfigAndStart();
  };
 }
 
 // =========================
-// GUEST
+// GUEST VIEW
 // =========================
 if (role === "guest") {
 
@@ -188,19 +184,10 @@ if (role === "guest") {
 
  btn.onclick = () => {
   room.setGuestReady();
-  btn.classList.add("disabled");
+  btn.disabled = true;
   btn.textContent = "WAITING HOST...";
-  info.textContent = "You are ready ✔";
  };
 }
-
-// =========================
-// START SIGNAL
-// =========================
-room.onStart(() => {
- started = true;
- `window.location.href = /play.html?room=${roomId}`;
-});
 </script>
 
 </body>
