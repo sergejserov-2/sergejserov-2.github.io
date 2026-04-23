@@ -49,11 +49,11 @@ export async function createDuelApp(config) {
  }
 
  // =========================
- // WAIT START
+ // WAIT START (FIXED)
  // =========================
  console.log("🟡 [DUEL] WAITING FOR START EVENT...");
 
- const gameConfig = await waitForStart(roomController);
+ const gameConfig = await waitForStart(roomController, config);
 
  console.log("🟢 [DUEL] START RECEIVED");
  console.log("🟢 [DUEL] GAME CONFIG:", gameConfig);
@@ -64,7 +64,7 @@ export async function createDuelApp(config) {
  console.log("🟡 [DUEL] CALL buildGameApp");
 
  const app = buildGameApp({
-  config: gameConfig || config,
+  config: gameConfig,
   mode: "duel",
   room: roomController,
   role
@@ -76,19 +76,18 @@ export async function createDuelApp(config) {
 }
 
 // =========================
-// START GATE
+// SAFE START GATE (NO UNSUB BUG)
 // =========================
-function waitForStart(roomController) {
+function waitForStart(roomController, fallbackConfig) {
  return new Promise(resolve => {
 
   console.log("🟡 [WAIT] Subscribing to onStart...");
 
-  const unsub = roomController.onStart((payload) => {
+  roomController.onStart((payload) => {
    console.log("🔥 [WAIT] GAME_STARTED EVENT RECEIVED");
    console.log("🔥 [WAIT] PAYLOAD:", payload);
 
-   unsub?.();
-   resolve(payload?.config);
+   resolve(payload?.config || fallbackConfig);
   });
 
  });
