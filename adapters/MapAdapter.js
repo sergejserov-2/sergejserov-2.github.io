@@ -106,7 +106,7 @@ export class MapAdapter {
     // =========================
     createMarker(map, { lat, lng }, { color = "#ff4d4d", scale = 1 } = {}) {
         const size = 20 * scale;
-        const inner = size * 0.75;
+        const inner = size * 0.6;
 
         const el = document.createElement("div");
 
