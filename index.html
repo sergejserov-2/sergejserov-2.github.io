@@ -336,7 +336,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   // START GAME
   // =========================
   roomController.onStart(() => {
-   window.location.href = /play.html?room=${room.roomId}&role=host;
+   window.location.href = `/play.html?room=${room.roomId}&role=host`;
   });
  };
 });
