@@ -266,7 +266,7 @@ function buildConfig() {
 }
 
 // =========================
-// UI ELEMENTS
+// ELEMENTS
 // =========================
 const link = document.getElementById("duelLink");
 const start = document.getElementById("start");
@@ -283,7 +283,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   mode = b.dataset.mode;
 
   // =========================
-  // SOLO MODE
+  // SOLO
   // =========================
   if (mode === "solo") {
 
@@ -299,7 +299,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   }
 
   // =========================
-  // DUEL MODE
+  // DUEL
   // =========================
   start.textContent = "Создание комнаты...";
   start.classList.add("wait");
@@ -311,7 +311,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   link.value = room.inviteLink;
   link.disabled = false;
 
-  console.log("🟢 ROOM CREATED:", room.roomId);
+  console.log("🟢 ROOM:", room.roomId);
 
   // =========================
   // CONFIG SYNC
@@ -321,21 +321,46 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   });
 
   // =========================
-  // GAME START LISTENER (ONLY SOURCE OF TRUTH)
+  // STATE (LOCAL DERIVED STATE)
+  // =========================
+  roomController.onState((state) => {
+
+   console.log("STATE:", state);
+
+   if (state.guestReady && !state.started) {
+    start.textContent = "Начать игру";
+    start.classList.remove("wait");
+    start.disabled = false;
+   }
+
+   if (!state.guestReady) {
+    start.textContent = "Ожидание игрока...";
+    start.disabled = true;
+   }
+
+   if (state.started) {
+    start.textContent = "Запуск...";
+    start.disabled = true;
+   }
+  });
+
+  // =========================
+  // START GAME EVENT
   // =========================
   roomController.onStart((payload) => {
-   console.log("🔥 GAME START RECEIVED:", payload);
+   console.log("🔥 START RECEIVED:", payload);
 
    window.location.href =
     `/play.html?room=${room.roomId}&role=host`;
   });
 
   start.textContent = "Ожидание игрока...";
+  start.disabled = true;
  };
 });
 
 // =========================
-// SYNC CONFIG TO ROOM
+// SYNC CONFIG
 // =========================
 function syncRoom() {
  if (mode !== "duel" || !roomController) return;
@@ -392,7 +417,6 @@ timeOn.onclick = () => {
 };
 
 timeInput.oninput = syncRoom;
-
 // =========================
 // MOVES
 // =========================
@@ -407,7 +431,8 @@ movesOff.onclick = () => {
  movesEnabled = false;
  syncRoom();
 };
-    movesOn.onclick = () => {
+
+movesOn.onclick = () => {
  movesOn.classList.add("active");
  movesOff.classList.remove("active");
  movesInput.disabled = false;
