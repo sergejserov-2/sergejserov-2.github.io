@@ -8,11 +8,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
 import { db } from "./firebaseApp.js";
-import { firebaseApp } from "./firebaseApp.js";
 
 export class FirebaseRoomController {
  constructor() {
-  this.db = getDatabase(firebaseApp);
+  this.db = db;
 
   this.roomId = null;
   this.roomRef = null;
@@ -35,7 +34,7 @@ export class FirebaseRoomController {
   this.roomId = newRoom.key;
   this.roomRef = ref(this.db, `rooms/${this.roomId}`);
 
-  const state = {
+  await set(this.roomRef, {
    roomId: this.roomId,
    config,
 
@@ -43,9 +42,7 @@ export class FirebaseRoomController {
    started: false,
 
    createdAt: Date.now()
-  };
-
-  await set(this.roomRef, state);
+  });
 
   this.bind();
 
@@ -80,7 +77,7 @@ export class FirebaseRoomController {
    this.listeners.config.forEach(cb => cb(state.config));
 
    if (state.guestReady) {
-    this.listeners.guestReady.forEach(cb => cb());
+    this.listeners.guestReady.forEach(cb => cb(state));
    }
 
    if (state.started) {
@@ -93,6 +90,8 @@ export class FirebaseRoomController {
  // GUEST READY
  // =========================
  async setGuestReady() {
+  if (!this.roomRef) return;
+
   await update(this.roomRef, {
    guestReady: true
   });
