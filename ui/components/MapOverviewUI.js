@@ -60,12 +60,15 @@ export class MapOverviewUI {
         for (const g of guesses) {
             const color = this.uiBuilder.getPlayerColor(g.playerId);
 
-            this.markers.push(
-                this.adapter.createMarker(this.map, g, {
-                    color,
-                    scale: 1
-                })
-            );
+        this.markers.push(
+          this.adapter.createMarker(this.map, {
+            lat: g.lat,
+            lng: g.lng
+          }, {
+            color,
+            scale: 1
+          })
+        );
 
             pointsForCamera.push(g);
         }
@@ -84,23 +87,32 @@ export class MapOverviewUI {
             const color = this.uiBuilder.getPlayerColor(g.playerId);
 
             await this.adapter.animateLine(
-                this.map,
-                g,
-                actual,
-                color,
-                actualColor
+              this.map,
+              {
+                lat: g.lat,
+                lng: g.lng
+              },
+              {
+                lat: actual.lat,
+                lng: actual.lng
+              },
+              color,
+              actualColor
             );
         }
 
         // =========================
         // 3. ACTUAL MARKER (ПОСЛЕДНИЙ)
         // =========================
-        this.markers.push(
-            this.adapter.createMarker(this.map, actual, {
-                color: actualColor,
-                scale: 1.3
-            })
-        );
+this.markers.push(
+  this.adapter.createMarker(this.map, {
+    lat: actual.lat,
+    lng: actual.lng
+  }, {
+    color: actualColor,
+    scale: 1.3
+  })
+);
     }
 
     // =========================
