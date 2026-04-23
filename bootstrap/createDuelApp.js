@@ -2,7 +2,7 @@ import { FirebaseRoomController } from "../server/FirebaseRoomController.js";
 import { buildGameApp } from "./shared/buildGameApp.js";
 
 export async function createDuelApp(config) {
-
+console.log("Entry Duel");
  const params = new URLSearchParams(window.location.search);
  const role = params.get("role") || "host";
  const roomId = params.get("room");
