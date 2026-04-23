@@ -435,7 +435,13 @@ start.onclick = () => {
   if (!roomController) return;
 
   // 🔥 ВАЖНО: HOST START
+roomController.onState((state) => {
+ if (state.guestReady && !state.started) {
+  console.log("🔥 AUTO START TRIGGER");
+
   roomController.lockConfigAndStart(buildConfig());
+ }
+});
 
   return;
  }
