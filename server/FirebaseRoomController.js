@@ -27,25 +27,20 @@ export class FirebaseRoomController {
   this.roomId = null;
   this.roomRef = null;
 
-  // =========================
-  // LISTENERS
-  // =========================
+  // listeners
   this.listeners = {
    start: [],
    draftConfig: [],
    roundStarted: [],
    guess: [],
-   roundComplete: [],
-   state: []
+   roundComplete: []
   };
 
-  // =========================
-  // LOCAL DERIVED STATE (IMPORTANT)
-  // =========================
-  this.localState = {
-   guestReady: false,
-   started: false
-  };
+  // защита от повторной обработки
+  this.seen = new Set();
+
+  // локально (только для UI ожидания)
+  this.guestReady = false;
  }
 
  // =========================
@@ -68,7 +63,8 @@ export class FirebaseRoomController {
 
   return {
    roomId: this.roomId,
-   inviteLink: `${window.location.origin}/waiting.html?room=${this.roomId}&role=guest`
+   inviteLink:
+    `${window.location.origin}/waiting.html?room=${this.roomId}&role=guest`
   };
  }
 
@@ -101,7 +97,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // BIND EVENT STREAM
+ // SUBSCRIBE
  // =========================
  bind() {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
@@ -112,6 +108,9 @@ export class FirebaseRoomController {
 
    for (const e of events) {
 
+    if (this.seen.has(e.id)) continue;
+    this.seen.add(e.id);
+
     switch (e.type) {
 
      case EVENTS.CONFIG_UPDATED:
@@ -121,14 +120,11 @@ export class FirebaseRoomController {
       break;
 
      case EVENTS.GUEST_READY:
-      this.localState.guestReady = true;
-      this.pushState();
+      this.guestReady = true;
+      this.emitState();
       break;
 
      case EVENTS.GAME_STARTED:
-      this.localState.started = true;
-      this.pushState();
-
       this.listeners.start.forEach(cb =>
        cb(e.payload)
       );
@@ -157,16 +153,17 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // STATE PUSH (LOCAL ONLY)
+ // STATE (minimal only guestReady)
  // =========================
- pushState() {
-  this.listeners.state.forEach(cb =>
-   cb({ ...this.localState })
+ emitState() {
+  // не ломаем архитектуру — только флаг ожидания
+  this.listeners.state?.forEach(cb =>
+   cb({ guestReady: this.guestReady })
   );
  }
 
  // =========================
- // API METHODS
+ // API
  // =========================
  setDraftConfig(cfg) {
   return this.emitEvent(EVENTS.CONFIG_UPDATED, cfg);
@@ -201,11 +198,11 @@ export class FirebaseRoomController {
  onStart(cb) {
   this.listeners.start.push(cb);
  }
-onDraftConfig(cb) {
+
+ onDraftConfig(cb) {
   this.listeners.draftConfig.push(cb);
  }
-
- onRoundStarted(cb) {
+onRoundStarted(cb) {
   this.listeners.roundStarted.push(cb);
  }
 
@@ -219,8 +216,6 @@ onDraftConfig(cb) {
 
  onState(cb) {
   this.listeners.state.push(cb);
-
-  // immediate sync
-  cb({ ...this.localState });
+  cb({ guestReady: this.guestReady });
  }
 }
