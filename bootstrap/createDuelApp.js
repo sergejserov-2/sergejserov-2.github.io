@@ -1,60 +1,48 @@
 import { FirebaseRoomController } from "../server/FirebaseRoomController.js";
 import { buildGameApp } from "./shared/buildGameApp.js";
 
+function getRole() {
+ const params = new URLSearchParams(window.location.search);
+ return params.get("role") || "host";
+}
+
 export async function createDuelApp(config) {
  console.log("DUEL MODE START");
 
  const roomController = new FirebaseRoomController();
+ const role = getRole();
 
- let roomId;
-
- // =========================
- // CREATE OR JOIN
- // =========================
  if (config.roomId) {
   console.log("JOIN ROOM:", config.roomId);
 
-  roomId = config.roomId;
-  await roomController.joinRoom(roomId);
+  await roomController.joinRoom(config.roomId);
+
+  if (role === "guest") {
+   await roomController.sendGuestJoined();
+   await roomController.setGuestReady();
+  }
 
  } else {
   const room = await roomController.createRoom(config);
 
-  roomId = room.roomId;
-
   console.log("ROOM CREATED:", room.roomId);
   console.log("INVITE LINK:", room.inviteLink);
 
-  setupLobby(roomController, room);
-
-  // ❌ больше НЕТ waitForStart
-  // UI сам слушает onStart
+  return;
  }
 
- // =========================
- // BUILD GAME IMMEDIATELY
- // =========================
- const game = buildGameApp({
+ await waitForStart(roomController);
+
+ return buildGameApp({
   config,
   mode: "duel",
-  room: roomController
+  room: roomController,
+  role
  });
-
- // =========================
- // BOOTSTRAP CONTROL BRIDGE
- // =========================
- roomController.onStart((payload) => {
-  console.log("🔥 GAME START EVENT RECEIVED");
-
-  game.flow.startGameFromNetwork?.(payload);
- });
-
- return game;
 }
 
-// =========================
-// LOBBY HOOK
-// =========================
-function setupLobby(roomController, room) {
- console.log("LOBBY READY:", room.roomId);
+function waitForStart(roomController) {
+ return new Promise(resolve => {
+  roomController.onStart(({ config }) => resolve(config));
+ });
 }
