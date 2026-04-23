@@ -109,23 +109,21 @@ export async function init() {
  // =========================
  // FLOW (NO NETWORK HERE)
  // =========================
- const gameFlow = new GameFlow({
+const gameFlow = new GameFlow({
   game,
   generator,
   area,
   services,
-  mode: config.mode || "solo"
- });
+  mode: config.mode || "solo",
+  network
+});
 
  // =========================
  // NETWORK (DUEL ONLY)
  // =========================
- let network = null;
-
- if (config.mode === "duel") {
-  console.log("DUEL MODE: network disabled for now / or will be enabled later");
-  // network = new NetworkAdapter();
- }
+const network = config.mode === "duel"
+  ? new NetworkAdapter(/* transport */)
+  : null;
 
  // =========================
  // UI BUILDER
