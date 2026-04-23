@@ -42,7 +42,7 @@ export async function createDuelApp(config) {
    console.log("🔥 GAME ALREADY STARTED (SNAPSHOT) → REDIRECT");
 
    window.location.href =
-    /play.html?room=${roomId}&role=${role};
+    `/play.html?room=${roomId}&role=${role}`;
 
    return;
   }
