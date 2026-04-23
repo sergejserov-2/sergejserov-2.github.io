@@ -31,7 +31,7 @@ export async function createDuelApp(config) {
   return;
  }
 
- await waitForStart(roomController);
+ await roomController.waitForStart();
 
  return buildGameApp({
   config,
@@ -41,8 +41,4 @@ export async function createDuelApp(config) {
  });
 }
 
-function waitForStart(roomController) {
- return new Promise(resolve => {
-  roomController.onStart(({ config }) => resolve(config));
- });
-}
+
