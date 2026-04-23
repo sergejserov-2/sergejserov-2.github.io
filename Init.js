@@ -19,10 +19,24 @@ export async function init() {
 
  await waitForGoogleMaps();
 
+ // =========================
+ // BOOT CONTEXT (DUEL vs SOLO)
+ // =========================
+ const boot = window.__GAME_BOOT || null;
+
  const config = getConfig();
 
- if (config.mode === "duel") {
-  await createDuelApp(config);
+ const mode = boot?.mode || config.mode;
+ const roomId = boot?.roomId || null;
+
+ // =========================
+ // ROUTING
+ // =========================
+ if (mode === "duel") {
+  await createDuelApp({
+   ...config,
+   roomId
+  });
  } else {
   await createSoloApp(config);
  }
