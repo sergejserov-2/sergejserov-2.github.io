@@ -14,9 +14,6 @@ export class StaticUI {
   this.delayFrame = null;
  }
 
- // =========================
- // HUD
- // =========================
  updateHUD(vm = {}) {
   if (this.roundEl) {
    this.roundEl.textContent = `Раунд: ${vm.round} / ${vm.roundLimit}`;
@@ -32,35 +29,40 @@ export class StaticUI {
   if (el) el.textContent = `Время: ${value}`;
  }
 
-updateMoves(value) {
+ updateMoves(value) {
   const el = this.hudElement.querySelector(".moves-left b");
   if (!el) return;
   el.textContent = value === -1 ? "∞" : `Ходы: ${value}`;
  }
 
-
  // =========================
  // ROUND RESULT
  // =========================
+
  showRoundResult(vm = {}) {
   const root = this.roundRoot;
   if (!root) return;
 
   const container = root.querySelector(".players-score");
 
-  this.renderPlayerBars(container, vm.guesses || []);
+  const guesses = vm.guesses || [];
+
+  this.renderPlayerBars(container, guesses);
  }
 
  // =========================
  // GAME RESULT
  // =========================
+
  showGameResult(vm = {}) {
   const root = this.gameRoot;
   if (!root) return;
 
   const container = root.querySelector(".players-score");
 
-  const list = Object.entries(vm.players || {}).map(([playerId, data]) => ({
+  const players = vm.players || {};
+
+  const list = Object.entries(players).map(([playerId, data]) => ({
    playerId,
    score: data.score || 0,
    distance: 0
@@ -74,6 +76,7 @@ updateMoves(value) {
  // =========================
  // PLAYER BARS
  // =========================
+
  renderPlayerBars(container, list = []) {
   if (!container) return;
 
@@ -95,11 +98,25 @@ updateMoves(value) {
    const el = document.createElement("div");
    el.className = "player-score";
 
+   el.style.position = "relative";
+   el.style.margin = "8px 0";
+   el.style.padding = "10px";
+   el.style.borderRadius = "8px";
+   el.style.overflow = "hidden";
+   el.style.background = "rgba(255,255,255,0.08)";
+
    el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;color:white;font-size:13px;">
-     <span>${p.playerId}</span>
-     <span>${distance.toFixed(1)} km</span>
-     <span>${score} / ${MAX_SCORE}</span>
+    <div style="
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: white;
+    ">
+      <span>${p.playerId}</span>
+      <span>${distance.toFixed(1)} км</span>
+      <span>${score} / ${MAX_SCORE}</span>
     </div>
 
     <div class="fill"></div>
@@ -114,13 +131,7 @@ updateMoves(value) {
    fill.style.width = `${percent}%`;
    fill.style.background = color;
    fill.style.opacity = "0.35";
-
-   el.style.position = "relative";
-   el.style.overflow = "hidden";
-   el.style.padding = "10px";
-   el.style.margin = "8px 0";
-   el.style.borderRadius = "8px";
-   el.style.background = "rgba(255,255,255,0.08)";
+   fill.style.transition = "width 0.4s ease";
 
    wrap.appendChild(el);
   });
@@ -129,14 +140,16 @@ updateMoves(value) {
  }
 
  // =========================
- // ROUND TIMER BAR (FIXED)
+ // TIMER BAR
  // =========================
+
  startRoundDelay(duration, onFinish) {
   this.stopRoundDelay();
 
   const bar = this.roundRoot?.querySelector(".round-timer-bar");
   if (!bar) return;
 
+  bar.style.transition = "none";
   bar.style.transform = "scaleX(1)";
 
   const start = performance.now();
@@ -144,26 +157,4 @@ updateMoves(value) {
   const animate = (now) => {
    const progress = Math.max(0, 1 - (now - start) / duration);
 
-   bar.style.transform = `scaleX(${progress})`;
-
-   if (progress > 0) {
-    this.delayFrame = requestAnimationFrame(animate);
-   } else {
-    this.stopRoundDelay();
-    onFinish?.();
-   }
-  };
-
-  this.delayFrame = requestAnimationFrame(animate);
- }
-
- stopRoundDelay() {
-  if (this.delayFrame) {
-   cancelAnimationFrame(this.delayFrame);
-   this.delayFrame = null;
-  }
-
-  const bar = this.roundRoot?.querySelector(".round-timer-bar");
-  if (bar) bar.style.transform = "scaleX(0)";
- }
-}
+   bar.style.transform = `scale
