@@ -1,27 +1,45 @@
-// bootstrap/createDuelApp.js
-
 import { FirebaseRoomController } from "../server/FirebaseRoomController.js";
+import { buildGameApp } from "./shared/buildGameApp.js";
 
 export async function createDuelApp(config) {
  console.log("DUEL MODE START");
 
  const roomController = new FirebaseRoomController();
 
+ let room;
+
+ // =========================
+ // JOIN OR CREATE
+ // =========================
  if (config.roomId) {
   console.log("JOIN ROOM:", config.roomId);
 
-  await roomController.joinRoom(config.roomId);
+  room = await roomController.joinRoom(config.roomId);
+
  } else {
-  const room = await roomController.createRoom();
+  room = await roomController.createRoom();
 
   console.log("ROOM CREATED:", room.roomId);
   console.log("INVITE LINK:", room.inviteLink);
 
-  // дальше UI лобби (следующий шаг)
+  // здесь остаётся LOBBY (пока не стартуем игру)
+  setupLobby(roomController, room);
+  return;
  }
 
- roomController.on("gameStarted", () => {
-  console.log("GAME STARTED FROM ROOM");
-  // здесь позже подключим GameFlow (как в solo)
+ // =========================
+ // WAIT START SIGNAL
+ // =========================
+ await new Promise(resolve => {
+  roomController.onStart(() => resolve());
+ });
+
+ // =========================
+ // START GAME
+ // =========================
+ buildGameApp({
+  config,
+  mode: "duel",
+  room: roomController
  });
 }
