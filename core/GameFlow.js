@@ -30,6 +30,9 @@ export class GameFlow {
 
   this._roundFinishing = false;
 
+  // 🔥 NEW: anti double start
+  this._started = false;
+
   this.bindNetwork();
  }
 
@@ -57,12 +60,21 @@ export class GameFlow {
   this.network.onRoundComplete?.(() => {
    this.syncRoundComplete();
   });
+
+  // 🔥 NEW: DUEL START HOOK
+  this.network.onStart?.(() => {
+   this.startGameFromNetwork();
+  });
  }
 
  // =========================
- // START GAME
+ // SOLO START (unchanged entry)
  // =========================
  async startGame() {
+  if (this.mode === "duel") return; // safety guard
+
+  this._started = true;
+
   this.finishedPlayers.clear();
   this.roundLocked = false;
 
@@ -71,6 +83,25 @@ export class GameFlow {
   this.emit("gameStarted", this.game.getState());
 
   await this.startRound();
+ }
+
+ // =========================
+ // DUEL START (NETWORK ENTRY POINT)
+ // =========================
+ startGameFromNetwork() {
+  if (this._started) return;
+  this._started = true;
+
+  console.log("🔥 GameFlow: START FROM NETWORK");
+
+  this.finishedPlayers.clear();
+  this.roundLocked = false;
+
+  this.game.startGame();
+
+  this.emit("gameStarted", this.game.getState());
+
+  this.startRound();
  }
 
  // =========================
@@ -94,7 +125,7 @@ export class GameFlow {
 
   this.emit("loadingFinished");
 
-  // TIMER (solo + duel)
+  // TIMER
   this.timer.start(
    this.game.config.rules.time,
    () => this.finishRound("timeout"),
@@ -141,7 +172,7 @@ export class GameFlow {
  }
 
  // =========================
- // APPLY GUESS (SOURCE OF TRUTH)
+ // APPLY GUESS
  // =========================
  applyGuess(playerId, point) {
   if (this.roundLocked) return;
@@ -164,7 +195,7 @@ export class GameFlow {
  }
 
  // =========================
- // EXTERNAL GUESS (DUEL SYNC)
+ // EXTERNAL GUESS (DUEL)
  // =========================
  applyExternalGuess({ playerId, guess }) {
   if (this.locked) return;
@@ -172,7 +203,7 @@ export class GameFlow {
   this.applyGuess(playerId, guess);
  }
 
- // =========================
+// =========================
  // DUEL FLOW
  // =========================
  handlePlayerFinished(playerId) {
@@ -184,6 +215,7 @@ export class GameFlow {
   });
 
   this.locked = true;
+
   this.emit("inputLocked");
   this.emit("roundWaiting");
 
@@ -204,7 +236,7 @@ export class GameFlow {
   }
  }
 
-// =========================
+ // =========================
  // MOVES
  // =========================
  registerMove() {
@@ -220,7 +252,7 @@ export class GameFlow {
  }
 
  // =========================
- // ROUND END (SAFE)
+ // ROUND END
  // =========================
  finishRound(reason = "manual") {
   if (this._roundFinishing) return;
@@ -250,7 +282,7 @@ export class GameFlow {
  }
 
  // =========================
- // SYNC ROUND COMPLETE
+ // SYNC
  // =========================
  syncRoundComplete() {
   this.roundLocked = false;
