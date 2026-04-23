@@ -80,6 +80,20 @@ export class FirebaseRoomController {
   return snap.val();
  }
 
+waitForStart() {
+ return new Promise(resolve => {
+  const unsub = this.onState((s) => {
+   if (s.started) {
+    unsub?.();
+    resolve();
+   }
+  });
+ });
+}
+
+
+
+ 
  // =========================
  // EVENT EMITTER
  // =========================
