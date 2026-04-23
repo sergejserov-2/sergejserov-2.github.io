@@ -107,19 +107,6 @@ const status = document.getElementById("status");
 // =========================
 const room = new FirebaseRoomController();
 
-const snapshot = await room.joinRoom(roomId);
-
-// =========================
-// SNAPSHOT CHECK (IMPORTANT)
-// =========================
-if (snapshot?.players?.game?.started) {
-
- console.log("🔥 GAME ALREADY STARTED → REDIRECT");
-
- window.location.href =
-  `/play.html?room=${roomId}&role=guest`;
-}
-
 // =========================
 // CONFIG SYNC
 // =========================
@@ -149,17 +136,6 @@ room.onPlayers?.((players) => {
   status.textContent = "You are ready ✔️";
  }
 
- // game start sync
- if (players?.game?.started && !gameStarted) {
-
-  gameStarted = true;
-
-  console.log("🔥 GAME START EVENT → REDIRECT");
-
-  window.location.href =
-    `/play.html?room=${roomId}&role=guest`;
- }
-});
 
 // =========================
 // READY BUTTON
