@@ -28,10 +28,6 @@ import { RoundsService } from "./services/RoundsService.js";
 
 import { getConfig } from "./config/getConfig.js";
 
-// 🔥 NEW
-import { FirebaseTransport } from "./server/FirebaseTransport.js";
-import { NetworkAdapter } from "./server/NetworkAdapter.js";
-
 // =========================
 // GOOGLE MAPS
 // =========================
@@ -57,6 +53,7 @@ export async function init() {
  // CONFIG
  // =========================
  const config = getConfig();
+ const isDuel = config.mode === "duel";
 
  // =========================
  // DOM
@@ -95,6 +92,20 @@ export async function init() {
  const mapAdapter = new MapAdapter();
 
  // =========================
+ // NETWORK (DUEL ONLY)
+ // =========================
+ let network = null;
+
+ if (isDuel) {
+  const { NetworkAdapter } = await import("./server/NetworkAdapter.js");
+
+  // позже сюда вставим FirebaseTransport
+  const transport = null;
+
+  network = new NetworkAdapter(transport);
+ }
+
+ // =========================
  // CORE
  // =========================
  const gameState = new GameState();
@@ -109,20 +120,6 @@ export async function init() {
  const generator = new LocationGenerator({
   streetAdapter
  });
-
- // =========================
- // NETWORK (🔥 FIXED ORDER)
- // =========================
- let network = null;
-
- if (config.mode === "duel") {
-  const roomId = config.roomId || "default-room";
-  const playerId = config.playerId || "p1";
-
-  const transport = new FirebaseTransport(roomId);
-
-  network = new NetworkAdapter(transport, playerId);
- }
 
  // =========================
  // FLOW
@@ -151,7 +148,7 @@ export async function init() {
   uiBuilder
  });
 
-const streetViewUI = new StreetViewUI({
+ const streetViewUI = new StreetViewUI({
   adapter: streetAdapter,
   element: streetEl
  });
@@ -161,7 +158,7 @@ const streetViewUI = new StreetViewUI({
   uiBuilder
  });
 
- const screenManager = new ScreenManager({
+const screenManager = new ScreenManager({
   root: screensEl
  });
 
