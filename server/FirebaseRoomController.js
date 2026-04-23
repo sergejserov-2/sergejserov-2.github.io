@@ -27,16 +27,25 @@ export class FirebaseRoomController {
   this.roomId = null;
   this.roomRef = null;
 
-  // listeners
+  // =========================
+  // LISTENERS
+  // =========================
   this.listeners = {
    start: [],
    draftConfig: [],
    roundStarted: [],
    guess: [],
-   roundComplete: []
+   roundComplete: [],
+   state: []
   };
 
-  // 🔥 NO lastSeen cache anymore (CRITICAL FIX)
+  // =========================
+  // LOCAL DERIVED STATE (IMPORTANT)
+  // =========================
+  this.localState = {
+   guestReady: false,
+   started: false
+  };
  }
 
  // =========================
@@ -92,20 +101,16 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // BIND (SAFE EVENT STREAM)
+ // BIND EVENT STREAM
  // =========================
  bind() {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
 
   onValue(eventsRef, (snap) => {
    const data = snap.val() || {};
-
-   const events = Object.values(data)
-    .sort((a, b) => a.ts - b.ts);
+   const events = Object.values(data).sort((a, b) => a.ts - b.ts);
 
    for (const e of events) {
-
-    // 🔥 NO dedupe logic here
 
     switch (e.type) {
 
@@ -116,11 +121,13 @@ export class FirebaseRoomController {
       break;
 
      case EVENTS.GUEST_READY:
-      // можно расширить позже, сейчас не нужен state-layer
+      this.localState.guestReady = true;
+      this.pushState();
       break;
 
      case EVENTS.GAME_STARTED:
-      console.log("🔥 GAME_STARTED RECEIVED:", e.payload);
+      this.localState.started = true;
+      this.pushState();
 
       this.listeners.start.forEach(cb =>
        cb(e.payload)
@@ -150,7 +157,16 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // API
+ // STATE PUSH (LOCAL ONLY)
+ // =========================
+ pushState() {
+  this.listeners.state.forEach(cb =>
+   cb({ ...this.localState })
+  );
+ }
+
+ // =========================
+ // API METHODS
  // =========================
  setDraftConfig(cfg) {
   return this.emitEvent(EVENTS.CONFIG_UPDATED, cfg);
@@ -161,8 +177,10 @@ export class FirebaseRoomController {
  }
 
  lockConfigAndStart(config) {
-  console.log("🔥 EMIT GAME START");
-  return this.emitEvent(EVENTS.GAME_STARTED, { config });
+  return this.emitEvent(EVENTS.GAME_STARTED, {
+   config,
+   startedAt: Date.now()
+  });
  }
 
  sendRoundStarted(payload) {
@@ -183,20 +201,3 @@ export class FirebaseRoomController {
  onStart(cb) {
   this.listeners.start.push(cb);
  }
-
- onDraftConfig(cb) {
-  this.listeners.draftConfig.push(cb);
- }
-
- onRoundStarted(cb) {
-  this.listeners.roundStarted.push(cb);
- }
-
- onGuess(cb) {
-  this.listeners.guess.push(cb);
- }
-
- onRoundComplete(cb) {
-  this.listeners.roundComplete.push(cb);
- }
-}
