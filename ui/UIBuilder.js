@@ -8,7 +8,7 @@ export class UIBuilder {
    p3: "#7CFC00"
   };
 
-  this.actualColor = "#9aa0a6";
+  this.actualColor = "#161a22";
  }
 
  setConfig(config) {
