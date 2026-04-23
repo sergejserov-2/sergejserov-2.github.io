@@ -1,11 +1,9 @@
 import { Game } from "./core/Game.js";
 import { GameState } from "./core/GameState.js";
 import { GameFlow } from "./core/GameFlow.js";
-import { GameBridge } from "./core/GameBridge.js"
 
 import { Scoring } from "./domain/Scoring.js";
 import { Difficulty } from "./domain/math/Difficulty.js";
-
 import { LocationGenerator } from "./domain/LocationGenerator.js";
 import { AreaRegistry } from "./domain/AreaRegistry.js";
 
@@ -25,9 +23,14 @@ import { Tweaks } from "./ui/Tweaks.js";
 
 import { TimerService } from "./services/TimerService.js";
 import { MovesService } from "./services/MovesService.js";
-import { RoundsService } from "./services/RoundsService.js";
 
 import { getConfig } from "./config/getConfig.js";
+
+// =========================
+// TRANSPORT (LOCAL NOW)
+// =========================
+import { LocalServer } from "./server/LocalServer.js";
+import { NetworkAdapter } from "./server/NetworkAdapter.js";
 
 // =========================
 // GOOGLE MAPS
@@ -63,13 +66,8 @@ export async function init() {
  const streetEl = document.querySelector(".streetview");
  const screensEl = document.querySelector(".screens");
 
- const roundOverviewMapEl = document.querySelector(
-  ".round-result .overview-map"
- );
-
- const gameOverviewMapEl = document.querySelector(
-  ".game-result .overview-map"
- );
+ const roundOverviewMapEl = document.querySelector(".round-result .overview-map");
+ const gameOverviewMapEl = document.querySelector(".game-result .overview-map");
 
  const guessBtn = document.querySelector("#makeGuess");
  const polygonBtn = document.querySelector(".polygon-button");
@@ -86,15 +84,14 @@ export async function init() {
  // =========================
  const services = {
   timer: new TimerService(),
-  moves: new MovesService(),
-  rounds: new RoundsService()
+  moves: new MovesService()
  };
 
  // =========================
- // ADAPTERS
+ // TRANSPORT LAYER
  // =========================
- const streetAdapter = new StreetViewAdapter();
- const mapAdapter = new MapAdapter();
+ const server = new LocalServer();
+ const network = new NetworkAdapter(server, "p1");
 
  // =========================
  // CORE
@@ -104,27 +101,23 @@ export async function init() {
  const game = new Game({
   gameState,
   scoring,
-  players: ["p1"],
+  players: ["p1", "p2"],
   config
  });
 
  const generator = new LocationGenerator({
-  streetAdapter
+  streetAdapter: new StreetViewAdapter()
  });
 
  const gameFlow = new GameFlow({
   game,
   generator,
   area,
-  services
+  services,
+  mode: "duel",
+  network
  });
 
-const gameBridge = new GameBridge({
- gameFlow,
- mode: config.mode, // "solo" | "duel"
- network: null
-});
- 
  // =========================
  // UI BUILDER
  // =========================
@@ -135,19 +128,19 @@ const gameBridge = new GameBridge({
  // UI COMPONENTS
  // =========================
  const mapWrapperUI = new MapWrapperUI({
-  adapter: mapAdapter,
+  adapter: new MapAdapter(),
   element: mapEl,
   uiBuilder
  });
 
  const streetViewUI = new StreetViewUI({
-  adapter: streetAdapter,
+  adapter: new StreetViewAdapter(),
   element: streetEl
  });
 
  const staticUI = new StaticUI({
   hudElement: hud,
-  uiBuilder: uiBuilder
+  uiBuilder
  });
 
  const screenManager = new ScreenManager({
@@ -155,82 +148,60 @@ const gameBridge = new GameBridge({
  });
 
  const roundOverviewUI = new MapOverviewUI({
-  adapter: mapAdapter,
+  adapter: new MapAdapter(),
   element: roundOverviewMapEl,
   uiBuilder
  });
 
- const gameOverviewUI = new MapOverviewUI({
-  adapter: mapAdapter,
+const gameOverviewUI = new MapOverviewUI({
+  adapter: new MapAdapter(),
   element: gameOverviewMapEl,
   uiBuilder
  });
 
  roundOverviewUI.init();
  gameOverviewUI.init();
-// =========================
+
+ // =========================
  // UI FLOW
  // =========================
-new UIFlow({
- gameFlow: gameBridge,
- screenManager,
- staticUI,
- uiBuilder,
- streetViewUI,
- mapWrapperUI,
- roundOverviewUI,
- gameOverviewUI
-});
+ new UIFlow({
+  gameFlow,
+  screenManager,
+  staticUI,
+  uiBuilder,
+  streetViewUI,
+  mapWrapperUI,
+  roundOverviewUI,
+  gameOverviewUI
+ });
 
  // =========================
  // STREET VIEW
  // =========================
-streetViewUI.onReady = () => {
- gameBridge.streetViewReady();
-};
+ streetViewUI.onReady = () => {
+  gameFlow.streetViewReady();
+ };
 
-
- gameFlow.on("streetViewSetLocation", (location) => {
-  streetViewUI.setLocation(location);
- });
+ streetViewUI.onMove = () => {
+  gameFlow.registerMove();
+ };
 
  streetViewUI.init({ lat: 0, lng: 0 });
-
- // =========================
- // 🔥 MOVES (ЕДИНСТВЕННАЯ ТОЧКА)
- // =========================
-streetViewUI.onMove = () => {
- gameBridge.registerMove();
-};
 
  // =========================
  // MAP
  // =========================
  mapWrapperUI.init();
  mapWrapperUI.reset();
-
  mapWrapperUI.setArea(area);
  mapWrapperUI.bindPolygonButton(polygonBtn);
 
- // =========================
- // INPUT
- // =========================
-mapWrapperUI.bindGuess((point) => {
- gameBridge.finishGuess(point);
-});
-
- mapWrapperUI.bindGuessButton(guessBtn);
-
- // =========================
- // TWEAKS
- // =========================
- const tweaks = new Tweaks({
-  mapElement: mapEl,
-  streetElement: streetEl,
-  root: screensEl
+ mapWrapperUI.bindGuess((point) => {
+  gameFlow.finishGuess(point, "p1");
  });
 
- tweaks.apply();
+ mapWrapperUI.bindGuessButton(guessBtn);
 
  // =========================
  // START GAME
