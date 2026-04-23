@@ -12,7 +12,6 @@ import { db } from "./firebaseApp.js";
 export class FirebaseRoomController {
  constructor() {
   this.db = db;
-
   this.roomId = null;
   this.roomRef = null;
 
@@ -23,7 +22,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // CREATE ROOM
+ // CREATE
  // =========================
  async createRoom(initialConfig = {}) {
   const roomsRef = ref(this.db, "rooms");
@@ -36,17 +35,10 @@ export class FirebaseRoomController {
    roomId: this.roomId,
 
    players: {
-    host: {
-     connected: true,
-     ready: false
-    },
-    guest: {
-     connected: false,
-     ready: false
-    }
+    host: { connected: true, ready: false },
+    guest: { connected: false, ready: false }
    },
 
-   // 🔥 ВАЖНО
    game: {
     started: false,
     config: null
@@ -64,7 +56,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // JOIN ROOM
+ // JOIN
  // =========================
  async joinRoom(roomId) {
   this.roomId = roomId;
@@ -95,7 +87,7 @@ export class FirebaseRoomController {
    this.listeners.players.forEach(cb =>
     cb({
      ...room.players,
-     game: room.game // 🔥 прокидываем сюда
+     game: room.game
     })
    );
 
@@ -109,9 +101,7 @@ export class FirebaseRoomController {
  // STATE UPDATE
  // =========================
  setDraftConfig(cfg) {
-  return update(this.roomRef, {
-   draftConfig: cfg
-  });
+  return update(this.roomRef, { draftConfig: cfg });
  }
 
  setGuestReady() {
@@ -120,7 +110,6 @@ export class FirebaseRoomController {
   });
  }
 
- // 🔥 СТАРТ ИГРЫ (КЛЮЧ)
  startGame(config) {
   return update(this.roomRef, {
    "game/started": true,
@@ -129,7 +118,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // LISTENERS
+ // LISTEN
  // =========================
  onPlayers(cb) {
   this.listeners.players.push(cb);
