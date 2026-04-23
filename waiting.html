@@ -52,6 +52,7 @@ h2 {
     cursor: pointer;
     font-weight: bold;
     transition: 0.2s;
+    user-select: none;
 }
 
 .btn:disabled {
@@ -80,7 +81,7 @@ h2 {
 
     <div class="btn" id="btn">READY</div>
 
-    <div class="status" id="status">Click when ready</div>
+    <div class="status" id="status">Waiting for host...</div>
 
 </div>
 
@@ -91,9 +92,8 @@ import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 // URL
 // =========================
 const url = new URL(window.location.href);
-
 const roomId = url.searchParams.get("room");
-const role = (url.searchParams.get("role") || "guest");
+const role = "guest";
 
 // =========================
 // UI
@@ -107,51 +107,68 @@ const status = document.getElementById("status");
 // =========================
 const room = new FirebaseRoomController();
 
-await room.joinRoom(roomId);
+const snapshot = await room.joinRoom(roomId);
 
 // =========================
-// STATE
+// SNAPSHOT CHECK (IMPORTANT)
 // =========================
-let guestReady = false;
-let gameStarted = false;
+if (snapshot?.players?.game?.started) {
+
+ console.log("🔥 GAME ALREADY STARTED → REDIRECT");
+
+ window.location.href =
+  /play.html?room=${roomId}&role=guest;
+}
 
 // =========================
-// CONFIG LIVE
+// CONFIG SYNC
 // =========================
 room.onDraftConfig((cfg) => {
  configEl.textContent = JSON.stringify(cfg, null, 2);
 });
 
 // =========================
-// PLAYER STATE LISTENER (🔥 ВАЖНО)
+// STATE TRACKING
 // =========================
-// ожидаем что в bind() ты уже эмитишь players state
+let guestReady = false;
+let gameStarted = false;
+
+// =========================
+// PLAYERS STATE (LIVE)
+// =========================
 room.onPlayers?.((players) => {
 
- console.log("👀 PLAYERS UPDATE:", players);
+ console.log("👀 PLAYERS:", players);
 
- if (players?.guest?.ready) {
+ // guest ready sync
+ if (players?.guest?.ready && !guestReady) {
   guestReady = true;
+
   btn.disabled = true;
   btn.textContent = "WAITING HOST...";
-  status.textContent = "Guest ready ✔️";
+  status.textContent = "You are ready ✔️";
  }
 
-const snap = await room.joinRoom(roomId);
+ // game start sync
+ if (players?.game?.started && !gameStarted) {
 
-if (snap?.players?.game?.started) {
- window.location.href =
-  `/play.html?room=${roomId}&role=guest`;
-}
+  gameStarted = true;
+
+  console.log("🔥 GAME START EVENT → REDIRECT");
+
+  window.location.href =
+    `/play.html?room=${roomId}&role=guest`;
+ }
 });
 
 // =========================
-// READY CLICK
+// READY BUTTON
 // =========================
 btn.onclick = async () => {
+
  if (guestReady) return;
 
- console.log("🟢 SET GUEST READY");
+ console.log("🟢 GUEST READY CLICK");
 
  guestReady = true;
 
