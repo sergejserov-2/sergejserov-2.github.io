@@ -2,15 +2,17 @@ import {
  getDatabase,
  ref,
  set,
- get,
  update,
  onValue,
- push
+ push,
+ get
 } from "firebase/database";
 
+import { firebaseApp } from "./FirebaseApp.js";
+
 export class FirebaseRoomController {
- constructor(app) {
-  this.db = getDatabase(app);
+ constructor() {
+  this.db = getDatabase(firebaseApp);
 
   this.roomId = null;
   this.roomRef = null;
@@ -33,7 +35,7 @@ export class FirebaseRoomController {
   this.roomId = newRoom.key;
   this.roomRef = ref(this.db, `rooms/${this.roomId}`);
 
-  const initialState = {
+  const state = {
    roomId: this.roomId,
    config,
 
@@ -43,13 +45,13 @@ export class FirebaseRoomController {
    createdAt: Date.now()
   };
 
-  await set(this.roomRef, initialState);
+  await set(this.roomRef, state);
 
   this.bind();
 
   return {
    roomId: this.roomId,
-   inviteLink: `${window.location.origin}/waiting.html?room=${this.roomId}&role=guest`
+   inviteLink: `${window.location.origin}/waiting.html?room=${this.roomId}`
   };
  }
 
@@ -67,25 +69,20 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // FIREBASE BIND
+ // LISTEN STATE
  // =========================
  bind() {
   onValue(this.roomRef, (snap) => {
    const state = snap.val();
    if (!state) return;
 
-   // full state
    this.listeners.state.forEach(cb => cb(state));
-
-   // config
    this.listeners.config.forEach(cb => cb(state.config));
 
-   // guest ready
    if (state.guestReady) {
     this.listeners.guestReady.forEach(cb => cb());
    }
 
-   // start game
    if (state.started) {
     this.listeners.start.forEach(cb => cb(state));
    }
@@ -96,15 +93,13 @@ export class FirebaseRoomController {
  // GUEST READY
  // =========================
  async setGuestReady() {
-  if (!this.roomRef) return;
-
   await update(this.roomRef, {
    guestReady: true
   });
  }
 
  // =========================
- // HOST START GAME
+ // START GAME (HOST)
  // =========================
  async startGame() {
   const snap = await get(this.roomRef);
@@ -119,7 +114,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // EVENTS API
+ // EVENTS
  // =========================
  onGuestReady(cb) {
   this.listeners.guestReady.push(cb);
