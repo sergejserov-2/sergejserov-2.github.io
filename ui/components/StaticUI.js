@@ -32,10 +32,12 @@ export class StaticUI {
   if (el) el.textContent = `Время: ${value}`;
  }
 
- updateMoves(value) {
+updateMoves(value) {
   const el = this.hudElement.querySelector(".moves-left b");
-  if (el) el.textContent = `Ходы: ${value}`;
+  if (!el) return;
+  el.textContent = value === -1 ? "∞" : `Ходы: ${value}`;
  }
+
 
  // =========================
  // ROUND RESULT
