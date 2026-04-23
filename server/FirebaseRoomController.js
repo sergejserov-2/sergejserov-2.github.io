@@ -82,7 +82,7 @@ export class FirebaseRoomController {
  // EVENT EMITTER
  // =========================
  async emitEvent(type, payload = {}) {
-  const eventsRef = ref(this.db, `rooms/${this.roomId}/events)`;
+  const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
   const id = push(eventsRef).key;
 
   await set(ref(this.db, `rooms/${this.roomId}/events/${id}`), {
