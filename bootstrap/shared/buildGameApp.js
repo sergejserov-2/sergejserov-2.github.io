@@ -23,7 +23,7 @@ import { UIFlow } from "../../ui/UIFlow.js";
 import { UIBuilder } from "../../ui/UIBuilder.js";
 import { Tweaks } from "../../ui/Tweaks.js";
 
-export function buildGameApp({ config, mode, room }) {
+export function buildGameApp({ config, mode, room, role }) {
 
  console.log("GAME BOOTSTRAP");
 
@@ -54,10 +54,15 @@ export function buildGameApp({ config, mode, room }) {
  // =========================
  const gameState = new GameState();
 
+ const playerId =
+  mode === "duel"
+   ? (role === "guest" ? "p2" : "p1")
+   : "p1";
+ 
  const game = new Game({
   gameState,
   scoring,
-  players: ["p1"],
+  players: mode === "duel" ? ["p1", "p2"] : ["p1"],
   config
  });
 
@@ -69,7 +74,8 @@ export function buildGameApp({ config, mode, room }) {
   area,
   services,
   mode,
-  network: room || null
+  network: room || null,
+  playerId
  });
 
  // =========================
