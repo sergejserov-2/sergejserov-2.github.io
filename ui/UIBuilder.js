@@ -47,12 +47,14 @@ export class UIBuilder {
   return this.actualColor;
  }
 
+ // =========================
  // HUD
+ // =========================
  formatGameVM(state) {
   const rounds = state.rounds || [];
 
   const totalScore = rounds.reduce((s, r) => {
-   return s + (r.guesses?.reduce((a,g)=>a+(g.score||0),0) || 0);
+   return s + (r.guesses?.reduce((a, g) => a + (g.score || 0), 0) || 0);
   }, 0);
 
   return {
@@ -64,17 +66,28 @@ export class UIBuilder {
   };
  }
 
- // ROUND
+ // =========================
+ // ROUND (🔥 ВАЖНО)
+ // =========================
  formatRoundVM(state) {
   const round = state.rounds.at(-1);
 
   return {
-   actual: round?.actualLocation,
-   guesses: round?.guesses || []
+   actual: round?.actualLocation || null,
+
+   guesses: (round?.guesses || []).map(g => ({
+    playerId: g.playerId,
+    lat: g.lat,
+    lng: g.lng,
+    distance: g.distance || 0,
+    score: g.score || 0
+   }))
   };
  }
 
+ // =========================
  // GAME RESULT
+ // =========================
  formatGameResultVM(state) {
   const rounds = state.rounds || [];
 
@@ -89,9 +102,6 @@ export class UIBuilder {
    });
   });
 
-  return {
-   players,
-   rounds
-  };
+  return { players, rounds };
  }
 }
