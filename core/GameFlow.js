@@ -14,27 +14,21 @@ export class GameFlow {
   this.timer = services.timer;
   this.moves = services.moves;
 
-  this.listeners = {};
+  this.roundTimer = services.timer;
 
-  // =========================
-  // MODE
-  // =========================
   this.mode = mode;
   this.network = network;
 
-  // =========================
-  // FSM (NEW CORE)
-  // =========================
-  this.roundState = "IDLE";
-  // IDLE → LOADING → ACTIVE → WAITING → RESOLVING → ENDED
+  this.listeners = {};
 
-  // =========================
-  // DUEL STATE
-  // =========================
+  this.locked = false;
+  this.roundLocked = false;
+
   this.finishedPlayers = new Set();
+
   this._resolveStreetViewReady = null;
 
-  this.roundTimer = services.timer;
+  this._roundFinishing = false;
 
   this.bindNetwork();
  }
@@ -66,25 +60,25 @@ export class GameFlow {
  }
 
  // =========================
- // GAME START
+ // START GAME
  // =========================
  async startGame() {
-  this.roundState = "IDLE";
-
   this.finishedPlayers.clear();
+  this.roundLocked = false;
 
   this.game.startGame();
+
   this.emit("gameStarted", this.game.getState());
 
   await this.startRound();
  }
 
  // =========================
- // ROUND START
+ // START ROUND
  // =========================
  async startRound() {
-  this.setState("LOADING");
-
+  this.locked = true;
+  this.roundLocked = false;
   this.finishedPlayers.clear();
 
   this.emit("inputLocked");
@@ -100,22 +94,18 @@ export class GameFlow {
 
   this.emit("loadingFinished");
 
-  // =========================
-  // TIMER (SOLO + DUEL BASE)
-  // =========================
+  // TIMER (solo + duel)
   this.timer.start(
    this.game.config.rules.time,
    () => this.finishRound("timeout"),
    (t) => this.emit("timerTick", t)
   );
 
-  // =========================
-  // MOVES RESET
-  // =========================
+  // MOVES
   this.moves.reset(this.game.config.rules.moves);
   this.emit("movesUpdated", this.moves.getRemaining());
 
-  this.setState("ACTIVE");
+  this.locked = false;
 
   this.emit("inputUnlocked");
   this.emit("roundStarted", this.game.getState());
@@ -139,23 +129,23 @@ export class GameFlow {
  // GUESS ENTRY
  // =========================
  finishGuess(point, playerId = "p1") {
-  if (this.roundState !== "ACTIVE") return;
+  if (this.locked || this.roundLocked) return;
 
-  // DUEL → sync first
+  const payload = { playerId, guess: point };
+
   if (this.mode === "duel") {
-   this.network?.sendGuess({
-    playerId,
-    guess: point
-   });
+   this.network?.sendGuess?.(payload);
   }
 
   this.applyGuess(playerId, point);
  }
 
  // =========================
- // CORE APPLY
+ // APPLY GUESS (SOURCE OF TRUTH)
  // =========================
  applyGuess(playerId, point) {
+  if (this.roundLocked) return;
+
   const result = this.game.setGuess(playerId, point);
   if (!result) return;
 
@@ -164,26 +154,28 @@ export class GameFlow {
   this.emit("guessResolved", result);
 
   if (this.mode === "solo") {
+   this.locked = true;
+   this.emit("inputLocked");
    this.finishRound("guess");
    return;
   }
 
-  this.handleDuelPlayerFinished(playerId);
+  this.handlePlayerFinished(playerId);
  }
 
  // =========================
- // NETWORK IN
+ // EXTERNAL GUESS (DUEL SYNC)
  // =========================
  applyExternalGuess({ playerId, guess }) {
+  if (this.locked) return;
+
   this.applyGuess(playerId, guess);
  }
 
  // =========================
- // DUEL LOGIC (FSM CONTROLLED)
+ // DUEL FLOW
  // =========================
- handleDuelPlayerFinished(playerId) {
-  if (this.roundState !== "ACTIVE") return;
-
+ handlePlayerFinished(playerId) {
   this.finishedPlayers.add(playerId);
 
   this.emit("playerFinished", {
@@ -191,24 +183,18 @@ export class GameFlow {
    state: this.game.getState()
   });
 
-  this.setState("WAITING");
+  this.locked = true;
   this.emit("inputLocked");
   this.emit("roundWaiting");
 
- // =========================
-  // ALL PLAYERS DONE
-  // =========================
   if (this.finishedPlayers.size >= this.game.players.length) {
    this.network?.sendRoundComplete?.();
    this.finishRound("allPlayersFinished");
    return;
   }
 
-  // =========================
-  // FIRST FINISH → TIMER WINDOW
-  // =========================
-  if (this.roundState !== "RESOLVING") {
-   this.setState("RESOLVING");
+  if (!this.roundLocked) {
+   this.roundLocked = true;
 
    this.roundTimer.start(
     10,
@@ -218,11 +204,11 @@ export class GameFlow {
   }
  }
 
- // =========================
+// =========================
  // MOVES
  // =========================
  registerMove() {
-  if (this.roundState !== "ACTIVE") return;
+  if (this.locked) return;
 
   const ok = this.moves.consume();
 
@@ -234,13 +220,17 @@ export class GameFlow {
  }
 
  // =========================
- // ROUND END
+ // ROUND END (SAFE)
  // =========================
  finishRound(reason = "manual") {
+  if (this._roundFinishing) return;
+  this._roundFinishing = true;
+
   this.timer.clear();
   this.roundTimer.clear();
 
-  this.setState("RESOLVING");
+  this.locked = true;
+  this.roundLocked = false;
 
   this.emit("inputLocked");
 
@@ -253,36 +243,24 @@ export class GameFlow {
 
   if (isLast) {
    this.game.endGame();
-   this.setState("ENDED");
    this.emit("gameEnded", this.game.getState());
-   return;
   }
 
-  this.setState("IDLE");
+  this._roundFinishing = false;
  }
 
  // =========================
- // ROUND SYNC
+ // SYNC ROUND COMPLETE
  // =========================
  syncRoundComplete() {
-  if (this.roundState !== "RESOLVING") return;
-
+  this.roundLocked = false;
   this.finishedPlayers.clear();
-  this.setState("IDLE");
 
   this.emit("roundSyncComplete");
  }
 
  async nextRound() {
-  if (this.roundState === "ENDED") return;
+  if (this.game.getState().status === "ended") return;
   await this.startRound();
- }
-
- // =========================
- // FSM HELPER
- // =========================
- setState(state) {
-  this.roundState = state;
-  this.emit("stateChanged", state);
  }
 }
