@@ -1,125 +1,106 @@
 // server/FirebaseRoomController.js
 
-import { FirebaseTransport } from "./FirebaseTransport.js";
+import { ref, set, onValue, update, push, get } from "firebase/database";
+import { db } from "./firebase.js";
 
 export class FirebaseRoomController {
  constructor() {
-  this.transport = new FirebaseTransport();
-
+  this.roomRef = null;
   this.roomId = null;
-  this.playerId = null;
-
-  this.isHost = false;
 
   this.listeners = {
-   roomUpdated: [],
-   opponentJoined: [],
-   gameStarted: []
+   ready: [],
+   update: [],
+   start: []
   };
- }
-
- // =========================
- // EVENTS
- // =========================
- on(event, cb) {
-  (this.listeners[event] ||= []).push(cb);
- }
-
- emit(event, data) {
-  this.listeners[event]?.forEach(cb => cb(data));
  }
 
  // =========================
  // CREATE ROOM (HOST)
  // =========================
  async createRoom() {
-  this.isHost = true;
+  const roomRef = push(ref(db, "rooms"));
 
-  const roomId = this._generateRoomId();
-  const playerId = "host";
+  this.roomId = roomRef.key;
+  this.roomRef = roomRef;
 
-  this.roomId = roomId;
-  this.playerId = playerId;
-
-  await this.transport.createRoom(roomId, {
+  const roomData = {
+   players: 1,
    status: "waiting",
-   host: playerId,
-   players: {
-    host: true
-   }
-  });
+   createdAt: Date.now()
+  };
 
-  this.transport.subscribeRoom(roomId, (data) => {
-   this._handleRoomUpdate(data);
-  });
+  await set(roomRef, roomData);
+
+  this.listen();
 
   return {
-   roomId,
-   inviteLink: ${window.location.origin}?room=${roomId}
+   roomId: this.roomId,
+   inviteLink: `${window.location.origin}/play.html?room=${this.roomId}`
   };
  }
 
  // =========================
- // JOIN ROOM (GUEST)
+ // JOIN ROOM (CLIENT)
  // =========================
  async joinRoom(roomId) {
-  this.isHost = false;
-
   this.roomId = roomId;
-  this.playerId = this._generatePlayerId();
+  this.roomRef = ref(db, `rooms/${roomId}`);
 
-  await this.transport.updateRoom(roomId, {
-   [players.${this.playerId}]: true
+  const snap = await get(this.roomRef);
+  if (!snap.exists()) throw new Error("Room not found");
+
+  const data = snap.val();
+
+  await update(this.roomRef, {
+   players: (data.players || 1) + 1,
+   status: "ready"
   });
 
-  this.transport.subscribeRoom(roomId, (data) => {
-   this._handleRoomUpdate(data);
-  });
-
-  return {
-   roomId,
-   playerId: this.playerId
-  };
+  this.listen();
  }
 
  // =========================
- // START GAME (ONLY HOST)
+ // LISTEN ROOM
+ // =========================
+ listen() {
+  onValue(this.roomRef, (snap) => {
+   const data = snap.val();
+   if (!data) return;
+
+   this.listeners.update.forEach(cb => cb(data));
+
+   if (data.status === "ready") {
+    this.listeners.ready.forEach(cb => cb(data));
+   }
+
+   if (data.status === "started") {
+    this.listeners.start.forEach(cb => cb(data));
+   }
+  });
+ }
+
+ // =========================
+ // START GAME (HOST ONLY)
  // =========================
  async startGame() {
-  if (!this.isHost || !this.roomId) return;
-
-  await this.transport.updateRoom(this.roomId, {
+  await update(this.roomRef, {
    status: "started"
   });
  }
 
  // =========================
- // ROOM LISTENER
+ // EVENTS
  // =========================
- _handleRoomUpdate(data) {
-  if (!data) return;
-
-  this.emit("roomUpdated", data);
-
-  // игрок присоединился
-  if (data.players && Object.keys(data.players).length > 1) {
-   this.emit("opponentJoined", data.players);
-  }
-
-  // старт игры
-  if (data.status === "started") {
-   this.emit("gameStarted", data);
-  }
+ onUpdate(cb) {
+  this.listeners.update.push(cb);
  }
 
- // =========================
- // UTILS
- // =========================
- _generateRoomId() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+ onReady(cb) {
+  this.listeners.ready.push(cb);
  }
 
- _generatePlayerId() {
-  return "p_" + Math.random().toString(36).substring(2, 8);
+ onStart(cb) {
+  this.listeners.start.push(cb);
  }
 }
