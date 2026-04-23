@@ -4,6 +4,7 @@ import { GameFlow } from "./core/GameFlow.js";
 
 import { Scoring } from "./domain/Scoring.js";
 import { Difficulty } from "./domain/math/Difficulty.js";
+
 import { LocationGenerator } from "./domain/LocationGenerator.js";
 import { AreaRegistry } from "./domain/AreaRegistry.js";
 
@@ -23,14 +24,9 @@ import { Tweaks } from "./ui/Tweaks.js";
 
 import { TimerService } from "./services/TimerService.js";
 import { MovesService } from "./services/MovesService.js";
+import { RoundsService } from "./services/RoundsService.js";
 
 import { getConfig } from "./config/getConfig.js";
-
-// =========================
-// TRANSPORT (LOCAL NOW)
-// =========================
-import { LocalServer } from "./server/LocalServer.js";
-import { NetworkAdapter } from "./server/NetworkAdapter.js";
 
 // =========================
 // GOOGLE MAPS
@@ -84,14 +80,15 @@ export async function init() {
  // =========================
  const services = {
   timer: new TimerService(),
-  moves: new MovesService()
+  moves: new MovesService(),
+  rounds: new RoundsService()
  };
 
  // =========================
- // TRANSPORT LAYER
+ // ADAPTERS
  // =========================
- const server = new LocalServer();
- const network = new NetworkAdapter(server, "p1");
+ const streetAdapter = new StreetViewAdapter();
+ const mapAdapter = new MapAdapter();
 
  // =========================
  // CORE
@@ -101,22 +98,34 @@ export async function init() {
  const game = new Game({
   gameState,
   scoring,
-  players: ["p1", "p2"],
+  players: ["p1"],
   config
  });
 
  const generator = new LocationGenerator({
-  streetAdapter: new StreetViewAdapter()
+  streetAdapter
  });
 
+ // =========================
+ // FLOW (NO NETWORK HERE)
+ // =========================
  const gameFlow = new GameFlow({
   game,
   generator,
   area,
   services,
-  mode: "duel",
-  network
+  mode: config.mode || "solo"
  });
+
+ // =========================
+ // NETWORK (DUEL ONLY)
+ // =========================
+ let network = null;
+
+ if (config.mode === "duel") {
+  console.log("DUEL MODE: network disabled for now / or will be enabled later");
+  // network = new NetworkAdapter();
+ }
 
  // =========================
  // UI BUILDER
@@ -128,13 +137,13 @@ export async function init() {
  // UI COMPONENTS
  // =========================
  const mapWrapperUI = new MapWrapperUI({
-  adapter: new MapAdapter(),
+  adapter: mapAdapter,
   element: mapEl,
   uiBuilder
  });
 
  const streetViewUI = new StreetViewUI({
-  adapter: new StreetViewAdapter(),
+  adapter: streetAdapter,
   element: streetEl
  });
 
@@ -147,14 +156,14 @@ export async function init() {
   root: screensEl
  });
 
- const roundOverviewUI = new MapOverviewUI({
-  adapter: new MapAdapter(),
+const roundOverviewUI = new MapOverviewUI({
+  adapter: mapAdapter,
   element: roundOverviewMapEl,
   uiBuilder
  });
 
-const gameOverviewUI = new MapOverviewUI({
-  adapter: new MapAdapter(),
+ const gameOverviewUI = new MapOverviewUI({
+  adapter: mapAdapter,
   element: gameOverviewMapEl,
   uiBuilder
  });
@@ -163,7 +172,7 @@ const gameOverviewUI = new MapOverviewUI({
  gameOverviewUI.init();
 
  // =========================
- // UI FLOW
+ // UI FLOW (PURE LOCAL)
  // =========================
  new UIFlow({
   gameFlow,
@@ -183,11 +192,15 @@ const gameOverviewUI = new MapOverviewUI({
   gameFlow.streetViewReady();
  };
 
+ gameFlow.on("streetViewSetLocation", (location) => {
+  streetViewUI.setLocation(location);
+ });
+
+ streetViewUI.init({ lat: 0, lng: 0 });
+
  streetViewUI.onMove = () => {
   gameFlow.registerMove();
  };
-
- streetViewUI.init({ lat: 0, lng: 0 });
 
  // =========================
  // MAP
@@ -198,10 +211,21 @@ const gameOverviewUI = new MapOverviewUI({
  mapWrapperUI.bindPolygonButton(polygonBtn);
 
  mapWrapperUI.bindGuess((point) => {
-  gameFlow.finishGuess(point, "p1");
+  gameFlow.finishGuess(point);
  });
 
  mapWrapperUI.bindGuessButton(guessBtn);
+
+ // =========================
+ // TWEAKS
+ // =========================
+ const tweaks = new Tweaks({
+  mapElement: mapEl,
+  streetElement: streetEl,
+  root: screensEl
+ });
+
+ tweaks.apply();
 
  // =========================
  // START GAME
