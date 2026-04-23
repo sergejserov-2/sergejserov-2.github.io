@@ -146,9 +146,8 @@ export class GameFlow {
 applyGuess(playerId, point) {
  const result = this.game.setGuess(playerId, point);
  if (!result) return;
- this.game.gameState.setRoundResult(result);
+ this.game.applyResult(result);
  this.emit("guessResolved", result);
-
  if (this.mode === "solo") {
   this.locked = true;
   this.emit("inputLocked");
