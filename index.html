@@ -241,9 +241,6 @@ input:disabled {
 <script type="module">
 import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 
-// =========================
-// STATE
-// =========================
 let mode = "solo";
 let area = "europe";
 let rounds = 5;
@@ -252,6 +249,7 @@ let timeEnabled = false;
 let movesEnabled = false;
 
 let roomController = null;
+let redirected = false;
 
 // =========================
 // BUILD CONFIG
@@ -263,8 +261,8 @@ function buildConfig() {
   players: ["p1", "p2"],
   rules: {
    rounds,
-   time: timeEnabled ? +document.getElementById("timeInput").value : -1,
-   moves: movesEnabled ? +document.getElementById("movesInput").value : -1
+   time: timeEnabled ? +timeInput.value : -1,
+   moves: movesEnabled ? +movesInput.value : -1
   }
  };
 }
@@ -272,8 +270,8 @@ function buildConfig() {
 // =========================
 // ELEMENTS
 // =========================
-const link = document.getElementById("duelLink");
 const start = document.getElementById("start");
+const link = document.getElementById("duelLink");
 
 // =========================
 // MODE SWITCH
@@ -285,163 +283,58 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
    .forEach(x => x.classList.remove("active"));
 
   btn.classList.add("active");
-
   mode = btn.dataset.mode;
 
-  // =========================
   // SOLO
-  // =========================
   if (mode === "solo") {
-
    roomController = null;
+
+   start.textContent = "Начать игру";
+   start.disabled = false;
 
    link.value = "";
    link.disabled = true;
-
-   start.textContent = "Начать игру";
-   start.classList.remove("wait");
-   start.disabled = false;
-
    return;
   }
 
-  // =========================
   // DUEL
-  // =========================
   start.textContent = "Создание комнаты...";
-  start.classList.add("wait");
   start.disabled = true;
 
   roomController = new FirebaseRoomController();
-
   const room = await roomController.createRoom(buildConfig());
 
   link.value = room.inviteLink;
   link.disabled = false;
 
-  console.log("🟢 ROOM CREATED:", room.roomId);
-
-  // =========================
-  // LIVE CONFIG SYNC
-  // =========================
-  roomController.onDraftConfig((cfg) => {
-   console.log("CONFIG UPDATE:", cfg);
-  });
-
-  // =========================
-  // PLAYERS STATE
-  // =========================
   roomController.onPlayers((players) => {
 
-   console.log("👀 PLAYERS:", players);
+   if (redirected) return;
 
    const guestConnected = players?.guest?.connected;
    const guestReady = players?.guest?.ready;
    const started = players?.game?.started;
 
-   // гость зашёл
    if (guestConnected && !guestReady) {
     start.textContent = "Гость подключился";
    }
 
-   // гость готов
    if (guestReady && !started) {
-    start.textContent = "Начать игру";
-    start.classList.remove("wait");
+    start.textContent = "START GAME";
     start.disabled = false;
    }
+
+   if (started) {
+    redirected = true;
+
+    window.location.href =
+     /play.html?room=${room.roomId}&role=host;
+   }
+  });
 
   start.textContent = "Ожидание игрока...";
  };
 });
-
-// =========================
-// SYNC CONFIG
-// =========================
-function syncRoom() {
- if (mode !== "duel" || !roomController) return;
-
- roomController.setDraftConfig(buildConfig());
-}
-
-// =========================
-// ROUNDS
-// =========================
-document.querySelectorAll("[data-rounds]").forEach(btn => {
- btn.onclick = () => {
-  document.querySelectorAll("[data-rounds]")
-   .forEach(x => x.classList.remove("active"));
-
-  btn.classList.add("active");
-
-  rounds = +btn.dataset.rounds;
-  syncRoom();
- };
-});
-
-// =========================
-// AREA
-// =========================
-document.querySelectorAll("[data-area]").forEach(btn => {
- btn.onclick = () => {
-  document.querySelectorAll("[data-area]")
-   .forEach(x => x.classList.remove("active"));
-
-  btn.classList.add("active");
-
-  area = btn.dataset.area;
-  syncRoom();
- };
-});
-
-// =========================
-// TIMER
-// =========================
-const timeOff = document.getElementById("timeOff");
-const timeOn = document.getElementById("timeOn");
-const timeInput = document.getElementById("timeInput");
-
-timeOff.onclick = () => {
- timeOff.classList.add("active");
- timeOn.classList.remove("active");
- timeInput.disabled = true;
- timeEnabled = false;
- syncRoom();
-};
-timeOn.onclick = () => {
- timeOn.classList.add("active");
- timeOff.classList.remove("active");
- timeInput.disabled = false;
- timeEnabled = true;
- syncRoom();
-};
-
-timeInput.oninput = syncRoom;
-
-// =========================
-// MOVES
-// =========================
-const movesOff = document.getElementById("movesOff");
-const movesOn = document.getElementById("movesOn");
-const movesInput = document.getElementById("movesInput");
-
-movesOff.onclick = () => {
- movesOff.classList.add("active");
- movesOn.classList.remove("active");
- movesInput.disabled = true;
- movesEnabled = false;
- syncRoom();
-};
-
-movesOn.onclick = () => {
- movesOn.classList.add("active");
- movesOff.classList.remove("active");
- movesInput.disabled = false;
- movesEnabled = true;
- syncRoom();
-};
-
-movesInput.oninput = syncRoom;
 
 // =========================
 // START BUTTON
@@ -449,19 +342,11 @@ movesInput.oninput = syncRoom;
 start.onclick = () => {
 
  if (mode === "duel") {
-
-  if (!roomController) return;
-
-  console.log("🔥 HOST START CLICK");
-
   start.disabled = true;
-
   roomController.startGame(buildConfig());
-
   return;
  }
 
- // SOLO
  localStorage.setItem("gameConfig", JSON.stringify(buildConfig()));
  window.location.href = "/play.html";
 };
