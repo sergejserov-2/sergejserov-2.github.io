@@ -26,7 +26,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // CREATE ROOM (HOST)
+ // CREATE ROOM
  // =========================
  async createRoom(initialConfig = {}) {
   const roomsRef = ref(this.db, "rooms");
@@ -38,14 +38,16 @@ export class FirebaseRoomController {
   const state = {
    roomId: this.roomId,
 
-   // фиксированный конфиг (только после START)
-   config: null,
+   // FSM STATE
+   state: "LOBBY",
 
-   // живой конфиг лобби (его крутит хост)
+   // LOBBY CONFIG
    draftConfig: initialConfig,
 
+   // FINAL CONFIG (only after START)
+   config: null,
+
    guestReady: false,
-   started: false,
 
    players: {
     host: "p1",
@@ -66,73 +68,74 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // JOIN ROOM (GUEST)
+ // JOIN ROOM
  // =========================
  async joinRoom(roomId) {
- this.roomId = roomId;
- this.roomRef = ref(this.db, `rooms/${roomId}`);
+  this.roomId = roomId;
+  this.roomRef = ref(this.db, `rooms/${roomId}`);
 
- this.bind();
+  this.bind();
 
- const snap = await get(this.roomRef);
- const state = snap.val();
+  const snap = await get(this.roomRef);
+  const state = snap.val();
 
- // 👉 ВАЖНО: регистрируем гостя
- await this.registerGuest();
+  await this.registerGuest();
 
- return state;
-}
-
-// =========================
-// REGISTER GUEST
-// =========================
-async registerGuest() {
- if (!this.roomRef) return;
-
- const snap = await get(this.roomRef);
- const state = snap.val();
-
- if (!state) return;
-
- // если гость уже есть — не перетираем
- if (state.players?.guest) return;
-
- await update(this.roomRef, {
-  "players/guest": "p2"
- });
-}
+  return state;
+ }
 
  // =========================
- // LIVE LISTEN
+ // REGISTER GUEST
+ // =========================
+ async registerGuest() {
+  if (!this.roomRef) return;
+
+  const snap = await get(this.roomRef);
+  const state = snap.val();
+
+  if (!state) return;
+  if (state.players?.guest) return;
+
+  await update(this.roomRef, {
+   "players/guest": "p2"
+  });
+ }
+
+ // =========================
+ // FSM LISTENER
  // =========================
  bind() {
   onValue(this.roomRef, (snap) => {
    const state = snap.val();
    if (!state) return;
 
+   // full state
    this.listeners.state.forEach(cb => cb(state));
 
-   // LIVE CONFIG (для лобби)
+   // draft config (LOBBY ONLY)
    if (state.draftConfig) {
     this.listeners.draftConfig.forEach(cb => cb(state.draftConfig));
    }
 
+   // final config (STARTED ONLY)
    if (state.config) {
     this.listeners.config.forEach(cb => cb(state.config));
    }
 
+   // READY SIGNAL
    if (state.guestReady) {
     this.listeners.guestReady.forEach(cb => cb(state));
    }
 
-   if (state.started) {
+   // FSM START GATE (ВАЖНО)
+   if (state.state === "STARTED") {
     this.listeners.start.forEach(cb => cb(state));
    }
   });
  }
 
  // =========================
- // DRAFT CONFIG (LIVE SYNC)
+ // LIVE CONFIG UPDATE
  // =========================
  async setDraftConfig(partialConfig) {
   if (!this.roomRef) return;
@@ -143,7 +146,19 @@ async registerGuest() {
  }
 
  // =========================
- // LOCK CONFIG (HOST START GAME)
+ // READY
+ // =========================
+ async setGuestReady() {
+  if (!this.roomRef) return;
+
+  await update(this.roomRef, {
+   guestReady: true,
+   state: "READY"
+  });
+ }
+
+ // =========================
+ // START GAME (FSM)
  // =========================
  async lockConfigAndStart() {
   const snap = await get(this.roomRef);
@@ -151,21 +166,16 @@ async registerGuest() {
 
   if (!state?.guestReady) return;
 
+  // 🔥 LOCK STEP
+  await update(this.roomRef, {
+   state: "LOCKING"
+  });
+
+  // commit config
   await update(this.roomRef, {
    config: state.draftConfig,
-   started: true,
+   state: "STARTED",
    startedAt: Date.now()
-  });
- }
-
- // =========================
- // GUEST READY
- // =========================
- async setGuestReady() {
-  if (!this.roomRef) return;
-
-  await update(this.roomRef, {
-   guestReady: true
   });
  }
 
