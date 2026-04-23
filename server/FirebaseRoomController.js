@@ -8,6 +8,9 @@ import {
 
 import { db } from "./firebaseApp.js";
 
+// =========================
+// EVENTS
+// =========================
 const EVENTS = {
  CONFIG_UPDATED: "CONFIG_UPDATED",
  GUEST_READY: "GUEST_READY",
@@ -30,21 +33,14 @@ export class FirebaseRoomController {
    draftConfig: [],
    roundStarted: [],
    guess: [],
-   roundComplete: [],
-   state: []
+   roundComplete: []
   };
 
-  this.lastSeen = new Set();
-
-  // 🔥 DERIVED STATE (ключ фикса)
-  this.state = {
-   guestReady: false,
-   started: false
-  };
+  // 🔥 NO lastSeen cache anymore (CRITICAL FIX)
  }
 
  // =========================
- // CREATE
+ // CREATE ROOM
  // =========================
  async createRoom(initialConfig = {}) {
   const roomsRef = ref(this.db, "rooms");
@@ -68,7 +64,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // JOIN
+ // JOIN ROOM
  // =========================
  async joinRoom(roomId) {
   this.roomId = roomId;
@@ -80,22 +76,8 @@ export class FirebaseRoomController {
   return snap.val();
  }
 
-waitForStart() {
- return new Promise(resolve => {
-  const unsub = this.onState((s) => {
-   if (s.started) {
-    unsub?.();
-    resolve();
-   }
-  });
- });
-}
-
-
-
- 
  // =========================
- // EVENT EMITTER
+ // EMIT EVENT
  // =========================
  async emitEvent(type, payload = {}) {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
@@ -110,57 +92,61 @@ waitForStart() {
  }
 
  // =========================
- // BIND + REDUCER
+ // BIND (SAFE EVENT STREAM)
  // =========================
  bind() {
   const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
 
   onValue(eventsRef, (snap) => {
    const data = snap.val() || {};
-   const events = Object.values(data).sort((a, b) => a.ts - b.ts);
+
+   const events = Object.values(data)
+    .sort((a, b) => a.ts - b.ts);
 
    for (const e of events) {
-    if (this.lastSeen.has(e.id)) continue;
-    this.lastSeen.add(e.id);
+
+    // 🔥 NO dedupe logic here
 
     switch (e.type) {
 
      case EVENTS.CONFIG_UPDATED:
-      this.listeners.draftConfig.forEach(cb => cb(e.payload));
+      this.listeners.draftConfig.forEach(cb =>
+       cb(e.payload)
+      );
       break;
 
      case EVENTS.GUEST_READY:
-      this.state.guestReady = true;
-      this.pushState();
+      // можно расширить позже, сейчас не нужен state-layer
       break;
 
      case EVENTS.GAME_STARTED:
-      this.state.started = true;
-      this.pushState();
-      this.listeners.start.forEach(cb => cb(e.payload));
+      console.log("🔥 GAME_STARTED RECEIVED:", e.payload);
+
+      this.listeners.start.forEach(cb =>
+       cb(e.payload)
+      );
       break;
 
      case EVENTS.ROUND_STARTED:
-      this.listeners.roundStarted.forEach(cb => cb(e.payload));
+      this.listeners.roundStarted.forEach(cb =>
+       cb(e.payload)
+      );
       break;
 
      case EVENTS.GUESS:
-      this.listeners.guess.forEach(cb => cb(e.payload));
+      this.listeners.guess.forEach(cb =>
+       cb(e.payload)
+      );
       break;
 
      case EVENTS.ROUND_COMPLETE:
-      this.listeners.roundComplete.forEach(cb => cb());
+      this.listeners.roundComplete.forEach(cb =>
+       cb()
+      );
       break;
     }
    }
   });
- }
-
- // =========================
- // STATE PUSH
- // =========================
- pushState() {
-  this.listeners.state.forEach(cb => cb({ ...this.state }));
  }
 
  // =========================
@@ -175,6 +161,7 @@ waitForStart() {
  }
 
  lockConfigAndStart(config) {
+  console.log("🔥 EMIT GAME START");
   return this.emitEvent(EVENTS.GAME_STARTED, { config });
  }
 
@@ -211,9 +198,5 @@ waitForStart() {
 
  onRoundComplete(cb) {
   this.listeners.roundComplete.push(cb);
- }
-
-onState(cb) {
-  this.listeners.state.push(cb);
  }
 }
