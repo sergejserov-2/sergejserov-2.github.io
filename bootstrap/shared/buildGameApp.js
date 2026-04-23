@@ -181,7 +181,6 @@ export function buildGameApp({ config, mode, room }) {
  // =========================
  // START
  // =========================
-await new Promise(r => requestAnimationFrame(r));
 gameFlow.startGame();
 
  return gameFlow;
