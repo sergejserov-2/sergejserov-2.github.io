@@ -201,3 +201,26 @@ export class FirebaseRoomController {
  onStart(cb) {
   this.listeners.start.push(cb);
  }
+onDraftConfig(cb) {
+  this.listeners.draftConfig.push(cb);
+ }
+
+ onRoundStarted(cb) {
+  this.listeners.roundStarted.push(cb);
+ }
+
+ onGuess(cb) {
+  this.listeners.guess.push(cb);
+ }
+
+ onRoundComplete(cb) {
+  this.listeners.roundComplete.push(cb);
+ }
+
+ onState(cb) {
+  this.listeners.state.push(cb);
+
+  // immediate sync
+  cb({ ...this.localState });
+ }
+}
