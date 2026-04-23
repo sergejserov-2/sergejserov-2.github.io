@@ -84,77 +84,44 @@ h2 {
     <div class="status" id="status">Waiting for host...</div>
 
 </div>
-
 <script type="module">
 import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 
-// =========================
-// URL
-// =========================
 const url = new URL(window.location.href);
 const roomId = url.searchParams.get("room");
-const role = "guest";
 
-// =========================
-// UI
-// =========================
-const configEl = document.getElementById("config");
 const btn = document.getElementById("btn");
-const status = document.getElementById("status");
 
-// =========================
-// ROOM
-// =========================
 const room = new FirebaseRoomController();
 
-// =========================
-// CONFIG SYNC
-// =========================
-room.onDraftConfig((cfg) => {
- configEl.textContent = JSON.stringify(cfg, null, 2);
+let redirected = false;
+
+const snapshot = await room.joinRoom(roomId);
+
+// snapshot check
+if (snapshot?.game?.started) {
+ window.location.href =
+ `/play.html?room=${roomId}&role=guest`;
+}
+
+// live
+room.onPlayers((players) => {
+
+ if (redirected) return;
+
+ if (players?.game?.started) {
+  redirected = true;
+
+  window.location.href =
+   `/play.html?room=${roomId}&role=guest`;
+ }
 });
 
-// =========================
-// STATE TRACKING
-// =========================
-let guestReady = false;
-let gameStarted = false;
-
-// =========================
-// PLAYERS STATE (LIVE)
-// =========================
-room.onPlayers?.((players) => {
-
- console.log("👀 PLAYERS:", players);
-
- // guest ready sync
- if (players?.guest?.ready && !guestReady) {
-  guestReady = true;
-
-  btn.disabled = true;
-  btn.textContent = "WAITING HOST...";
-  status.textContent = "You are ready ✔️";
- }
-
-
-// =========================
-// READY BUTTON
-// =========================
+// READY
 btn.onclick = async () => {
-
- if (guestReady) return;
-
- console.log("🟢 GUEST READY CLICK");
-
- guestReady = true;
-
  btn.disabled = true;
- btn.textContent = "WAITING HOST...";
- status.textContent = "Waiting for host...";
-
  await room.setGuestReady();
 };
-
 </script>
 
 </body>
