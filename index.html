@@ -288,7 +288,7 @@ document.querySelectorAll("[data-mode]").forEach(b => {
    });
 
    roomController.onStart(() => {
-    window.location.href = /play.html?room=${room.roomId};
+    window.location.href = `/play.html?room=${room.roomId}`;
    });
 
   } else {
