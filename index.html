@@ -313,19 +313,33 @@ document.querySelectorAll("[data-mode]").forEach(b => {
   link.value = room.inviteLink;
   link.disabled = false;
 
-  // LIVE CONFIG SYNC (ВАЖНО)
+  // =========================
+  // LIVE CONFIG SYNC
+  // =========================
   roomController.onDraftConfig((cfg) => {
-   // если надо — сюда потом можно привязать UI отображение в лобби
    console.log("draftConfig:", cfg);
   });
 
-roomController.onState((state) => {
- if (state.guestReady) {
-  start.textContent = "START GAME";
-  start.classList.remove("wait");
- }
-});
+  // =========================
+  // STATE (FSM SAFE)
+  // =========================
+  roomController.onState((state) => {
 
+   // гост вошёл
+   if (state.players?.guest) {
+    start.textContent = "Гость подключился";
+   }
+
+   // готовность
+   if (state.guestReady) {
+    start.textContent = "START GAME";
+    start.classList.remove("wait");
+   }
+  });
+
+  // =========================
+  // START GAME EVENT (CRITICAL)
+  // =========================
   roomController.onStart(() => {
    window.location.href = `/play.html?room=${room.roomId}&role=host`;
   });
@@ -339,7 +353,6 @@ roomController.onState((state) => {
 // =========================
 function syncRoom() {
  if (mode !== "duel" || !roomController) return;
-
  roomController.setDraftConfig(buildConfig());
 }
 
@@ -370,7 +383,7 @@ document.querySelectorAll("[data-area]").forEach(b => {
 });
 
 // =========================
-// TIMER / MOVES FIX (ВАЖНО)
+// TIMER / MOVES
 // =========================
 const timeOff = document.getElementById("timeOff");
 const timeOn = document.getElementById("timeOn");
@@ -398,8 +411,7 @@ timeInput.oninput = syncRoom;
 const movesOff = document.getElementById("movesOff");
 const movesOn = document.getElementById("movesOn");
 const movesInput = document.getElementById("movesInput");
-
-movesOff.onclick = () => {
+ movesOff.onclick = () => {
  movesOff.classList.add("active");
  movesOn.classList.remove("active");
  movesInput.disabled = true;
@@ -416,15 +428,16 @@ movesOn.onclick = () => {
 };
 
 movesInput.oninput = syncRoom;
+
 // =========================
-// START
+// START BUTTON
 // =========================
 start.onclick = () => {
 
  if (mode === "duel") {
   if (!roomController) return;
 
-  roomController.lockConfigAndStart();
+  roomController.setGuestReady(); // 🔥 ВАЖНО: триггер FSM
   return;
  }
 
