@@ -25,40 +25,60 @@ import { Tweaks } from "../../ui/Tweaks.js";
 
 export function buildGameApp({ config, mode, room, role }) {
 
- console.log("GAME BOOTSTRAP");
+ console.log("🔥 GAME BOOTSTRAP START");
+ console.log("🧠 MODE:", mode);
+ console.log("🧠 ROLE:", role);
+ console.log("🧠 CONFIG:", config);
 
  // =========================
  // DOMAIN
  // =========================
+ console.log("➡️ DOMAIN START");
+
  const area = AreaRegistry.get(config.area || "europe");
+ console.log("🗺️ AREA:", area);
 
  const difficulty = new Difficulty();
  const scoring = new Scoring({ difficulty });
 
+ console.log("➡️ DOMAIN OK");
+
  // =========================
  // SERVICES
  // =========================
+ console.log("➡️ SERVICES START");
+
  const services = {
   timer: new TimerService(),
   moves: new MovesService()
  };
 
+ console.log("➡️ SERVICES OK");
+
  // =========================
  // ADAPTERS
  // =========================
+ console.log("➡️ ADAPTERS START");
+
  const streetAdapter = new StreetViewAdapter();
  const mapAdapter = new MapAdapter();
+
+ console.log("➡️ ADAPTERS OK");
 
  // =========================
  // CORE
  // =========================
+ console.log("➡️ CORE START");
+
  const gameState = new GameState();
 
  const playerId =
   mode === "duel"
    ? (role === "guest" ? "p2" : "p1")
    : "p1";
- 
+
+ console.log("👤 PLAYER ID:", playerId);
+
  const game = new Game({
   gameState,
   scoring,
@@ -78,13 +98,24 @@ export function buildGameApp({ config, mode, room, role }) {
   playerId
  });
 
+ console.log("🚀 GAMEFLOW CREATED");
+
  // =========================
  // UI ROOT
  // =========================
+ console.log("➡️ UI START");
+
  const hud = document.querySelector(".hud");
  const mapEl = document.querySelector(".map");
  const streetEl = document.querySelector(".streetview");
  const screensEl = document.querySelector(".screens");
+
+ console.log("🧪 DOM CHECK:", {
+  hud: !!hud,
+  map: !!mapEl,
+  street: !!streetEl,
+  screens: !!screensEl
+ });
 
  const guessBtn = document.querySelector("#makeGuess");
  const polygonBtn = document.querySelector(".polygon-button");
@@ -118,8 +149,10 @@ export function buildGameApp({ config, mode, room, role }) {
   root: screensEl
  });
 
+ console.log("➡️ UI COMPONENTS CREATED");
+
  // =========================
- // OVERVIEW UI (FIX — ВАЖНО)
+ // OVERVIEW UI
  // =========================
  const roundOverviewUI = new MapOverviewUI({
   adapter: mapAdapter,
@@ -136,9 +169,13 @@ export function buildGameApp({ config, mode, room, role }) {
  roundOverviewUI.init();
  gameOverviewUI.init();
 
+ console.log("➡️ OVERVIEW UI OK");
+
  // =========================
  // FLOW
  // =========================
+ console.log("➡️ UIFLOW START");
+
  new UIFlow({
   gameFlow,
   screenManager,
@@ -150,28 +187,41 @@ export function buildGameApp({ config, mode, room, role }) {
   gameOverviewUI
  });
 
+ console.log("➡️ UIFLOW OK");
+
  // =========================
  // STREET VIEW
  // =========================
- streetViewUI.onReady = () => gameFlow.streetViewReady();
+ console.log("➡️ STREET VIEW INIT");
+
+ streetViewUI.onReady = () => {
+  console.log("📍 STREET READY");
+  gameFlow.streetViewReady();
+};
 
  streetViewUI.init({ lat: 0, lng: 0 });
 
  streetViewUI.onMove = () => gameFlow.registerMove();
 
+ console.log("➡️ STREET VIEW OK");
+
  // =========================
  // MAP
  // =========================
+ console.log("➡️ MAP INIT");
+
  mapWrapperUI.init();
  mapWrapperUI.reset();
  mapWrapperUI.setArea(area);
  mapWrapperUI.bindPolygonButton(polygonBtn);
-
  mapWrapperUI.bindGuess((point) => {
+  console.log("📍 GUESS");
   gameFlow.finishGuess(point);
  });
 
  mapWrapperUI.bindGuessButton(guessBtn);
+
+ console.log("➡️ MAP OK");
 
  // =========================
  // TWEAKS
@@ -184,13 +234,19 @@ export function buildGameApp({ config, mode, room, role }) {
 
  tweaks.apply();
 
+ console.log("➡️ TWEAKS OK");
+
  // =========================
  // START
  // =========================
-if (mode === "solo") {
- gameFlow.startGame();
-};
- 
+ console.log("➡️ START SECTION");
+
+ if (mode === "solo") {
+  console.log("🚀 SOLO START");
+  gameFlow.startGame();
+ }
+
+ console.log("🔥 BUILD GAME APP DONE");
 
  return gameFlow;
 }
