@@ -16,10 +16,6 @@ body {
     height: 100vh;
 }
 
-/* =========================
-   BOX
-========================= */
-
 .box {
     width: 520px;
     background: #161a22;
@@ -28,27 +24,15 @@ body {
     box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
 
-/* =========================
-   TITLE
-========================= */
-
 h2 {
     margin: 0 0 12px;
 }
-
-/* =========================
-   ROLE
-========================= */
 
 .role {
     font-size: 12px;
     opacity: 0.7;
     margin-bottom: 12px;
 }
-
-/* =========================
-   CONFIG DEBUG
-========================= */
 
 .config {
     background: #0f1115;
@@ -57,12 +41,7 @@ h2 {
     font-size: 12px;
     white-space: pre-wrap;
     margin-bottom: 16px;
-    opacity: 0.9;
 }
-
-/* =========================
-   BUTTON
-========================= */
 
 .btn {
     width: 100%;
@@ -73,11 +52,6 @@ h2 {
     cursor: pointer;
     font-weight: bold;
     transition: 0.2s;
-    user-select: none;
-}
-
-.btn:hover {
-    background: #27ae60;
 }
 
 .btn:disabled {
@@ -85,20 +59,11 @@ h2 {
     cursor: not-allowed;
 }
 
-.btn.wait {
-    background: #f39c12;
-}
-
-/* =========================
-   STATUS
-========================= */
-
 .status {
     margin-top: 10px;
     font-size: 12px;
     opacity: 0.7;
 }
-
 </style>
 
 </head>
@@ -109,13 +74,13 @@ h2 {
 
     <h2>⏳ Waiting Room</h2>
 
-    <div class="role" id="role">guest</div>
+    <div class="role">guest</div>
 
-    <div class="config" id="config">Loading config...</div>
+    <div class="config" id="config">Loading...</div>
 
-    <div class="btn" id="actionBtn">READY</div>
+    <div class="btn" id="btn">READY</div>
 
-    <div class="status" id="info">Click when ready</div>
+    <div class="status" id="status">Click when ready</div>
 
 </div>
 
@@ -128,19 +93,14 @@ import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 const url = new URL(window.location.href);
 
 const roomId = url.searchParams.get("room");
-const role = (url.searchParams.get("role") || "guest")
- .trim()
- .toLowerCase();
+const role = (url.searchParams.get("role") || "guest");
 
 // =========================
 // UI
 // =========================
-const roleEl = document.getElementById("role");
 const configEl = document.getElementById("config");
-const btn = document.getElementById("actionBtn");
-const info = document.getElementById("info");
-
-roleEl.textContent = "guest";
+const btn = document.getElementById("btn");
+const status = document.getElementById("status");
 
 // =========================
 // ROOM
@@ -153,40 +113,39 @@ await room.joinRoom(roomId);
 // STATE
 // =========================
 let guestReady = false;
+let gameStarted = false;
 
 // =========================
-// CONFIG SYNC
+// CONFIG LIVE
 // =========================
-room.onDraftConfig((draft) => {
- configEl.textContent = JSON.stringify(draft, null, 2);
+room.onDraftConfig((cfg) => {
+ configEl.textContent = JSON.stringify(cfg, null, 2);
 });
 
 // =========================
-// GAME START → REDIRECT
+// PLAYER STATE LISTENER (🔥 ВАЖНО)
 // =========================
-room.onStart(() => {
- console.log("🔥 GAME START → GO PLAY");
+// ожидаем что в bind() ты уже эмитишь players state
+room.onPlayers?.((players) => {
 
- window.location.href =
-  `/play.html?room=${roomId}&role=guest`;
-});
+ console.log("👀 PLAYERS UPDATE:", players);
 
-// =========================
-// UI RENDER
-// =========================
-function render() {
- if (!guestReady) {
-  btn.disabled = false;
-  btn.textContent = "READY";
-  info.textContent = "Click when ready";
- } else {
+ if (players?.guest?.ready) {
+  guestReady = true;
   btn.disabled = true;
   btn.textContent = "WAITING HOST...";
-  info.textContent = "Waiting for host to start...";
+  status.textContent = "Guest ready ✔️";
  }
-}
 
-render();
+ if (players?.game?.started && !gameStarted) {
+  gameStarted = true;
+
+  console.log("🔥 GAME START DETECTED → REDIRECT");
+
+  window.location.href =
+   `/play.html?room=${roomId}&role=guest`;
+ }
+});
 
 // =========================
 // READY CLICK
@@ -194,10 +153,13 @@ render();
 btn.onclick = async () => {
  if (guestReady) return;
 
- console.log("🟢 GUEST READY");
+ console.log("🟢 SET GUEST READY");
 
  guestReady = true;
- render();
+
+ btn.disabled = true;
+ btn.textContent = "WAITING HOST...";
+ status.textContent = "Waiting for host...";
 
  await room.setGuestReady();
 };
