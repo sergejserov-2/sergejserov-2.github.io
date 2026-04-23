@@ -6,58 +6,68 @@ export async function createDuelApp(config) {
 
  const roomController = new FirebaseRoomController();
 
- let room;
+ let roomId = config.roomId || null;
 
  // =========================
  // CREATE OR JOIN
  // =========================
- if (config.roomId) {
-  console.log("JOIN ROOM:", config.roomId);
-
-  await roomController.joinRoom(config.roomId);
-
- } else {
-  room = await roomController.createRoom(config);
+ if (!roomId) {
+  const room = await roomController.createRoom(config);
 
   console.log("ROOM CREATED:", room.roomId);
   console.log("INVITE LINK:", room.inviteLink);
 
   setupLobby(roomController, room);
+
   return;
  }
 
+ console.log("JOIN ROOM:", roomId);
+
+ const initialState = await roomController.joinRoom(roomId);
+
  // =========================
- // WAIT FOR START (FSM SAFE)
+ // WAIT FOR FSM START
  // =========================
- await waitForStart(roomController);
+ await waitForGameStart(roomController);
+
+ // =========================
+ // GET FINAL STATE
+ // =========================
+ const finalState = await roomController.getFinalState?.() 
+  || initialState;
 
  // =========================
  // START GAME
  // =========================
  return buildGameApp({
-  config,
+  config: finalState.config, // 🔥 ВАЖНО: только LOCKED config
   mode: "duel",
   room: roomController
  });
 }
 
 // =========================
-// SAFE START WAITER
+// FSM SAFE WAITER
 // =========================
-function waitForStart(roomController) {
+function waitForGameStart(roomController) {
  return new Promise(resolve => {
-  roomController.onStart(() => resolve());
+  roomController.onState((state) => {
+   if (state.state === "STARTED" && state.config) {
+    resolve(state);
+   }
+  });
  });
 }
 
 // =========================
-// LOBBY HOOK (UI LATER)
+// LOBBY HOOK
 // =========================
 function setupLobby(roomController, room) {
  console.log("LOBBY READY:", room.roomId);
 
- // UI layer will:
- // - show invite link
- // - show live config
- // - enable start when guestReady
+ // UI:
+ // - invite link
+ // - live draft config
+ // - guestReady / start button enable
 }
