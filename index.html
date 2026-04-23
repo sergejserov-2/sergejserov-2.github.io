@@ -49,7 +49,7 @@ h2 {
 }
 
 /* =========================
-   ROW (FIXED)
+   ROW
 ========================= */
 
 .row {
@@ -87,7 +87,7 @@ h2 {
 }
 
 /* =========================
-   ROUNDS (FIXED DISTRIBUTION)
+   ROUNDS
 ========================= */
 
 #rounds {
@@ -119,7 +119,7 @@ input:disabled {
 }
 
 /* =========================
-   INLINE CONTROL ROWS
+   INLINE
 ========================= */
 
 .inline {
@@ -128,27 +128,18 @@ input:disabled {
     align-items: center;
 }
 
-.inline input {
-    flex: 1;
-}
-
 /* =========================
-   MAP (LEFT ALIGN FIX)
+   MAP ROW
 ========================= */
 
 .map-row {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    justify-content: flex-start;
-}
-
-.map-row .btn {
-    flex: 0 0 auto;
 }
 
 /* =========================
-   START BUTTON (FIXED)
+   START BUTTON
 ========================= */
 
 .start {
@@ -170,6 +161,12 @@ input:disabled {
 
 .start.wait {
     background: #f39c12;
+    cursor: not-allowed;
+}
+
+.start.disabled {
+    background: #555;
+    cursor: not-allowed;
 }
 </style>
 
@@ -223,134 +220,3 @@ input:disabled {
             <input id="movesInput" type="number" value="10" disabled>
         </div>
     </div>
-<!-- MAP -->
-    <div class="section">
-        <div class="title">Карта</div>
-        <div class="map-row" id="areas">
-            <div class="btn active" data-area="europe">Европа</div>
-            <div class="btn" data-area="asia">Азия</div>
-            <div class="btn" data-area="northAmerica">Северная Америка</div>
-            <div class="btn" data-area="latinAmerica">Латинская Америка</div>
-            <div class="btn" data-area="oceania">Океания</div>
-            <div class="btn" data-area="middleEast">Ближний Восток</div>
-            <div class="btn" data-area="sovietUnion">СССР</div>
-        </div>
-    </div>
-
-    <!-- START -->
-    <div class="start" id="start">Начать игру</div>
-
-</div>
-
-<script>
-let mode = "solo";
-let area = "europe";
-let rounds = 5;
-
-let timeEnabled = false;
-let movesEnabled = false;
-
-function togglePair(offBtn, onBtn, input, setState) {
-    offBtn.onclick = () => {
-        offBtn.classList.add("active");
-        onBtn.classList.remove("active");
-
-        input.disabled = true;
-        setState(false);
-    };
-
-    onBtn.onclick = () => {
-        onBtn.classList.add("active");
-        offBtn.classList.remove("active");
-
-        input.disabled = false;
-        setState(true);
-    };
-}
-  
-// MODE
-document.querySelectorAll("[data-mode]").forEach(b => {
-    b.onclick = () => {
-        document.querySelectorAll("[data-mode]").forEach(x => x.classList.remove("active"));
-        b.classList.add("active");
-
-        mode = b.dataset.mode;
-
-        const link = document.getElementById("duelLink");
-
-        if (mode === "duel") {
-            link.disabled = false;
-            link.placeholder = "Ссылка для приглашения...";
-            start.textContent = "Ожидание игрока...";
-            start.classList.add("wait");
-        } else {
-            link.disabled = true;
-            link.value = "";
-            link.placeholder = "";
-            start.textContent = "Начать игру";
-            start.classList.remove("wait");
-        }
-    };
-});
-
-// ROUNDS
-document.querySelectorAll("[data-rounds]").forEach(b => {
-    b.onclick = () => {
-        document.querySelectorAll("[data-rounds]").forEach(x => x.classList.remove("active"));
-        b.classList.add("active");
-        rounds = +b.dataset.rounds;
-    };
-});
-
-// AREA
-document.querySelectorAll("[data-area]").forEach(b => {
-    b.onclick = () => {
-        document.querySelectorAll("[data-area]").forEach(x => x.classList.remove("active"));
-        b.classList.add("active");
-        area = b.dataset.area;
-    };
-});
-
-// TIMER
-const timeOff = document.getElementById("timeOff");
-const timeOn = document.getElementById("timeOn");
-const timeInput = document.getElementById("timeInput");
-
-togglePair(timeOff, timeOn, timeInput, (v) => {
-    timeEnabled = v;
-});
-
-// MOVES
-const movesOff = document.getElementById("movesOff");
-const movesOn = document.getElementById("movesOn");
-const movesInput = document.getElementById("movesInput");
-
-togglePair(movesOff, movesOn, movesInput, (v) => {
-    movesEnabled = v;
-});
-
-// START
-document.getElementById("start").onclick = () => {
-
-    const config = {
-        mode,
-        area,
-        rules: {
-            rounds,
-            time: timeEnabled ? +timeInput.value : -1,
-            moves: movesEnabled ? +movesInput.value : -1
-        }
-    };
-
-    localStorage.setItem("gameConfig", JSON.stringify(config));
-
-    if (mode === "duel") {
-        return;
-    }
-
-    window.location.href = "/play.html";
-};
-</script>
-
-</body>
-</html>
