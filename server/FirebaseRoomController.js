@@ -177,6 +177,9 @@ export class FirebaseRoomController {
   return this.emitEvent(EVENTS.GAME_STARTED, {
    config,
    startedAt: Date.now()
+   await update(this.roomRef, {
+   started: true
+   });
   });
  }
 
