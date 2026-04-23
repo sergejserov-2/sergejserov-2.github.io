@@ -28,6 +28,10 @@ import { RoundsService } from "./services/RoundsService.js";
 
 import { getConfig } from "./config/getConfig.js";
 
+// 🔥 NEW
+import { FirebaseTransport } from "./server/FirebaseTransport.js";
+import { NetworkAdapter } from "./server/NetworkAdapter.js";
+
 // =========================
 // GOOGLE MAPS
 // =========================
@@ -107,23 +111,30 @@ export async function init() {
  });
 
  // =========================
- // FLOW (NO NETWORK HERE)
+ // NETWORK (🔥 FIXED ORDER)
  // =========================
-const gameFlow = new GameFlow({
+ let network = null;
+
+ if (config.mode === "duel") {
+  const roomId = config.roomId || "default-room";
+  const playerId = config.playerId || "p1";
+
+  const transport = new FirebaseTransport(roomId);
+
+  network = new NetworkAdapter(transport, playerId);
+ }
+
+ // =========================
+ // FLOW
+ // =========================
+ const gameFlow = new GameFlow({
   game,
   generator,
   area,
   services,
   mode: config.mode || "solo",
   network
-});
-
- // =========================
- // NETWORK (DUEL ONLY)
- // =========================
-const network = config.mode === "duel"
-  ? new NetworkAdapter(/* transport */)
-  : null;
+ });
 
  // =========================
  // UI BUILDER
@@ -140,7 +151,7 @@ const network = config.mode === "duel"
   uiBuilder
  });
 
- const streetViewUI = new StreetViewUI({
+const streetViewUI = new StreetViewUI({
   adapter: streetAdapter,
   element: streetEl
  });
@@ -153,7 +164,7 @@ const network = config.mode === "duel"
  const screenManager = new ScreenManager({
   root: screensEl
  });
- 
+
  const roundOverviewUI = new MapOverviewUI({
   adapter: mapAdapter,
   element: roundOverviewMapEl,
@@ -170,7 +181,7 @@ const network = config.mode === "duel"
  gameOverviewUI.init();
 
  // =========================
- // UI FLOW (PURE LOCAL)
+ // UI FLOW
  // =========================
  new UIFlow({
   gameFlow,
