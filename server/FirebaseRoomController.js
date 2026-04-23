@@ -69,14 +69,38 @@ export class FirebaseRoomController {
  // JOIN ROOM (GUEST)
  // =========================
  async joinRoom(roomId) {
-  this.roomId = roomId;
-  this.roomRef = ref(this.db, `rooms/${roomId}`);
+ this.roomId = roomId;
+ this.roomRef = ref(this.db, rooms/${roomId});
 
-  this.bind();
+ this.bind();
 
-  const snap = await get(this.roomRef);
-  return snap.val();
- }
+ const snap = await get(this.roomRef);
+ const state = snap.val();
+
+ // 👉 ВАЖНО: регистрируем гостя
+ await this.registerGuest();
+
+ return state;
+}
+
+// =========================
+// REGISTER GUEST
+// =========================
+async registerGuest() {
+ if (!this.roomRef) return;
+
+ const snap = await get(this.roomRef);
+ const state = snap.val();
+
+ if (!state) return;
+
+ // если гость уже есть — не перетираем
+ if (state.players?.guest) return;
+
+ await update(this.roomRef, {
+  "players/guest": "p2"
+ });
+}
 
  // =========================
  // LIVE LISTEN
