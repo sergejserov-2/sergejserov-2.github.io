@@ -5,13 +5,15 @@ export class NetworkAdapter {
 
   this.listeners = {
    guess: [],
-   roundComplete: [],
-   state: []
+   roundComplete: []
   };
 
   this.bind();
  }
 
+ // =========================
+ // BIND
+ // =========================
  bind() {
   this.transport.on("guess", (data) => {
    this.listeners.guess.forEach(cb => cb(data));
@@ -20,17 +22,15 @@ export class NetworkAdapter {
   this.transport.on("roundComplete", (data) => {
    this.listeners.roundComplete.forEach(cb => cb(data));
   });
-
-  this.transport.on("state", (state) => {
-   this.listeners.state.forEach(cb => cb(state));
-  });
  }
 
- sendGuess({ playerId, guess, roundId }) {
+ // =========================
+ // OUTGOING
+ // =========================
+ sendGuess({ playerId, guess }) {
   this.transport.emit("guess", {
    playerId,
-   guess,
-   roundId
+   guess
   });
  }
 
@@ -38,15 +38,14 @@ export class NetworkAdapter {
   this.transport.emit("roundComplete", payload);
  }
 
+ // =========================
+ // INCOMING
+ // =========================
  onGuess(cb) {
   this.listeners.guess.push(cb);
  }
 
  onRoundComplete(cb) {
   this.listeners.roundComplete.push(cb);
- }
-
- onState(cb) {
-  this.listeners.state.push(cb);
  }
 }
