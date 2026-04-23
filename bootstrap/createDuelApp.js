@@ -18,6 +18,8 @@ export async function createDuelApp(config) {
   room,
   role
  });
+
+ app.startGameFromNetwork();
 }
 
 function waitForStart(room, snapshot) {
