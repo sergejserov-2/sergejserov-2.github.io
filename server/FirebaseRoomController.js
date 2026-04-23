@@ -9,6 +9,16 @@ import {
 
 import { db } from "./firebaseApp.js";
 
+// =========================
+// EVENT TYPES
+// =========================
+const EVENTS = {
+ GUEST_JOINED: "GUEST_JOINED",
+ CONFIG_UPDATED: "CONFIG_UPDATED",
+ GUEST_READY: "GUEST_READY",
+ GAME_STARTED: "GAME_STARTED"
+};
+
 export class FirebaseRoomController {
  constructor() {
   this.db = db;
@@ -17,12 +27,12 @@ export class FirebaseRoomController {
   this.roomRef = null;
 
   this.listeners = {
-   guestReady: [],
    start: [],
-   config: [],
-   state: [],
-   draftConfig: []
+   draftConfig: [],
+   state: []
   };
+
+  this.lastSeenEvents = new Set();
  }
 
  // =========================
@@ -35,29 +45,15 @@ export class FirebaseRoomController {
   this.roomId = newRoom.key;
   this.roomRef = ref(this.db, `rooms/${this.roomId}`);
 
-  const state = {
+  await set(this.roomRef, {
    roomId: this.roomId,
-
-   // FSM STATE
-   state: "LOBBY",
-
-   // LOBBY CONFIG
-   draftConfig: initialConfig,
-
-   // FINAL CONFIG (only after START)
-   config: null,
-
-   guestReady: false,
-
    players: {
     host: "p1",
     guest: null
    },
-
-   createdAt: Date.now()
-  };
-
-  await set(this.roomRef, state);
+   draftConfig: initialConfig,
+   events: {}
+  });
 
   this.bind();
 
@@ -76,122 +72,107 @@ export class FirebaseRoomController {
 
   this.bind();
 
+  await this.emitEvent(EVENTS.GUEST_JOINED);
+
   const snap = await get(this.roomRef);
-  const state = snap.val();
-
-  await this.registerGuest();
-
-  return state;
+  return snap.val();
  }
 
  // =========================
- // REGISTER GUEST
+ // EVENT EMITTER
  // =========================
- async registerGuest() {
-  if (!this.roomRef) return;
+ async emitEvent(type, payload = {}) {
+  const eventsRef = ref(this.db, `rooms/${this.roomId}/events)`;
+  const id = push(eventsRef).key;
 
-  const snap = await get(this.roomRef);
-  const state = snap.val();
-
-  if (!state) return;
-  if (state.players?.guest) return;
-
-  await update(this.roomRef, {
-   "players/guest": "p2"
+  await set(ref(this.db, `rooms/${this.roomId}/events/${id}`), {
+   id,
+   type,
+   payload,
+   ts: Date.now()
   });
  }
 
  // =========================
- // FSM LISTENER
+ // LIVE SUBSCRIBE (FSM CORE)
  // =========================
  bind() {
-  onValue(this.roomRef, (snap) => {
-   const state = snap.val();
-   if (!state) return;
+  const eventsRef = ref(this.db, `rooms/${this.roomId}/events`);
 
-   // full state
-   this.listeners.state.forEach(cb => cb(state));
+  onValue(eventsRef, (snap) => {
+   const eventsObj = snap.val() || {};
+   const events = Object.values(eventsObj)
+    .sort((a, b) => a.ts - b.ts);
 
-   // draft config (LOBBY ONLY)
-   if (state.draftConfig) {
-    this.listeners.draftConfig.forEach(cb => cb(state.draftConfig));
-   }
-
-   // final config (STARTED ONLY)
-   if (state.config) {
-    this.listeners.config.forEach(cb => cb(state.config));
-   }
-
-   // READY SIGNAL
-   if (state.guestReady) {
-    this.listeners.guestReady.forEach(cb => cb(state));
-   }
-
-   // FSM START GATE (ВАЖНО)
-   if (state.state === "STARTED") {
-    this.listeners.start.forEach(cb => cb(state));
-   }
+   this.replay(events);
   });
  }
 
  // =========================
- // LIVE CONFIG UPDATE
+ // FSM REDUCER (event replay)
+ // =========================
+ replay(events) {
+  for (const e of events) {
+   if (this.lastSeenEvents.has(e.id)) continue;
+   this.lastSeenEvents.add(e.id);
+
+   switch (e.type) {
+
+    case EVENTS.CONFIG_UPDATED:
+     this.listeners.draftConfig?.forEach(cb =>
+      cb(e.payload)
+     );
+     break;
+
+    case EVENTS.GUEST_READY:
+     this.listeners.state?.forEach(cb =>
+      cb({ guestReady: true })
+     );
+     break;
+
+    case EVENTS.GAME_STARTED:
+     this.listeners.start.forEach(cb =>
+      cb(e.payload)
+     );
+     break;
+   }
+  }
+ }
+
+ // =========================
+ // CONFIG LIVE UPDATE
  // =========================
  async setDraftConfig(partialConfig) {
-  if (!this.roomRef) return;
-
-  await update(this.roomRef, {
-   draftConfig: partialConfig
-  });
+  await this.emitEvent(EVENTS.CONFIG_UPDATED, partialConfig);
  }
 
  // =========================
- // READY
+ // GUEST READY
  // =========================
  async setGuestReady() {
-  if (!this.roomRef) return;
-
-  await update(this.roomRef, {
-   guestReady: true,
-   state: "READY"
-  });
+  await this.emitEvent(EVENTS.GUEST_READY);
  }
 
  // =========================
- // START GAME (FSM)
+ // START GAME (CRITICAL FIX)
  // =========================
  async lockConfigAndStart() {
   const snap = await get(this.roomRef);
-  const state = snap.val();
+  const room = snap.val();
 
-  if (!state?.guestReady) return;
+  if (!room) return;
 
-  // 🔥 LOCK STEP
-  await update(this.roomRef, {
-   state: "LOCKING"
-  });
-
-  // commit config
-  await update(this.roomRef, {
-   config: state.draftConfig,
-   state: "STARTED",
+  await this.emitEvent(EVENTS.GAME_STARTED, {
+   config: room.draftConfig,
    startedAt: Date.now()
   });
  }
 
  // =========================
- // EVENTS
+ // LISTENERS
  // =========================
- onGuestReady(cb) {
-  this.listeners.guestReady.push(cb);
- }
-
  onStart(cb) {
   this.listeners.start.push(cb);
- }
-
- onConfig(cb) {
-  this.listeners.config.push(cb);
  }
 
  onDraftConfig(cb) {
