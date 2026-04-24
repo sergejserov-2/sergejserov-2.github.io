@@ -303,12 +303,6 @@ updateRound(patch) {
 
  this.network.setRound(updated);
 }
-
- console.log("📡 setRound", updated);
-
- this.network.setRound(updated);
-}
-
  
 handlePlayerFinished(playerId, result) {
 
