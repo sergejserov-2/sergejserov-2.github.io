@@ -48,7 +48,7 @@ export class GameFlow {
  }
 
  // =========================
- // NETWORK (только игровые события)
+ // NETWORK
  // =========================
  bindNetwork() {
   if (!this.network) return;
@@ -82,13 +82,8 @@ export class GameFlow {
   this.game.startGame();
   this.emit("gameStarted", this.game.getState());
 
-  // HOST запускает раунд
-  if (this.mode === "duel" && role === "host") {
-   this.startRound();
-  }
-
-  // SOLO
-  if (this.mode === "solo") {
+  // HOST или SOLO запускают раунд
+  if (this.mode === "solo" || role === "host") {
    this.startRound();
   }
  }
@@ -181,11 +176,25 @@ export class GameFlow {
  }
 
  // =========================
+ // MOVES
+ // =========================
+ registerMove() {
+  if (this.locked) return;
+
+  const ok = this.moves.consume();
+
+  this.emit("movesUpdated", this.moves.getRemaining());
+
+  if (!ok || this.moves.isLocked()) {
+   this.emit("movesLocked");
+  }
+ }
+
+ // =========================
  // GUESS
  // =========================
  finishGuess(point) {
   if (this.locked || this.roundLocked) return;
-
   const payload = {
    playerId: this.playerId,
    guess: point
@@ -201,9 +210,11 @@ export class GameFlow {
  applyGuess(playerId, point) {
   if (this.roundLocked) return;
 
-const result = this.game.setGuess(playerId, point);
+  const result = this.game.setGuess(playerId, point);
   if (!result) return;
+
   this.game.applyResult(result);
+
   this.emit("guessResolved", result);
 
   if (this.mode === "solo") {
@@ -283,6 +294,9 @@ const result = this.game.setGuess(playerId, point);
   this._roundFinishing = false;
  }
 
+ // =========================
+ // SYNC
+ // =========================
  syncRoundComplete() {
   this.roundLocked = false;
   this.finishedPlayers.clear();
