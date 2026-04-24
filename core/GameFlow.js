@@ -81,80 +81,97 @@ export class GameFlow {
  }
 
  // NETWORK
- bindNetwork() {
-  if (!this.network) return;
+bindNetwork() {
+ if (!this.network) return;
 
-  this.network.onRoom((room) => {
+ console.log("🌐 bindNetwork active");
 
-   const game = room.game;
-   if (!game) return;
+ // =========================
+ // GUESS FROM GUEST → HOST
+ // =========================
+ if (this.network.onGuess) {
+  this.network.onGuess((data) => {
+   if (this.playerId !== "p1") return;
 
-   const round = game.round;
-   if (!round) return;
+   const { playerId, result } = data || {};
+   if (!playerId || !result) return;
 
-   if (game.started && !this._started) {
-    this._started = true;
-    this.game.startGame();
-    this.emit("gameStarted", this.game.getState());
-   }
-
-   this.setCurrentRound(round);
-   const current = this.getCurrentRound();
-   if (this.playerId !== "p1") {
-
-    const canStart =
-     current.index !== this._currentRoundIndex &&
-     current.actualLocation;
-
-    if (canStart) {
-     this._currentRoundIndex = current.index;
-
-     this.startRoundWithLocation(current.actualLocation);
-    }
-   }
-
-   if (current.status === "waiting") {
-
-    const isInitiator = this.playerId === current.initiator;
-
-    if (isInitiator) {
-     this.emit("roundWaiting");
-    }
-
-    if (!this._timerStarted) {
-     this._timerStarted = true;
-
-     this.roundTimer.start(
-      10,
-      () => {
-       if (this.playerId === "p1") {
-        this.updateRound({ status: "finished" });
-       }
-      },
-      (t) => this.emit("roundTimerTick", t)
-     );
-
-     this.emit("roundTimerStart");
-    }
-   }
-
-   const guessCount = Object.keys(current.guesses).length;
-
-   if (
-    this.playerId === "p1" &&
-    current.status !== "finished" &&
-    guessCount >= this.game.players.length
-   ) {
-    this.updateRound({ status: "finished" });
-   }
-
-   if (current.status === "finished" && !this._roundFinishing) {
-    this._timerStarted = false;
-    this.finishRoundFromState("networkFinish");
-   }
+   this.handlePlayerFinished(playerId, result);
   });
  }
 
+ this.network.onRoom((room) => {
+  const game = room.game;
+  if (!game) return;
+
+  const round = game.round;
+  if (!round) return;
+
+  if (game.started && !this._started) {
+   this._started = true;
+   this.game.startGame();
+   this.emit("gameStarted", this.game.getState());
+  }
+
+  const current = this.getCurrentRound();
+  this.setCurrentRound(round);
+
+  if (this.playerId !== "p1") {
+   const canStart =
+    current.index !== this._currentRoundIndex &&
+    current.actualLocation;
+
+   if (canStart) {
+    this._currentRoundIndex = current.index;
+
+    console.log("📡 FORCE START ROUND (GUEST)", current);
+
+    this.startRoundWithLocation(current.actualLocation);
+   }
+  }
+  if (current.status === "waiting") {
+
+   const isInitiator = this.playerId === current.initiator;
+
+   if (isInitiator) {
+    this.emit("roundWaiting");
+   }
+
+   if (!this._timerStarted) {
+    this._timerStarted = true;
+
+    this.roundTimer.start(
+     10,
+     () => {
+      if (this.playerId === "p1") {
+       this.updateRound({ status: "finished" });
+      }
+     },
+     (t) => this.emit("roundTimerTick", t)
+    );
+
+    this.emit("roundTimerStart");
+   }
+  }
+
+  const guessCount = Object.keys(current.guesses).length;
+
+  if (
+   this.playerId === "p1" &&
+   current.status !== "finished" &&
+   guessCount >= this.game.players.length
+  ) {
+   this.updateRound({ status: "finished" });
+  }
+
+  if (current.status === "finished" && !this._roundFinishing) {
+   this._timerStarted = false;
+   this.finishRoundFromState("networkFinish");
+  }
+ });
+}
+
+ 
  // GAME START
  startGame() {
   if (this._started) return;
