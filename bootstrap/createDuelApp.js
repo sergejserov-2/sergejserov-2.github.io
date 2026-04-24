@@ -1,40 +1,45 @@
 import { FirebaseRoomController } from "../server/FirebaseRoomController.js";
-import { buildGameApp } from "./shared/buildGameApp.js";
+import { buildGameApp } from "./buildGameApp.js";
 
 export async function createDuelApp(config) {
-console.log("Entry Duel");
- const params = new URLSearchParams(window.location.search);
- const role = params.get("role") || "host";
- const roomId = params.get("room");
+ console.log("🟢 [DUEL] INIT");
+
+ const url = new URL(window.location.href);
+ const roomId = url.searchParams.get("room");
+ const role = url.searchParams.get("role");
+
+ console.log("🟡 ROLE:", role);
+ console.log("🟡 ROOM:", roomId);
 
  const room = new FirebaseRoomController();
- const snapshot = await room.joinRoom(roomId);
+ await room.joinRoom(roomId);
 
- const gameConfig = await waitForStart(room, snapshot);
+ console.log("🟢 ROOM JOINED");
 
- return buildGameApp({
-  config: gameConfig || config,
+ // =========================
+ // BUILD GAME (НО НЕ СТАРТУЕМ)
+ // =========================
+ const gameFlow = buildGameApp({
+  config,
   mode: "duel",
   room,
   role
  });
 
-  app.startGameFromNetwork();
-}
+ console.log("🟢 GAME APP BUILT");
 
-function waitForStart(room, snapshot) {
- return new Promise(resolve => {
+ // =========================
+ // STATE-DRIVEN START
+ // =========================
+ room.onPlayers((players) => {
+  console.log("👥 PLAYERS UPDATE", players);
 
-  if (snapshot?.game?.started) {
-   resolve(snapshot.game.config);
-   return;
+  if (players?.host?.ready && players?.guest?.ready) {
+   console.log("🔥 BOTH READY → START");
+
+   gameFlow.start({ role });
   }
-
-  room.onPlayers((players) => {
-   if (players?.game?.started) {
-    resolve(players.game.config);
-   }
-  });
-
  });
+
+ return gameFlow;
 }
