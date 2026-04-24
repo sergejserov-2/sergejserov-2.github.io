@@ -284,25 +284,23 @@ syncRoundFromNetwork(round) {
  if (!this.game) return;
 
  const state = this.game.getState?.();
-
  if (!state) return;
 
- if (!state.currentRound) {
-  state.currentRound = {
-   guesses: {},
-   initiator: null,
-   status: null
-  };
- }
+ // 🚫 НЕ МУТИМ state.currentRound
+ // только читаем как fallback
 
- state.currentRound.guesses = round.guesses || {};
- state.currentRound.initiator = round.initiator;
- state.currentRound.status = round.status;
+ if (!this._networkRound) return;
+
+ this._networkRound.guesses = round.guesses || {};
+ this._networkRound.initiator = round.initiator;
+ this._networkRound.status = round.status;
 }
 
 
 
-
+getCurrentRound() {
+ return this._networkRound;
+}
 
 
 
@@ -416,8 +414,7 @@ finishRound(reason = "manual") {
 
  const state = this.game.getState();
 
- // ❗ ГАРАНТИЯ: все guesses уже в state.currentRound
- const round = state.currentRound;
+const round = this._networkRound;
 
  console.log("📊 FINAL ROUND DATA", round);
 
