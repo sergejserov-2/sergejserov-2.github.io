@@ -39,28 +39,21 @@ export class StaticUI {
  // ROUND RESULT
  // =========================
 
-showRoundResult(vm = {}) {
+ showRoundResult(vm = {}) {
   console.log("🧾 [StaticUI] showRoundResult CALLED", vm);
 
   const root = this.roundRoot;
-  console.log("🧾 roundRoot:", root);
-
-  if (!root) {
-    console.log("❌ roundRoot missing");
-    return;
-  }
+  if (!root) return;
 
   const container = root.querySelector(".players-score");
-  console.log("🧾 container:", container);
 
-const guesses = vm.round?.guesses
-  ? Object.values(vm.round.guesses)
-  : [];
+  // vm.round уже НОРМАЛИЗОВАН в UIBuilder
+  const guesses = vm.guesses || [];
 
   console.log("🧾 guesses parsed:", guesses);
 
   this.renderPlayerBars(container, guesses);
-}
+ }
 
  // =========================
  // GAME RESULT
@@ -84,10 +77,6 @@ const guesses = vm.round?.guesses
 
   this.stopRoundDelay();
  }
-
- // =========================
- // PLAYER BARS
- // =========================
 
  renderPlayerBars(container, list = []) {
   if (!container) return;
@@ -149,46 +138,5 @@ const guesses = vm.round?.guesses
   });
 
   container.appendChild(wrap);
- }
-
- // =========================
- // TIMER BAR
- // =========================
-
-startRoundDelay(duration, onFinish) {
-  this.stopRoundDelay();
-
-  const bar = this.roundRoot?.querySelector(".round-timer-bar");
-  if (!bar) return;
-
-  bar.style.transition = "none";
-  bar.style.transform = "scaleX(1)";
-
-  const start = performance.now();
-
-  const animate = (now) => {
-   const progress = Math.max(0, 1 - (now - start) / duration);
-
-   bar.style.transform = `scaleX(${progress})`;
-
-   if (progress > 0) {
-    this.delayFrame = requestAnimationFrame(animate);
-   } else {
-    this.stopRoundDelay();
-    onFinish?.();
-   }
-  };
-
-  this.delayFrame = requestAnimationFrame(animate);
- }
-
- stopRoundDelay() {
-  if (this.delayFrame) {
-   cancelAnimationFrame(this.delayFrame);
-   this.delayFrame = null;
-  }
-
-  const bar = this.roundRoot?.querySelector(".round-timer-bar");
-  if (bar) bar.style.transform = "scaleX(0)";
  }
 }
