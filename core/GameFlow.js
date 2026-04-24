@@ -110,28 +110,33 @@ bindNetwork() {
   // =========================
   // WAITING STATE
   // =========================
-  if (round.status === "waiting") {
+if (round.status === "waiting" && this.mode === "duel") {
 
-   const isInitiator = this.playerId === round.initiator;
+ const isInitiator = this.playerId === round.initiator;
 
-   if (isInitiator) {
-    this.locked = true;
-    this.emit("roundWaiting");
-   }
+ if (isInitiator) {
+  this.locked = true;
+  this.emit("roundWaiting");
+ }
 
-   // UI TIMER (NOT STATE)
-   if (!this._timerStarted) {
-    this._timerStarted = true;
+ if (!this._timerStarted) {
+  this._timerStarted = true;
 
-    this.roundTimer.start(
-     10,
-     () => {}, // НЕ меняем state
-     (t) => this.emit("roundTimerTick", t)
-    );
+  this.roundTimer.start(
+   10,
+   () => {
+    console.log("⏱ TIMEOUT → FINISH ROUND");
 
-    this.emit("roundTimerStart");
-   }
-  }
+    this.updateRound({
+     status: "finished"
+    });
+   },
+   (t) => this.emit("roundTimerTick", t)
+  );
+
+  this.emit("roundTimerStart");
+ }
+}
 
   // =========================
   // AUTO FINISH FROM STATE (guesses-based)
@@ -151,12 +156,16 @@ bindNetwork() {
   // =========================
   // FINISHED STATE
   // =========================
-  if (round.status === "finished" && !this._roundFinishing) {
+if (round.status === "finished" && !this._roundFinishing) {
 
-   this._timerStarted = false;
+ console.log("🏁 FINISH TRIGGER");
 
-   this.finishRoundFromState("networkFinish");
-  }
+ this._timerStarted = false;
+
+ this._initiatorId = null;
+
+ this.finishRoundFromState("networkFinish");
+}
  });
 }
 
@@ -333,8 +342,17 @@ updateRound(patch) {
 
  
 handlePlayerFinished(playerId, result) {
-
  this.emit("inputLocked");
+
+ const current = this.game.getState().currentRound;
+ const guesses = current.guesses || {};
+
+ const updatedGuesses = {
+  ...guesses,
+  [playerId]: result
+ };
+
+ const guessCount = Object.keys(updatedGuesses).length;
 
  // =========================
  // FIRST GUESS → WAITING
@@ -350,24 +368,30 @@ handlePlayerFinished(playerId, result) {
   this.updateRound({
    status: "waiting",
    initiator: playerId,
-   lastGuess: result,
-   guesses: {
-    [playerId]: result
-   }
+   guesses: updatedGuesses
   });
 
   return;
  }
 
  // =========================
- // NEXT GUESSES → ONLY SYNC
+ // UPDATE GUESSES
  // =========================
  this.updateRound({
-  guesses: {
-   ...this.game.getState().currentRound.guesses,
-   [playerId]: result
-  }
+  guesses: updatedGuesses
  });
+
+ // =========================
+ // ALL PLAYERS DONE → FINISH ROUND
+ // =========================
+ if (guessCount >= this.game.players.length) {
+
+  console.log("🏁 ALL PLAYERS DONE → FINISH");
+
+  this.updateRound({
+   status: "finished"
+  });
+ }
 }
 
  
