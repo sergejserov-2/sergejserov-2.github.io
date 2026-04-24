@@ -92,48 +92,6 @@ emit(event, data) {
   };
  }
 
-validateRoundForNetwork(round) {
- if (!round) {
-  throw new Error("ROUND INVALID: round is null");
- }
-
- if (round.index == null) {
-  throw new Error("ROUND INVALID: missing index");
- }
-
- if (!round.status) {
-  throw new Error("ROUND INVALID: missing status");
- }
-
- if (!round.actualLocation) {
-  throw new Error("ROUND INVALID: missing actualLocation");
- }
-
- if (!round.guesses) {
-  round.guesses = {};
- }
-
- // КЛЮЧЕВО: Firebase НЕ принимает undefined
- if (round.initiator === undefined) {
-  round.initiator = null;
- }
-
- return {
-  index: round.index,
-  status: round.status,
-  actualLocation: round.actualLocation,
-  guesses: round.guesses,
-  initiator: round.initiator
- };
-}
-
-
-
-
-
-
-
-
  
  // =========================================================
  bindNetwork() {
@@ -236,7 +194,8 @@ validateRoundForNetwork(round) {
    location: location,
    actualLocation: location,
    status: "running",
-   guesses: {}
+   guesses: {},
+   initiator: null
   });
 
   if (this.mode === "duel" && this.playerId === "p1") {
