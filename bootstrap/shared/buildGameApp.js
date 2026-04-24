@@ -241,10 +241,7 @@ export function buildGameApp({ config, mode, room, role }) {
  // =========================
  console.log("➡️ START SECTION");
 
- if (mode === "solo") {
-  console.log("🚀 SOLO START");
   gameFlow.startGame();
- }
 
  console.log("🔥 BUILD GAME APP DONE");
 
