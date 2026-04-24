@@ -16,7 +16,6 @@ export class FirebaseRoomController {
   this.roomId = null;
   this.roomRef = null;
 
-  // SINGLE STREAM
   this.listeners = {
    room: []
   };
@@ -40,13 +39,13 @@ export class FirebaseRoomController {
     guest: { connected: false, ready: false }
    },
 
-   draftConfig: initialConfig,
-
    game: {
     started: false,
     config: null,
     round: null
-   }
+   },
+
+   draftConfig: initialConfig
   });
 
   this.bind();
@@ -79,7 +78,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // STREAM
+ // BIND (SINGLE SOURCE)
  // =========================
  bind() {
   onValue(this.roomRef, (snap) => {
@@ -95,67 +94,43 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // CONFIG
+ // GAME STATE
  // =========================
- setDraftConfig(cfg) {
+ startGame(config) {
   return update(this.roomRef, {
-   draftConfig: cfg
+   "game/started": true,
+   "game/config": config
   });
  }
 
- // =========================
- // READY
- // =========================
+ setRound(round) {
+  return update(this.roomRef, {
+   "game/round": round
+  });
+ }
+
+ updateGame(patch) {
+  const flat = {};
+  for (const k in patch) {
+   flat[`game/${k}`] = patch[k];
+  }
+  return update(this.roomRef, flat);
+ }
+
+ updatePlayer(id, patch) {
+  const flat = {};
+  for (const k in patch) {
+   flat[`players/${id}/${k}`] = patch[k];
+  }
+  return update(this.roomRef, flat);
+ }
+
  setGuestReady() {
   return update(this.roomRef, {
    "players/guest/ready": true
   });
  }
 
- // =========================
- // GAME START
- // =========================
- startGame(config) {
-  return update(this.roomRef, {
-   "game/started": true,
-   "game/config": config,
-   "game/round": null
-  });
- }
-
- // =========================
- // ROUND STATE (KEY PART)
- // =========================
- setRound(round) {
-  return update(this.roomRef, {
-   "game/round": {
-    index: round.index,
-    location: round.location,
-    status: "running"
-   }
-  });
- }
-
- finishRound() {
-  return update(this.roomRef, {
-   "game/round/status": "finished"
-  });
- }
-
- // =========================
- // PLAYER PATCH
- // =========================
- updatePlayer(playerId, patch) {
-  const flat = {};
-  for (const k in patch) {
-   flat[`players/${playerId}/${k}`] = patch[k];
-  }
-  return update(this.roomRef, flat);
- }
-
- // =========================
- // RAW
- // =========================
  async getRoom() {
   const snap = await get(this.roomRef);
   return snap.val();
