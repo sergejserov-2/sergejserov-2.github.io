@@ -233,15 +233,22 @@ this.game.startGame();
 
  // GUESSES
 applyGuess(playerId, point) {
- const round = this.getCurrentRound();
- if (round.guesses[playerId]) return;
+ if (this.locked) return;
  const result = this.game.setGuess(playerId, point);
  if (!result) return;
  this.emit("guessResolved", result);
+ if (this.playerId !== "p1") {
+  this.network.sendGuess({
+   playerId,
+   result
+  });
+  return;
+ }
  this.handlePlayerFinished(playerId, result);
 }
 
-handlePlayerFinished(playerId, result) {
+ 
+ handlePlayerFinished(playerId, result) {
  const round = this.getCurrentRound();
 
  const guesses = {
