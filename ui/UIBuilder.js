@@ -48,23 +48,6 @@ export class UIBuilder {
  }
 
  // =========================
- // 🔥 НОРМАЛИЗАЦИЯ (ЕДИНАЯ ТОЧКА)
- // =========================
- normalizeGuesses(guessesObj = {}) {
-  return Object.values(guessesObj).map(g => {
-   const point = g.guess || g; // поддержка старого/нового формата
-
-   return {
-    playerId: g.playerId,
-    score: g.score || 0,
-    distance: g.distance || 0,
-    lat: point.lat,
-    lng: point.lng
-   };
-  });
- }
-
- // =========================
  // HUD
  // =========================
 
@@ -72,10 +55,7 @@ export class UIBuilder {
   const rounds = state.rounds || [];
 
   const totalScore = rounds.reduce((sum, r) => {
-   return (
-    sum +
-    Object.values(r.guesses || {}).reduce((a, g) => a + (g.score || 0), 0)
-   );
+   return sum + (r.guesses || []).reduce((a, g) => a + (g.score || 0), 0);
   }, 0);
 
   return {
@@ -96,7 +76,7 @@ export class UIBuilder {
 
   return {
    actual: round?.actualLocation,
-   guesses: this.normalizeGuesses(round?.guesses || {})
+   guesses: round?.guesses || []
   };
  }
 
@@ -110,7 +90,7 @@ export class UIBuilder {
   const players = {};
 
   for (const r of rounds) {
-   for (const g of Object.values(r.guesses || {})) {
+   for (const g of (r.guesses || [])) {
     if (!players[g.playerId]) {
      players[g.playerId] = { score: 0 };
     }
