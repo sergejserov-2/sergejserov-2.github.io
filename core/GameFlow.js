@@ -160,20 +160,6 @@ bindNetwork() {
  });
 }
 
-  // =========================
-  // FINISHED STATE
-  // =========================
-if (round.status === "finished" && !this._roundFinishing) {
-
- console.log("🏁 FINISHED");
-
- this._timerStarted = false;
-
- this.finishRoundFromState("networkFinish");
-}
- });
-}
-
  // =========================================================
  // GAME START
  // =========================================================
