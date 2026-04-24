@@ -34,11 +34,7 @@ export async function createDuelApp(config) {
 
    console.log("🔥 DUEL START");
 
-   if (role === "host") {
     gameFlow.startGame();
-   } else {
-    gameFlow.startGameFromNetwork();
-   }
   }
  });
 
