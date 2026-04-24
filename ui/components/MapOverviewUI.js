@@ -19,21 +19,10 @@ export class MapOverviewUI {
   });
  }
 
-async render(round) {
-  console.log("🗺️ [MapOverviewUI] render CALLED", round);
+ async render(round) {
+  console.log("🗺 [MapOverviewUI] render CALLED", round);
 
-  if (!this.map) {
-    console.log("❌ map missing");
-    return;
-  }
-
-  if (!round) {
-    console.log("❌ round missing");
-    return;
-  }
-
-  console.log("🗺️ actualLocation:", round.actualLocation);
-  console.log("🗺️ guesses RAW:", round.guesses);
+  if (!this.map || !round) return;
 
   await this.adapter.waitReady(this.map);
 
@@ -44,12 +33,12 @@ async render(round) {
 
   const actualColor = this.uiBuilder.getActualColor();
 
-const guesses = round.guesses
- ? Object.values(round.guesses)
- : [];
+  // ✅ теперь ВСЕГДА массив нормализованных точек
+  const guesses = round.guesses || [];
 
   const points = [actual];
 
+  // если нет догадок — просто точка
   if (!guesses.length) {
    this.markers.push(
     this.adapter.createMarker(this.map, actual, {
@@ -60,21 +49,18 @@ const guesses = round.guesses
    return;
   }
 
-for (const g of guesses) {
+  for (const g of guesses) {
+   const color = this.uiBuilder.getPlayerColor(g.playerId);
 
- const point = g.guess || g;
+   this.markers.push(
+    this.adapter.createMarker(this.map, g, {
+     color,
+     scale: 1
+    })
+   );
 
- const color = this.uiBuilder.getPlayerColor(g.playerId);
-
- this.markers.push(
-  this.adapter.createMarker(this.map, point, {
-   color,
-   scale: 1
-  })
- );
-
- points.push(point);
-}
+   points.push(g);
+  }
 
   this.fitToAll(points);
 
@@ -82,14 +68,14 @@ for (const g of guesses) {
 
   for (const g of guesses) {
    const color = this.uiBuilder.getPlayerColor(g.playerId);
-const point = g.guess || g;
+
    await this.adapter.animateLine(
- this.map,
- point,
- actual,
- color,
- actualColor
-);
+    this.map,
+    g,
+    actual,
+    color,
+    actualColor
+   );
   }
 
   this.markers.push(
