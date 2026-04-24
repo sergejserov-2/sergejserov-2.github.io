@@ -17,7 +17,7 @@ export class GameFlow {
   this.area = area;
 
   // =========================
-  // SERVICES (НЕ ТРОГАЕМ)
+  // SERVICES
   // =========================
   this.timer = services.timer;
   this.roundTimer = services.timer;
@@ -41,14 +41,11 @@ export class GameFlow {
   this.finishedPlayers = new Set();
 
   this._started = false;
-  this._roundFinishing = false;
 
-  // =========================
-  // NETWORK BUFFER (DUEL FIX)
-  // =========================
-  this._resolveRoundStart = null;
-  this._pendingRoundLocation = null;
+  // защита от повторного старта раунда
+  this._lastRoundIndex = null;
 
+  // street view sync
   this._resolveStreetViewReady = null;
 
   this.bindNetwork();
@@ -66,63 +63,55 @@ export class GameFlow {
  }
 
  // =========================================================
- // NETWORK
+ // NETWORK (STATE-DRIVEN)
  // =========================================================
-bindNetwork() {
+ bindNetwork() {
   if (!this.network) return;
 
-  this.network.onRoom?.((room) => {
+  this.network.onRoom((room) => {
+   const game = room.game;
+   if (!game) return;
 
-    const round = room?.game?.round;
+   // =========================
+   // GAME START
+   // =========================
+   if (game.started && !this._started) {
+    this._started = true;
 
-    if (!round) return;
-    if (round.status !== "running") return;
+    this.game.startGame();
+    this.emit("gameStarted", this.game.getState());
+   }
 
-    console.log("🌍 ROUND FROM ROOM:", round);
+   // =========================
+   // ROUND UPDATE
+   // =========================
+   const round = game.round;
+   if (!round) return;
 
-    this.startRoundFromNetwork(round);
+   if (this._lastRoundIndex === round.index) return;
+
+   this._lastRoundIndex = round.index;
+
+   this.startRoundFromState(round);
   });
-}
+ }
 
  // =========================================================
- // CONTRACT: GAME START
+ // GAME START (SOLO + HOST)
  // =========================================================
-
  startGame() {
   if (this._started) return;
 
   this._started = true;
 
-  console.log("🚀 GAMEFLOW START (HOST)");
-
   this.game.startGame();
   this.emit("gameStarted", this.game.getState());
-
-  this.finishedPlayers.clear();
-  this.roundLocked = false;
 
   this.startRound();
  }
 
-startGameFromNetwork() {
-  if (this._started) return;
-
-  this._started = true;
-
-  console.log("🚀 GAMEFLOW START (GUEST)");
-
-  this.game.startGame();
-  this.emit("gameStarted", this.game.getState());
-
-  this.finishedPlayers.clear();
-  this.roundLocked = false;
-
-  // 💥 ВАЖНО: ГОСТЬ ДОЛЖЕН ЖДАТЬ ROUND
-  this.startRound();
-}
-
  // =========================================================
- // ROUND START
+ // ROUND START (HOST / SOLO)
  // =========================================================
  async startRound() {
   this.lockRoundUI();
@@ -137,53 +126,29 @@ startGameFromNetwork() {
   if (this.playerId === "p1") {
    const location = await this.generator.generate(this.area);
 
-  const roundIndex =
+   const index =
     (this.game.getState().rounds?.length || 0) + 1;
 
-   await this.network?.setRound({
-     index: roundIndex,
-     location,
-     status: "running"
+   await this.network.setRound({
+    index,
+    location
    });
 
    return this.startRoundWithLocation(location);
   }
-
-  // GUEST
-  const location = await this.waitForRoundFromNetwork();
-
-  return this.startRoundWithLocation(location);
  }
 
  // =========================================================
- // NETWORK ROUND BUFFER
+ // ROUND FROM STATE (GUEST)
  // =========================================================
- waitForRoundFromNetwork() {
-  return new Promise((resolve) => {
-   this._resolveRoundStart = resolve;
-
-   if (this._pendingRoundLocation) {
-    resolve(this._pendingRoundLocation);
-    this._pendingRoundLocation = null;
-    this._resolveRoundStart = null;
-   }
-  });
- }
-
- startRoundFromNetwork({ location }) {
+ startRoundFromState(round) {
   if (this.playerId === "p1") return;
 
-  if (!this._resolveRoundStart) {
-   this._pendingRoundLocation = location;
-   return;
-  }
-
-  this._resolveRoundStart(location);
-  this._resolveRoundStart = null;
+  this.startRoundWithLocation(round.location);
  }
 
-// =========================================================
- // ROUND CORE
+ // =========================================================
+ // CORE ROUND LOGIC
  // =========================================================
  async startRoundWithLocation(location) {
   this.game.startRound(location);
@@ -194,21 +159,25 @@ startGameFromNetwork() {
 
   this.emit("loadingFinished");
 
-  // TIMER SERVICE
+  // =========================
+  // MAIN TIMER (RESTORED)
+  // =========================
   this.timer.start(
    this.game.config.rules.time,
    () => this.finishRound("timeout"),
    (t) => this.emit("timerTick", t)
   );
 
-  // MOVES SERVICE
+  // =========================
+  // MOVES
+  // =========================
   this.moves.reset(this.game.config.rules.moves);
-
   this.emit("movesUpdated", this.moves.getRemaining());
 
+ // unlock input
   this.locked = false;
-
   this.emit("inputUnlocked");
+
   this.emit("roundStarted", this.game.getState());
  }
 
@@ -227,10 +196,10 @@ startGameFromNetwork() {
  }
 
  // =========================================================
- // GUESS SYSTEM
+ // GUESS
  // =========================================================
  finishGuess(point) {
-  if (this.locked || this.roundLocked) return;
+  if (this.locked) return;
 
   const payload = {
    playerId: this.playerId,
@@ -238,15 +207,15 @@ startGameFromNetwork() {
   };
 
   if (this.mode === "duel") {
-   this.network?.sendGuess?.(payload);
+   this.network?.updatePlayer?.(this.playerId, {
+    guess: point
+   });
   }
 
   this.applyGuess(this.playerId, point);
  }
 
  applyGuess(playerId, point) {
-  if (this.roundLocked) return;
-
   const result = this.game.setGuess(playerId, point);
   if (!result) return;
 
@@ -255,17 +224,11 @@ startGameFromNetwork() {
   this.emit("guessResolved", result);
 
   if (this.mode === "solo") {
-   this.locked = true;
    this.finishRound("guess");
    return;
   }
 
   this.handlePlayerFinished(playerId);
- }
-
- applyExternalGuess({ playerId, guess }) {
-  if (this.locked) return;
-  this.applyGuess(playerId, guess);
  }
 
  // =========================================================
@@ -280,11 +243,12 @@ startGameFromNetwork() {
   this.emit("roundWaiting");
 
   if (this.finishedPlayers.size >= this.game.players.length) {
-   this.network?.sendRoundComplete?.();
+   this.network?.finishRound?.();
    this.finishRound("allFinished");
    return;
   }
 
+  // duel timeout window (RESTORED)
   if (!this.roundLocked) {
    this.roundLocked = true;
 
@@ -315,15 +279,12 @@ startGameFromNetwork() {
  // ROUND END
  // =========================================================
  finishRound(reason = "manual") {
-  if (this._roundFinishing) return;
-
-  this._roundFinishing = true;
-
   this.timer.clear();
   this.roundTimer.clear();
 
   this.locked = true;
   this.roundLocked = false;
+  this.finishedPlayers.clear();
 
   this.emit("inputLocked");
 
@@ -336,40 +297,34 @@ startGameFromNetwork() {
 
   if (isLast) {
    this.game.endGame();
-   this.emit("gameEnded", this.game.getState());
+   this.emit("gameEnded", state);
   }
-
-  this._roundFinishing = false;
  }
 
  // =========================================================
- // SYNC
+ // LEGACY COMPATIBILITY (IMPORTANT)
  // =========================================================
- syncRoundComplete() {
-  this.roundLocked = false;
-  this.finishedPlayers.clear();
+ startGameFromNetwork() {
+  if (this._started) return;
 
-  this.emit("roundSyncComplete");
+  this._started = true;
+
+  this.game.startGame();
+  this.emit("gameStarted", this.game.getState());
+
+  this.startRound();
  }
-
- // =========================================================
- // NEXT ROUND
- // =========================================================
- nextRound() {
-  if (this.game.getState().status === "ended") return;
-  return this.startRound();
- }
-
-// =========================================================
- // LEGACY COMPATIBILITY (ВАЖНО)
- // =========================================================
 
  lockRoundUI() {
   this.locked = true;
   this.roundLocked = false;
-  this.finishedPlayers.clear();
 
   this.emit("inputLocked");
   this.emit("loadingStarted");
-}
+ }
+
+ streetViewReady() {
+  this._resolveStreetViewReady?.();
+  this._resolveStreetViewReady = null;
+ }
 }
