@@ -359,12 +359,12 @@ handlePlayerFinished(playerId) {
 
    const currentRound = this.game.getState().currentRound;
 
-   this.network?.updateGame?.({
-    round: {
-     ...currentRound,
-     status: "finished"
-    }
-   });
+this.network?.updateGame?.({
+ round: {
+  ...this.game.getState().currentRound,
+  status: "finished"
+ }
+});
 
    // ❗ важно: НЕ finishRound здесь
    return;
@@ -398,12 +398,12 @@ handlePlayerFinished(playerId) {
 
     const currentRound = this.game.getState().currentRound;
 
-    this.network?.updateGame?.({
-     round: {
-      ...currentRound,
-      status: "finished"
-     }
-    });
+this.network?.updateGame?.({
+ round: {
+  ...this.game.getState().currentRound,
+  status: "finished"
+ }
+});
 
     this.finishRound("duelTimeout");
    },
