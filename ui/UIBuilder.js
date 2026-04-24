@@ -104,10 +104,4 @@ formatGameResultVM(state) {
   rounds
  };
 }
-
-  return {
-   players,
-   rounds
-  };
- }
 }
