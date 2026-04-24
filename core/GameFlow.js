@@ -324,7 +324,11 @@ this.game.startGame();
   this._resolveStreetViewReady = null;
  }
 
+ lockRoundUI() {
+  this.locked = true;
+  this.emit("inputLocked");
 
+ }
  
  finishGuess(point) {
   return this.applyGuess(this.playerId, point);
