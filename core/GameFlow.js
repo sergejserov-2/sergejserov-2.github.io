@@ -428,4 +428,8 @@ handlePlayerFinished(playerId) {
   this.emit("inputLocked");
   this.emit("loadingStarted");
  }
+ finishGuess(point) {
+ return this.applyGuess(this.playerId, point);
+}
+ 
 }
