@@ -48,60 +48,80 @@ export class UIBuilder {
  }
 
  // =========================
+ // 🔥 НОРМАЛИЗАЦИЯ (ЕДИНАЯ ТОЧКА)
+ // =========================
+ normalizeGuesses(guessesObj = {}) {
+  return Object.values(guessesObj).map(g => {
+   const point = g.guess || g; // поддержка старого/нового формата
+
+   return {
+    playerId: g.playerId,
+    score: g.score || 0,
+    distance: g.distance || 0,
+    lat: point.lat,
+    lng: point.lng
+   };
+  });
+ }
+
+ // =========================
  // HUD
  // =========================
 
-formatGameVM(state) {
- const rounds = state.rounds || [];
+ formatGameVM(state) {
+  const rounds = state.rounds || [];
 
- const totalScore = rounds.reduce((sum, r) => {
-  return sum + Object.values(r.guesses || {}).reduce((a, g) => a + (g.score || 0), 0);
- }, 0);
+  const totalScore = rounds.reduce((sum, r) => {
+   return (
+    sum +
+    Object.values(r.guesses || {}).reduce((a, g) => a + (g.score || 0), 0)
+   );
+  }, 0);
 
- return {
-  round: rounds.length,
-  roundLimit: this.getRoundLimit(),
-  totalScore,
-  showTime: this.isTimeEnabled(),
-  showMoves: this.isMovesEnabled()
- };
-}
+  return {
+   round: rounds.length,
+   roundLimit: this.getRoundLimit(),
+   totalScore,
+   showTime: this.isTimeEnabled(),
+   showMoves: this.isMovesEnabled()
+  };
+ }
 
  // =========================
  // ROUND
  // =========================
 
-formatRoundVM(state) {
- const round = state.rounds.at(-1);
+ formatRoundVM(state) {
+  const round = state.rounds.at(-1);
 
- return {
-  actual: round?.actualLocation,
-  guesses: Object.values(round?.guesses || {})
- };
-}
+  return {
+   actual: round?.actualLocation,
+   guesses: this.normalizeGuesses(round?.guesses || {})
+  };
+ }
 
  // =========================
  // GAME RESULT
  // =========================
 
-formatGameResultVM(state) {
- const rounds = state.rounds || [];
+ formatGameResultVM(state) {
+  const rounds = state.rounds || [];
 
- const players = {};
+  const players = {};
 
- for (const r of rounds) {
-  for (const g of Object.values(r.guesses || {})) {
-   if (!players[g.playerId]) {
-    players[g.playerId] = { score: 0 };
+  for (const r of rounds) {
+   for (const g of Object.values(r.guesses || {})) {
+    if (!players[g.playerId]) {
+     players[g.playerId] = { score: 0 };
+    }
+
+    players[g.playerId].score += g.score || 0;
    }
-
-   players[g.playerId].score += g.score || 0;
   }
- }
 
- return {
-  players,
-  rounds
- };
-}
+  return {
+   players,
+   rounds
+  };
+ }
 }
