@@ -349,66 +349,72 @@ handlePlayerFinished(playerId) {
  this.emit("inputLocked");
 
  // =========================
- // ALL PLAYERS FINISHED → PUSH STATE ONLY (DUEL SAFE)
+ // CASE 1: FIRST FINISH (ANY PLAYER)
+ // =========================
+ if (this.finishedPlayers.size === 1) {
+
+  console.log("⏳ FIRST FINISH → WAIT STATE");
+
+  this.locked = true;
+
+  this.emit("roundWaiting");
+
+  // отправляем состояние в сеть
+  if (this.mode === "duel") {
+   this.network?.updateGame?.({
+    round: {
+     ...this.game.getState().currentRound,
+     status: "waiting"
+    }
+   });
+  }
+
+  // запускаем таймер ТОЛЬКО у тех, кто НЕ нажал
+  if (this.mode === "duel") {
+
+   this.roundLocked = true;
+
+   this.roundTimer.start(
+    10,
+    () => {
+     console.log("⏱ TIMER END → FINISH ROUND");
+
+     this.network?.updateGame?.({
+      round: {
+       ...this.game.getState().currentRound,
+       status: "finished"
+      }
+     });
+
+     this.finishRound("duelTimeout");
+    },
+    (t) => this.emit("roundTimerTick", t)
+   );
+
+   this.emit("roundTimerStart");
+  }
+ }
+
+ // =========================
+ // CASE 2: ALL PLAYERS FINISHED
  // =========================
  if (this.finishedPlayers.size >= this.game.players.length) {
 
-  console.log("🏁 [GameFlow] ALL PLAYERS FINISHED");
+  console.log("🏁 ALL PLAYERS FINISHED");
 
-  if (this.mode === "duel") {
+  this.network?.updateGame?.({
+   round: {
+    ...this.game.getState().currentRound,
+    status: "finished"
+   }
+  });
 
-   const currentRound = this.game.getState().currentRound;
-
-this.network.setRound?.({
- index: this.game.getState().currentRound.index,
- status: "finished"
-});
-
-   // ❗ важно: НЕ finishRound здесь
-   return;
-  }
-
-  // SOLO → сразу локальный финал
   this.finishRound("allFinished");
-  return;
- }
-
- // =========================
- // FIRST FINISH → WAIT STATE
- // =========================
- this.locked = true;
- this.emit("roundWaiting");
-
- // =========================
- // START DUEL TIMER (ONLY ONCE)
- // =========================
- if (!this.roundLocked && this.mode === "duel") {
-
-  this.roundLocked = true;
-
-  console.log("⏱️ [GameFlow] START ROUND TIMER");
-
-  this.roundTimer.start(
-   10,
-   () => {
-
-    console.log("⏱️ [GameFlow] DUEL TIMER EXPIRED");
-
-    const currentRound = this.game.getState().currentRound;
-
-this.network.setRound?.({
- index: this.game.getState().currentRound.index,
- status: "finished"
-});
-
-    this.finishRound("duelTimeout");
-   },
-   (t) => this.emit("roundTimerTick", t)
-  );
-
-  this.emit("roundTimerStart");
  }
 }
+
+
+ 
 
 
 finishRound(reason = "manual") {
