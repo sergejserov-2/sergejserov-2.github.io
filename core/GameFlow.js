@@ -225,15 +225,6 @@ bindNetwork() {
 
    return this.startRoundWithLocation(location);
   }
-
-  // GUEST
-  console.log("🎯 [GameFlow] GUEST waiting for round");
-
-  const location = await this.waitForRoundFromNetwork();
-
-  console.log("🎯 [GameFlow] GUEST got location", location);
-
-  return this.startRoundWithLocation(location);
  }
 
  // =========================================================
