@@ -17,7 +17,7 @@ export async function createDuelApp(config) {
  console.log("🟢 ROOM JOINED");
 
  // =========================
- // BUILD GAME (НО НЕ СТАРТУЕМ)
+ // BUILD GAME (без старта)
  // =========================
  const gameFlow = buildGameApp({
   config,
@@ -31,11 +31,17 @@ export async function createDuelApp(config) {
  // =========================
  // STATE-DRIVEN START
  // =========================
+ let startedOnce = false;
+
  room.onPlayers((players) => {
   console.log("👥 PLAYERS UPDATE", players);
 
-  if (players?.host?.ready && players?.guest?.ready) {
-   console.log("🔥 BOTH READY → START");
+  const started = players?.game?.started;
+
+  if (started && !startedOnce) {
+   startedOnce = true;
+
+   console.log("🔥 GAME STARTED (STATE)");
 
    gameFlow.start({ role });
   }
