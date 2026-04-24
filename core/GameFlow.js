@@ -301,7 +301,7 @@ if (round.guesses[playerId]) return;
 
   if (!ok) {
    this.moveslocked = true;
-   this.emit("movesLocked");
+   this.emit("movesLocked", this.moves.Islocked());
   }
  }
 
