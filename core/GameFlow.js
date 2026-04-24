@@ -53,7 +53,7 @@ this._roundFinishing = false;
   
   this._resolveRoundStart = null;
   this._pendingRoundLocation = null;
-
+  this._initiatorId = null;
   this._resolveStreetViewReady = null;
 
   console.log("🧠 [GameFlow] bindNetwork()");
@@ -111,39 +111,44 @@ bindNetwork() {
   // =========================
   // WAIT STATE → START TIMER UI (NO STATE CHANGE)
   // =========================
-  if (round.status === "waiting") {
+if (round.status === "waiting") {
 
-   console.log("⏳ WAIT STATE");
+ const isInitiator = this.playerId === round.initiator;
 
-   this.locked = true;
-   this.emit("roundWaiting");
+ if (isInitiator) {
+  // только он видит waiting screen
+  this.emit("roundWaiting");
+  this.locked = true;
+ }
 
-   // ⚠️ ВАЖНО: таймер НЕ из Firebase, только UI
-   if (!this._timerStarted) {
-    this._timerStarted = true;
+ // остальные НЕ видят waiting
+ // но запускают таймер
+ if (!this._timerStarted) {
+  this._timerStarted = true;
 
-    this.roundTimer.start(
-     10,
-     () => {
-      // локально НЕ меняем state
-      // ждём finished от сервера
-     },
-     (t) => this.emit("roundTimerTick", t)
-    );
+  this.roundTimer.start(
+   10,
+   () => {
+    this.updateRound({ status: "finished" });
+   },
+   (t) => this.emit("roundTimerTick", t)
+  );
 
-    this.emit("roundTimerStart");
-   }
-  }
+  this.emit("roundTimerStart");
+ }
+}
 
   // =========================
   // FINISHED STATE
   // =========================
-  if (round.status === "finished" && !this._roundFinishing) {
+if (round.status === "finished" && !this._roundFinishing) {
 
-   console.log("🏁 FINISHED STATE");
+ console.log("🏁 FINISHED");
 
-   this.finishRoundFromState("networkFinish");
-  }
+ this._timerStarted = false;
+
+ this.finishRoundFromState("networkFinish");
+}
  });
 }
 
@@ -322,33 +327,35 @@ updateRound(patch) {
 handlePlayerFinished(playerId, result) {
 
  this.finishedPlayers.add(playerId);
-
  this.emit("inputLocked");
 
  // =========================
- // FIRST GUESS → [waiting]
+ // FIRST GUESS → ONLY INITIATOR SETS WAITING
  // =========================
  if (this.finishedPlayers.size === 1) {
 
-  console.log("➡️ FIRST GUESS → WAITING");
+  console.log("➡️ FIRST GUESS");
+
+  this._initiatorId = playerId;
 
   this.locked = true;
-  this.emit("roundWaiting");
 
+  // 🔥 Firebase state
   this.updateRound({
    status: "waiting",
-   lastGuess: result
+   lastGuess: result,
+   initiator: playerId
   });
 
   return;
  }
 
  // =========================
- // ALL GUESSED → [finished]
+ // ALL PLAYERS → FINISHED
  // =========================
  if (this.finishedPlayers.size >= this.game.players.length) {
 
-  console.log("➡️ ALL GUESSED → FINISHED");
+  console.log("➡️ FINISHED");
 
   this.updateRound({
    status: "finished"
