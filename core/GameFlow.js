@@ -85,73 +85,54 @@ bindNetwork() {
   if (!round) return;
 
   // =========================
-  // GAME START (STATE DRIVEN)
+  // GAME START
   // =========================
   if (game.started && !this._started) {
    this._started = true;
 
-   console.log("🚀 [GameFlow] GAME START (STATE)");
+   console.log("🚀 GAME START (STATE)");
 
    this.game.startGame();
    this.emit("gameStarted", this.game.getState());
   }
 
   // =========================
-  // ROUND START (STATE DRIVEN)
+  // ROUND START (ONLY GUEST)
   // =========================
   if (
    this.playerId !== "p1" &&
    round.location &&
-   round.status === "running"
+   round.status === "running" &&
+   this._currentRoundIndex !== round.index
   ) {
+   this._currentRoundIndex = round.index;
 
-   const roundIndex = round.index;
+   console.log("🎯 ROUND START");
 
-   if (this._currentRoundIndex !== roundIndex) {
-
-    console.log("🎯 [GameFlow] ROUND START FROM STATE", {
-     roundIndex,
-     playerId: this.playerId
-    });
-
-    this._currentRoundIndex = roundIndex;
-
-    this.startRoundFromNetwork(round);
-   }
+   this.startRoundFromNetwork(round);
   }
 
   // =========================
-  // ROUND WAIT STATE (IMPORTANT FIX)
+  // WAIT STATE (IMPORTANT)
   // =========================
-  if (
-   round.status === "waiting" &&
-   this.mode === "duel"
-  ) {
-
-   // игрок уже нажал "угадать" → показать waiting UI
-   console.log("⏳ [GameFlow] ROUND WAIT STATE");
-
+  if (round.status === "waiting") {
    this.locked = true;
    this.emit("roundWaiting");
   }
 
   // =========================
-  // ROUND TIMER SYNC (IMPORTANT FIX)
+  // TIMER STATE (CRITICAL FIX)
   // =========================
-  if (
-   round.status === "timer" &&
-   this.mode === "duel"
-  ) {
-
-   console.log("⏱️ [GameFlow] ROUND TIMER START FROM STATE");
+  if (round.status === "timer") {
 
    if (!this.roundLocked) {
-
     this.roundLocked = true;
+
+    console.log("⏱️ TIMER START (SYNC)");
 
     this.roundTimer.start(
      10,
-     () => this.finishRound("duelTimeout"),
+     () => this.updateGame({ status: "finished" }),
      (t) => this.emit("roundTimerTick", t)
     );
 
@@ -160,14 +141,10 @@ bindNetwork() {
   }
 
   // =========================
-  // ROUND FINISH (STATE DRIVEN)
+  // FINISH STATE
   // =========================
-  if (
-   round.status === "finished" &&
-   !this._roundFinishing
-  ) {
-
-   console.log("🏁 [GameFlow] ROUND FINISH FROM STATE");
+  if (round.status === "finished" && !this._roundFinishing) {
+   console.log("🏁 FINISH FROM STATE");
 
    this.finishRoundFromState("networkFinish");
   }
@@ -262,18 +239,13 @@ bindNetwork() {
  // =========================================================
  // NETWORK ROUND
  // =========================================================
- startRoundFromNetwork(round) {
-  console.log("🌍 [GameFlow] startRoundFromNetwork", round);
+startRoundFromNetwork(round) {
+ if (this.playerId === "p1") return;
 
-  if (this.playerId === "p1") return;
+ if (!round?.location) return;
 
-  if (!round?.location) {
-   console.warn("⚠️ [GameFlow] empty round");
-   return;
-  }
-
-  this.startRoundWithLocation(round.location);
- }
+ this.startRoundWithLocation(round.location);
+}
 
  // =========================================================
  // CORE ROUND
@@ -332,12 +304,6 @@ bindNetwork() {
  }
 
 
-
-
-
-
-
-
 applyGuess(playerId, point) {
  if (this.roundLocked) return;
 
@@ -348,23 +314,27 @@ applyGuess(playerId, point) {
 
  this.emit("guessResolved", result);
 
- // ❗️ ВАЖНО: теперь только локальный хендлинг
  this.handlePlayerFinished(playerId, result);
 }
-
 
 updateGame(patch) {
  if (!this.network?.updateGame) return;
 
- const currentState = this.game.getState();
+ const state = this.game.getState();
+ const round = state.currentRound;
 
  const updated = {
-  ...currentState,
+  ...state,
   round: {
-   ...currentState.currentRound,
+   ...round,
    ...patch
   }
  };
+
+ console.log("📡 updateGame", patch);
+
+ this.network.updateGame(updated);
+}
 
  console.log("📡 [GameFlow] updateGame", patch);
 
@@ -379,47 +349,51 @@ handlePlayerFinished(playerId, result) {
  this.emit("inputLocked");
 
  // =========================
- // FIRST PLAYER → WAIT STATE
+ // FIRST PLAYER → WAIT
  // =========================
  if (this.finishedPlayers.size === 1) {
 
-  console.log("⏳ [GameFlow] FIRST FINISH → WAIT");
+  console.log("⏳ FIRST GUESS → WAIT");
 
   this.locked = true;
   this.emit("roundWaiting");
 
-  // пишем ТОЛЬКО состояние waiting
-  if (this.mode === "duel") {
-   this.updateGame({
-    status: "waiting",
-    lastGuess: result
-   });
-  }
+  this.updateGame({
+   status: "waiting",
+   lastGuess: result
+  });
 
-  // запускаем таймер ТОЛЬКО у остальных через state sync
   return;
  }
 
  // =========================
- // ALL PLAYERS FINISHED
+ // SECOND PLAYER → START TIMER
+ // =========================
+ if (this.mode === "duel" && this.finishedPlayers.size === 2) {
+
+  console.log("⏱️ START TIMER STATE");
+
+  this.updateGame({
+   status: "timer"
+  });
+
+  return;
+ }
+
+ // =========================
+ // ALL FINISHED
  // =========================
  if (this.finishedPlayers.size >= this.game.players.length) {
 
-  console.log("🏁 [GameFlow] ALL PLAYERS FINISHED");
+  console.log("🏁 ALL FINISHED");
 
-  if (this.mode === "duel") {
+  this.updateGame({
+   status: "finished"
+  });
 
-   this.updateGame({
-    status: "finished"
-   });
-
-   return; // finish придёт из bindNetwork
-  }
-
-  this.finishRound("allFinished");
+  return;
  }
 }
-
 
  
 
@@ -449,11 +423,7 @@ finishRound(reason = "manual") {
   this.emit("gameEnded", state);
  }
 
- // =========================
- // RESET ROUND STATE (CRITICAL)
- // =========================
-this._finished = false;
-this._currentRoundIndex = null;
+ this._currentRoundIndex = null;
  this._roundFinishing = false;
 }
 
