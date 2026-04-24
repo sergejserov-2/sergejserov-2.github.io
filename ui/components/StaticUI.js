@@ -45,7 +45,9 @@ export class StaticUI {
 
   const container = root.querySelector(".players-score");
 
-  const guesses = vm.guesses || [];
+const guesses = vm.guesses
+ ? Object.values(vm.guesses)
+ : [];
 
   this.renderPlayerBars(container, guesses);
  }
