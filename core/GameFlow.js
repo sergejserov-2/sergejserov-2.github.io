@@ -29,56 +29,51 @@ export class GameFlow {
   this.finishedPlayers = new Set();
 
   this._started = false;
-  this._pendingRound = null;
 
-  this._resolveStreetView = null;
+  // ===== ROUND SYNC =====
+  this._pendingRound = null;
+  this._roundReady = true;
 
   this.bindNetwork();
  }
 
  // =========================
- // EVENTS
- // =========================
- on(e, cb) {
-  (this.listeners[e] ||= []).push(cb);
+ on(event, cb) {
+  (this.listeners[event] ||= []).push(cb);
  }
 
- emit(e, d) {
-  this.listeners[e]?.forEach(cb => cb(d));
+ emit(event, data) {
+  this.listeners[event]?.forEach(cb => cb(data));
  }
 
- // =========================
- // NETWORK
  // =========================
  bindNetwork() {
   if (!this.network) return;
 
   this.network.onRoom?.((state) => {
-   const game = state.game;
-   if (!game) return;
+   const round = state.game?.round;
 
-   // START
-   if (game.started && !this._started) {
-    this._started = true;
-    this.game.startGame();
-    this.emit("gameStarted", this.game.getState());
+   if (round && round.location) {
+    this.startRoundFromNetwork(round);
    }
 
-   // ROUND SYNC
-   if (game.round) {
-    this.receiveRound(game.round);
+   if (state.game?.started && !this._started) {
+    this.startGameFromNetwork();
    }
   });
  }
 
  // =========================
- // SOLO + DUEL ENTRY
+ // GAME START
  // =========================
  startGame() {
-  if (this.mode === "duel") return;
+  if (this._started) return;
 
   this._started = true;
+
   this.game.startGame();
+  this.emit("gameStarted", this.game.getState());
+
   this.startRound();
  }
 
@@ -86,6 +81,7 @@ export class GameFlow {
   if (this._started) return;
 
   this._started = true;
+
   this.game.startGame();
   this.emit("gameStarted", this.game.getState());
  }
@@ -94,55 +90,58 @@ export class GameFlow {
  // ROUND START
  // =========================
  async startRound() {
-  this.locked = true;
+
+  this.lockRoundUI();
+
+  let location;
 
   if (this.mode === "solo") {
-   const loc = await this.generator.generate(this.area);
-   return this.startRoundWithLocation(loc);
+   location = await this.generator.generate(this.area);
+   return this.startRoundWithLocation(location);
   }
 
   if (this.playerId === "p1") {
-   const loc = await this.generator.generate(this.area);
+   location = await this.generator.generate(this.area);
 
-   const round = {
-    index: (this.game.getState().rounds?.length || 0) + 1,
-    location: loc,
+   const roundIndex =
+    (this.game.getState().rounds?.length || 0) + 1;
+
+   this.network?.setRound({
+    index: roundIndex,
+    location,
     status: "running"
-   };
+   });
 
-   await this.network?.setRound(round);
-
-   return this.startRoundWithLocation(loc);
+   return this.startRoundWithLocation(location);
   }
 
   // guest waits
-  const loc = await new Promise(res => {
-   this._pendingRound = res;
-  });
-
-  return this.startRoundWithLocation(loc);
  }
 
- receiveRound(round) {
+ // =========================
+ // NETWORK ROUND
+ // =========================
+ startRoundFromNetwork(round) {
+
   if (this.playerId === "p1") return;
 
-  if (this._pendingRound) {
-   this._pendingRound(round.location);
-   this._pendingRound = null;
-  } else {
-   this._pendingRound = round.location;
-  }
+  if (!round?.location) return;
+
+  this.startRoundWithLocation(round.location);
  }
 
  // =========================
  // CORE ROUND
  // =========================
  async startRoundWithLocation(location) {
+
   this.game.startRound(location);
 
   this.emit("streetViewSetLocation", location);
 
-  await this.waitStreetView();
+  await this.waitForStreetViewReady();
+
+  this.emit("loadingFinished");
 
   this.timer.start(
    this.game.config.rules.time,
@@ -154,18 +153,22 @@ export class GameFlow {
 
   this.locked = false;
 
+  this.emit("inputUnlocked");
   this.emit("roundStarted", this.game.getState());
  }
 
- waitStreetView() {
+ // =========================
+ // STREET VIEW SYNC
+ // =========================
+ waitForStreetViewReady() {
   return new Promise(res => {
-   this._resolveStreetView = res;
+   this._resolveStreetViewReady = res;
   });
  }
 
  streetViewReady() {
-  this._resolveStreetView?.();
-  this._resolveStreetView = null;
+  this._resolveStreetViewReady?.();
+  this._resolveStreetViewReady = null;
  }
 
  // =========================
@@ -174,50 +177,94 @@ export class GameFlow {
  finishGuess(point) {
   if (this.locked) return;
 
-  if (this.mode === "duel") {
-   this.network?.sendGuess?.({ playerId: this.playerId, guess: point });
-  }
+  const payload = {
+   playerId: this.playerId,
+   guess: point
+  };
+
+  this.network?.sendGuess?.(payload);
 
   this.applyGuess(this.playerId, point);
  }
 
  applyGuess(playerId, point) {
-  const res = this.game.setGuess(playerId, point);
-  if (!res) return;
 
-  this.game.applyResult(res);
+  const result = this.game.setGuess(playerId, point);
+  if (!result) return;
 
-  this.emit("guessResolved", res);
+  this.game.applyResult(result);
 
-  if (this.mode === "solo") {
-   this.finishRound();
+  this.emit("guessResolved", result);
+
+  this.handlePlayerFinished(playerId);
+ }
+
+ // =========================
+ // DUEL LOCK
+ // =========================
+ handlePlayerFinished(playerId) {
+
+  this.finishedPlayers.add(playerId);
+  this.locked = true;
+
+  if (this.finishedPlayers.size >= this.game.players.length) {
+   this.network?.sendRoundComplete?.();
+   this.finishRound("allFinished");
+   return;
+  }
+  this.roundTimer.start(
+   10,
+   () => this.finishRound("duelTimeout"),
+   (t) => this.emit("roundTimerTick", t)
+  );
+ }
+
+ // =========================
+ // MOVE SYSTEM
+ // =========================
+ registerMove() {
+  const ok = this.moves.consume();
+
+  this.emit("movesUpdated", this.moves.getRemaining());
+
+  if (!ok) {
+   this.emit("movesLocked");
   }
  }
 
  // =========================
- // MOVES
+ // ROUND END
  // =========================
- registerMove() {
-  if (this.locked) return;
+ finishRound(reason) {
 
-  this.moves.consume();
-  this.emit("movesUpdated", this.moves.getRemaining());
- }
-
- // =========================
- // END ROUND
- // =========================
- finishRound() {
   this.timer.clear();
   this.roundTimer.clear();
-this.locked = true;
 
-  this.emit("roundEnded", this.game.getState());
+  this.locked = true;
+
+  this.emit("inputLocked");
+
+  const state = this.game.getState();
+
+  const isLast =
+   state.rounds.length >= this.game.config.rules.rounds;
+
+  this.emit("roundResultShown", { state, reason });
+
+  if (isLast) {
+   this.game.endGame();
+   this.emit("gameEnded", this.game.getState());
+  }
  }
 
- // legacy safety
+ // =========================
+ // LEGACY
+ // =========================
  lockRoundUI() {
   this.locked = true;
+  this.finishedPlayers.clear();
+
   this.emit("inputLocked");
+  this.emit("loadingStarted");
  }
 }
