@@ -68,25 +68,21 @@ export class GameFlow {
  // =========================================================
  // NETWORK
  // =========================================================
- bindNetwork() {
+bindNetwork() {
   if (!this.network) return;
 
-  this.network.onRoundStarted?.((data) => {
-   this.startRoundFromNetwork(data);
-  });
+  this.network.onRoom?.((room) => {
 
-  this.network.onGuess?.((data) => {
-   this.applyExternalGuess(data);
-  });
+    const round = room?.game?.round;
 
-  this.network.onRoundComplete?.(() => {
-   this.syncRoundComplete();
-  });
+    if (!round) return;
+    if (round.status !== "running") return;
 
-  this.network.onStart?.(() => {
-   this.startGameFromNetwork();
+    console.log("🌍 ROUND FROM ROOM:", round);
+
+    this.startRoundFromNetwork(round);
   });
- }
+}
 
  // =========================================================
  // CONTRACT: GAME START
