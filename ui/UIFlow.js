@@ -113,29 +113,46 @@ export class UIFlow {
   // =========================
   // ROUND RESULT (GUESS ONLY PIPELINE)
   // =========================
-  this.gameFlow.on("roundResultShown", (payload) => {
-   const { state } = payload;
+this.gameFlow.on("roundResultShown", ({ state, round }) => {
 
-   this.screenManager.show("roundResult");
+  this.screenManager.show("roundResult");
 
-   const vm = this.uiBuilder.formatRoundVM(state);
+  // =========================
+  // NORMALIZE (🔥 КЛЮЧ)
+  // =========================
+  const guessesArray = Array.isArray(round.guesses)
+    ? round.guesses
+    : Object.values(round.guesses || {});
 
-   // 1. UI FIRST
-   this.staticUI.showRoundResult(vm);
+  const vm = {
+    actual: round.actualLocation,
+    guesses: guessesArray
+  };
 
-   const round = state.rounds?.at(-1);
-   if (!round) return;
+  console.log("🎯 UI VM", vm);
 
-   // 2. MAP RENDER AFTER UI FRAME
-   requestAnimationFrame(() => {
-    this.roundOverviewUI.render(round);
-   });
+  // =========================
+  // STATIC UI
+  // =========================
+  this.staticUI.showRoundResult(vm);
 
-   // 3. DELAY TIMER START LAST
-   this.staticUI.startRoundDelay(10000, () => {
-    this.gameFlow.nextRound();
-   });
+  // =========================
+  // MAP
+  // =========================
+  requestAnimationFrame(() => {
+    this.roundOverviewUI.render({
+      actualLocation: round.actualLocation,
+      guesses: guessesArray
+    });
   });
+
+  // =========================
+  // DELAY
+  // =========================
+  this.staticUI.startRoundDelay(10000, () => {
+    this.gameFlow.nextRound();
+  });
+});
 
   // =========================
   // GAME END
