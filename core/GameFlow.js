@@ -138,7 +138,14 @@ export class GameFlow {
   if (this.playerId === "p1") {
    const location = await this.generator.generate(this.area);
 
-   this.network?.sendRoundStarted?.({ location });
+  const roundIndex =
+    (this.game.getState().rounds?.length || 0) + 1;
+
+   await this.network?.setRound({
+     index: roundIndex,
+     location,
+     status: "running"
+   });
 
    return this.startRoundWithLocation(location);
   }
