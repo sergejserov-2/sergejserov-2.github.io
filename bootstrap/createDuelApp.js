@@ -11,6 +11,9 @@ export async function createDuelApp(config) {
  console.log("🟡 ROLE:", role);
  console.log("🟡 ROOM:", roomId);
 
+ // =========================
+ // CONNECT ROOM
+ // =========================
  const room = new FirebaseRoomController();
  await room.joinRoom(roomId);
 
@@ -28,25 +31,37 @@ export async function createDuelApp(config) {
 
  console.log("🟢 GAME APP BUILT");
 
+ // =========================
+ // STATE FLAG
+ // =========================
  let startedOnce = false;
 
  // =========================
- // STATE DRIVER
+ // SINGLE SOURCE OF TRUTH
  // =========================
  room.onRoom((state) => {
+
+  console.log("📡 ROOM STATE UPDATE", state);
 
   const game = state.game;
 
   if (!game) return;
 
-  const started = game.started;
-
-  if (started && !startedOnce) {
+  // =========================
+  // START CONDITION
+  // =========================
+  if (game.started && !startedOnce) {
    startedOnce = true;
 
-   console.log("🔥 GAME STARTED (STATE)");
+   console.log("🔥 DUEL START TRIGGERED");
 
-   gameFlow.startGameFromNetwork?.();
+   if (role === "host") {
+    gameFlow.startGame();
+   }
+
+   if (role === "guest") {
+    gameFlow.startGameFromNetwork?.();
+   }
   }
  });
 
