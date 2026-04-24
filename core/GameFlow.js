@@ -66,16 +66,20 @@ export class GameFlow {
  // =========================
  // GAME START
  // =========================
- startGame() {
-  if (this._started) return;
+startGame() {
+ if (this._started) return;
 
-  this._started = true;
+ this._started = true;
 
-  this.game.startGame();
-  this.emit("gameStarted", this.game.getState());
+ this.game.startGame();
+ this.emit("gameStarted", this.game.getState());
 
-  this.startRound();
- }
+ this.finishedPlayers.clear();
+ this.roundLocked = false;
+
+ // 🔥 FIX: ОБЯЗАТЕЛЬНЫЙ ROUND START
+ this.startRound();
+}
 
  startGameFromNetwork() {
   if (this._started) return;
