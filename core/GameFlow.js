@@ -289,25 +289,27 @@ export class GameFlow {
  }
 
  // FINISH
- finishRound(reason) {
+finishRound(reason) {
 
-  if (this._roundFinishing) return;
+ if (this._roundFinishing) return;
 
-  this._roundFinishing = true;
+ this._roundFinishing = true;
 
-  this.timer.clear();
-  this.roundTimer.clear();
+ this.timer.clear();
+ this.roundTimer.clear();
 
-  const round = this.getRoundForUI();
-  const state = this.game.getState();
+ const round = this.getRoundForUI();
+ const state = this.game.getState();
 
-  this.emit("roundResultShown", {
-   state,
-   round
-  });
+ console.log("🏁 ROUND FINISH → UI", { round, state });
 
-  this._roundFinishing = false;
- }
+ this.emit("roundResultShown", {
+  state,
+  round
+ });
+
+ this._roundFinishing = false;
+}
 
  finishRoundFromState(reason) {
   if (this._roundFinishing) return;
@@ -347,30 +349,40 @@ export class GameFlow {
  // =========================
  // UI ADAPTER (FIXED ONLY HERE)
  // =========================
- getRoundForUI() {
-  const r = this.getCurrentRound();
+getRoundForUI() {
+ const r = this.getCurrentRound();
 
-  if (!r) {
-   return {
-    index: 0,
-    status: "running",
-    actual: null,
-    guesses: {}
-   };
-  }
-
+ if (!r) {
   return {
-   index: r.index ?? 0,
-   status: r.status ?? "running",
-
-   // 🔥 защита от Firebase/legacy
-   actual: r.actualLocation ?? null,
-
-   // 🔥 всегда объект (UI не должен падать)
-   guesses: r.guesses ?? {}
+   index: 0,
+   status: "running",
+   actualLocation: null,
+   guesses: []
   };
+ }
+
+ return {
+  index: r.index ?? 0,
+  status: r.status ?? "running",
+  actualLocation: r.actualLocation ?? null,
+
+  // 🔥 ВОТ КЛЮЧЕВОЕ
+  guesses: this.convertGuessesToArray(r.guesses)
+ };
 }
 
+
+ convertGuessesToArray(guessesObj = {}) {
+ return Object.entries(guessesObj).map(([playerId, g]) => ({
+  playerId,
+  lat: g.lat ?? g.guess?.lat,
+  lng: g.lng ?? g.guess?.lng,
+  score: g.score ?? 0,
+  distance: g.distance ?? 0
+ }));
+}
+
+ 
  emitUI(event, data) {
   this.emit(event, data);
  }
