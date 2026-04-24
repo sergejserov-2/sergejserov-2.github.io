@@ -188,7 +188,6 @@ export class GameFlow {
  }
 
  startRoundFromNetwork(round) {
-  if (this.playerId === "p1") return;
   if (!round?.location) return;
 
   this.startRoundWithLocation(round.location);
