@@ -129,7 +129,7 @@ export class FirebaseRoomController {
  
  updateGuess(playerId, result) {
  return update(this.roomRef, {
-  [game/round/guesses/${playerId}]: result
+  [`game/round/guesses/${playerId}`]: result
  });
 }
  
