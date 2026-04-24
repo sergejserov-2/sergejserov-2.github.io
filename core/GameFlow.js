@@ -74,52 +74,43 @@ bindNetwork() {
 
  console.log("🌐 [GameFlow] bindNetwork active");
 
- // =========================
- // ROUND STATE SYNC (CRITICAL FIX)
- // =========================
  this.network.onRoom?.((room) => {
 
-  const round = room?.game?.round;
+  if (!room?.game) return;
+
+  const { started, round } = room.game;
+
+  // =========================
+  // GAME START (STATE ONLY)
+  // =========================
+  if (started && !this._started) {
+   this._started = true;
+
+   this.game.startGame();
+   this.emit("gameStarted", this.game.getState());
+  }
+
   if (!round) return;
 
-  // HOST → ignore (already authoritative)
+  // =========================
+  // ROUND START (GUEST ONLY)
+  // =========================
   if (this.playerId !== "p1") {
 
-   // =========================
-   // START ROUND
-   // =========================
    if (round.location && round.status !== "finished") {
     this.startRoundFromNetwork(round);
    }
 
    // =========================
-   // END ROUND SYNC (FIX)
+   // ROUND FINISH (STATE DRIVEN)
    // =========================
-   if (round.status === "finished") {
+   if (
+    round.status === "finished" &&
+    this.locked !== "final"
+   ) {
     this.finishRound("networkFinish");
    }
   }
- });
-
- // =========================
- // GUESSES
- // =========================
- this.network.onGuess?.((data) => {
-  this.applyExternalGuess(data);
- });
-
- // =========================
- // ROUND COMPLETE
- // =========================
- this.network.onRoundComplete?.(() => {
-  this.syncRoundComplete();
- });
-
- // =========================
- // GAME START
- // =========================
- this.network.onStart?.(() => {
-  this.startGameFromNetwork();
  });
 }
 
@@ -244,42 +235,32 @@ bindNetwork() {
  // =========================================================
  // CORE ROUND
  // =========================================================
- async startRoundWithLocation(location) {
-  console.log("📍 [GameFlow] startRoundWithLocation ENTER", location);
+async startRoundWithLocation(location) {
 
-  if (!location) {
-   console.error("❌ [GameFlow] location is undefined");
-  }
+ this.game.startRound(location);
 
-  this.game.startRound(location);
+ this.emit("streetViewSetLocation", location);
 
-  console.log("📍 [GameFlow] emit streetViewSetLocation");
+ await this.waitForStreetViewReady();
 
-  this.emit("streetViewSetLocation", location);
+ this.emit("loadingFinished");
 
-  console.log("📍 [GameFlow] waitForStreetViewReady...");
-  await this.waitForStreetViewReady();
+ // =========================
+ // CRITICAL FIX: SYNC FLAGS
+ // =========================
+ this.roundLocked = true;
+ this.locked = false;
 
-  console.log("📍 [GameFlow] streetView READY");
+ this.timer.start(
+  this.game.config.rules.time,
+  () => this.finishRound("timeout"),
+  (t) => this.emit("timerTick", t)
+ );
 
-  this.emit("loadingFinished");
+ this.moves.reset(this.game.config.rules.moves);
 
-  console.log("📍 [GameFlow] starting timer");
-
-  this.timer.start(
-   this.game.config.rules.time,
-   () => this.finishRound("timeout"),
-   (t) => this.emit("timerTick", t)
-  );
-
-  this.moves.reset(this.game.config.rules.moves);
-
-  this.locked = false;
-
-  console.log("📍 [GameFlow] ROUND STARTED OK");
-
-  this.emit("roundStarted", this.game.getState());
- }
+ this.emit("roundStarted", this.game.getState());
+}
 
 // =========================
  // MOVES (FIXED)
@@ -327,7 +308,7 @@ handlePlayerFinished(playerId) {
  this.emit("inputLocked");
 
  // =========================
- // ALL PLAYERS FINISHED → AUTHORITATIVE FINISH
+ // ALL PLAYERS FINISHED → AUTHORITATIVE HOST FINISH
  // =========================
  if (this.finishedPlayers.size >= this.game.players.length) {
 
@@ -345,13 +326,13 @@ handlePlayerFinished(playerId) {
  }
 
  // =========================
- // FIRST CLICK → WAITING STATE
+ // FIRST CLICK → WAIT STATE
  // =========================
  this.locked = true;
  this.emit("roundWaiting");
 
  // =========================
- // START DUEL TIMER (ONLY ONCE)
+ // DUEL TIMER (ONLY ONCE)
  // =========================
  if (!this.roundLocked && this.mode === "duel") {
 
