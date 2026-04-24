@@ -91,36 +91,62 @@ const url = new URL(window.location.href);
 const roomId = url.searchParams.get("room");
 
 const btn = document.getElementById("btn");
+const status = document.getElementById("status");
 
 const room = new FirebaseRoomController();
 
 let redirected = false;
 
-const snapshot = await room.joinRoom(roomId);
+// =========================
+// JOIN
+// =========================
+const state = await room.joinRoom(roomId);
 
-// snapshot check
-if (snapshot?.game?.started) {
+// instant redirect
+if (state?.game?.started) {
  window.location.href =
  `/play.html?room=${roomId}&role=guest`;
 }
 
-// live
-room.onPlayers((players) => {
+// =========================
+// STATE STREAM
+// =========================
+room.onRoom((state) => {
 
  if (redirected) return;
 
- if (players?.game?.started) {
+ const game = state.game;
+ const players = state.players;
+
+ // =========================
+ // AUTO START
+ // =========================
+ if (game?.started) {
   redirected = true;
 
   window.location.href =
    `/play.html?room=${roomId}&role=guest`;
  }
+
+ // =========================
+ // UI STATUS
+ // =========================
+ if (players?.guest?.connected && !players?.guest?.ready) {
+  status.textContent = "Connected. Press READY.";
+ }
+
+ if (players?.guest?.ready && !game?.started) {
+  status.textContent = "Waiting host start...";
+ }
 });
 
-// READY
+// =========================
+// READY BUTTON
+// =========================
 btn.onclick = async () => {
  btn.disabled = true;
  await room.setGuestReady();
+ status.textContent = "Ready ✔";
 };
 </script>
 
