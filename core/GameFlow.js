@@ -28,12 +28,16 @@ export class GameFlow {
   this.finishedPlayers = new Set();
 
   this._resolveStreetViewReady = null;
+  this._resolveRoundStart = null;
+
   this._roundFinishing = false;
   this._started = false;
+
+  this.bindNetwork();
  }
 
  // =========================
- // EVENTS (UI only)
+ // EVENTS
  // =========================
  on(event, cb) {
   (this.listeners[event] ||= []).push(cb);
@@ -44,38 +48,49 @@ export class GameFlow {
  }
 
  // =========================
- // START GAME
+ // NETWORK (только игровые события)
  // =========================
- async startGame() {
-  if (this.mode === "duel") return;
+ bindNetwork() {
+  if (!this.network) return;
 
-  this._started = true;
+  this.network.onRoundStarted?.((data) => {
+   this.startRoundFromNetwork(data);
+  });
 
-  this.finishedPlayers.clear();
-  this.roundLocked = false;
+  this.network.onGuess?.((data) => {
+   this.applyExternalGuess(data);
+  });
 
-  this.game.startGame();
-
-  this.emit("gameStarted", this.game.getState());
-
-  await this.startRound();
+  this.network.onRoundComplete?.(() => {
+   this.syncRoundComplete();
+  });
  }
 
- startGameFromNetwork() {
+ // =========================
+ // START (ЕДИНАЯ ТОЧКА)
+ // =========================
+ start({ role }) {
   if (this._started) return;
 
   this._started = true;
 
-  console.log("🔥 START FROM STATE");
+  console.log("🚀 GAMEFLOW START", { role, mode: this.mode });
 
   this.finishedPlayers.clear();
   this.roundLocked = false;
 
   this.game.startGame();
-
   this.emit("gameStarted", this.game.getState());
 
-  this.startRound();
+  // HOST запускает раунд
+  if (this.mode === "duel" && role === "host") {
+   this.startRound();
+  }
+
+  // SOLO
+  if (this.mode === "solo") {
+   this.startRound();
+  }
  }
 
  // =========================
@@ -93,66 +108,42 @@ export class GameFlow {
  async startRound() {
   this.lockRoundUI();
 
-  // =========================
   // SOLO
-  // =========================
   if (this.mode === "solo") {
    const location = await this.generator.generate(this.area);
    return this.startRoundWithLocation(location);
   }
 
-  // =========================
-  // DUEL HOST
-  // =========================
+  // HOST
   if (this.playerId === "p1") {
-   return this.startRoundAsHost();
+   const location = await this.generator.generate(this.area);
+
+   this.network?.sendRoundStarted?.({ location });
+
+   return this.startRoundWithLocation(location);
   }
 
-  // =========================
-  // DUEL GUEST
-  // =========================
-  return this.waitForRoundFromState();
- }
-
- // =========================
- // HOST → пишет в Firebase
- // =========================
- async startRoundAsHost() {
-  const location = await this.generator.generate(this.area);
-
-  console.log("🔥 HOST GENERATED LOCATION", location);
-
-  await this.network.setRound({
-   location,
-   index: this.game.getState().rounds.length
-  });
-
+  // GUEST
+  const location = await this.waitForRoundFromNetwork();
   return this.startRoundWithLocation(location);
  }
 
- // =========================
- // GUEST → читает из Firebase
- // =========================
- waitForRoundFromState() {
-  return new Promise(resolve => {
-
-   const unsub = this.network.onRound((round) => {
-
-    if (!round?.location) return;
-
-    console.log("🔥 GUEST GOT LOCATION", round.location);
-
-    unsub?.();
-    resolve(this.startRoundWithLocation(round.location));
-   });
-
+ waitForRoundFromNetwork() {
+  return new Promise(res => {
+   this._resolveRoundStart = res;
   });
  }
 
- // =========================
- // ОБЩИЙ СТАРТ РАУНДА
- // =========================
+ startRoundFromNetwork({ location }) {
+  if (this.playerId === "p1") return;
+
+  this._resolveRoundStart?.(location);
+  this._resolveRoundStart = null;
+ }
+
  async startRoundWithLocation(location) {
+  console.log("🌍 ROUND START", location);
+
   this.game.startRound(location);
 
   this.emit("streetViewSetLocation", location);
@@ -171,7 +162,6 @@ export class GameFlow {
   this.emit("movesUpdated", this.moves.getRemaining());
 
   this.locked = false;
-
   this.emit("inputUnlocked");
   this.emit("roundStarted", this.game.getState());
  }
@@ -182,12 +172,6 @@ export class GameFlow {
  waitForStreetViewReady() {
   return new Promise(res => {
    this._resolveStreetViewReady = res;
-
-   // safeguard (чтобы не зависнуть)
-   setTimeout(() => {
-    this._resolveStreetViewReady?.();
-    this._resolveStreetViewReady = null;
-   }, 3000);
   });
  }
 
@@ -196,7 +180,7 @@ export class GameFlow {
   this._resolveStreetViewReady = null;
  }
 
-// =========================
+ // =========================
  // GUESS
  // =========================
  finishGuess(point) {
@@ -207,18 +191,19 @@ export class GameFlow {
    guess: point
   };
 
-  // 👉 пока можно оставить локально (или потом перевести в state)
+  if (this.mode === "duel") {
+   this.network?.sendGuess?.(payload);
+  }
+
   this.applyGuess(this.playerId, point);
  }
 
  applyGuess(playerId, point) {
   if (this.roundLocked) return;
 
-  const result = this.game.setGuess(playerId, point);
+const result = this.game.setGuess(playerId, point);
   if (!result) return;
-
   this.game.applyResult(result);
-
   this.emit("guessResolved", result);
 
   if (this.mode === "solo") {
@@ -229,6 +214,11 @@ export class GameFlow {
   }
 
   this.handlePlayerFinished(playerId);
+ }
+
+ applyExternalGuess({ playerId, guess }) {
+  if (this.locked) return;
+  this.applyGuess(playerId, guess);
  }
 
  // =========================
@@ -243,11 +233,11 @@ export class GameFlow {
   });
 
   this.locked = true;
-
   this.emit("inputLocked");
   this.emit("roundWaiting");
 
   if (this.finishedPlayers.size >= this.game.players.length) {
+   this.network?.sendRoundComplete?.();
    this.finishRound("allPlayersFinished");
    return;
   }
@@ -260,21 +250,6 @@ export class GameFlow {
     () => this.finishRound("duelTimeout"),
     (t) => this.emit("roundTimerTick", t)
    );
-  }
- }
-
- // =========================
- // MOVES
- // =========================
- registerMove() {
-  if (this.locked) return;
-
-  const ok = this.moves.consume();
-
-  this.emit("movesUpdated", this.moves.getRemaining());
-
-  if (!ok || this.moves.isLocked()) {
-   this.emit("movesLocked");
   }
  }
 
@@ -308,9 +283,13 @@ export class GameFlow {
   this._roundFinishing = false;
  }
 
- // =========================
- // NEXT ROUND
- // =========================
+ syncRoundComplete() {
+  this.roundLocked = false;
+  this.finishedPlayers.clear();
+
+  this.emit("roundSyncComplete");
+ }
+
  async nextRound() {
   if (this.game.getState().status === "ended") return;
   await this.startRound();
