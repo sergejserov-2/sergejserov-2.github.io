@@ -100,7 +100,7 @@ export class GameFlow {
 
    this.setCurrentRound(round);
 
-   const current = this.getRoundForUI();
+   const current = this.getCurrentRound();
    if (!current) return;
 
    // =========================
