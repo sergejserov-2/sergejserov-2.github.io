@@ -53,9 +53,9 @@ showRoundResult(vm = {}) {
   const container = root.querySelector(".players-score");
   console.log("🧾 container:", container);
 
-  const guesses = vm.guesses
-    ? Object.values(vm.guesses)
-    : [];
+const guesses = vm.round?.guesses
+  ? Object.values(vm.round.guesses)
+  : [];
 
   console.log("🧾 guesses parsed:", guesses);
 
