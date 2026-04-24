@@ -22,8 +22,7 @@ export class GameFlow {
   this.playerId = playerId;
 
   this.listeners = {};
-
-  this.locked = false;
+  
   this._started = false;
   this._roundFinishing = false;
   this._timerStarted = false;
@@ -119,7 +118,6 @@ export class GameFlow {
     const isInitiator = this.playerId === current.initiator;
 
     if (isInitiator) {
-     this.locked = true;
      this.emit("roundWaiting");
     }
 
@@ -211,15 +209,14 @@ this.game.startGame();
 
   this.moves.reset(this.game.config.rules.moves);
 
-  this.locked = false;
+  this.moveslocked = false;
 
   this.emit("roundStarted", this.game.getState());
  }
 
  // GUESSES
  applyGuess(playerId, point) {
-  if (this.locked) return;
-
+if (round.guesses[playerId]) return;
   const result = this.game.setGuess(playerId, point);
   if (!result) return;
 
@@ -229,8 +226,6 @@ this.game.startGame();
  }
 
  handlePlayerFinished(playerId, result) {
-
-  this.emit("inputLocked");
 
   const round = this.getCurrentRound();
 
@@ -280,8 +275,6 @@ this.game.startGame();
   this.timer.clear();
   this.roundTimer.clear();
 
-  this.locked = true;
-
   const round = this.getCurrentRound();
   const state = this.game.getState();
 
@@ -300,14 +293,14 @@ this.game.startGame();
 
  // MOVES
  registerMove() {
-  if (this.locked) return;
+  if (this.moveslocked) return;
 
   const ok = this.moves.consume();
 
   this.emit("movesUpdated", this.moves.getRemaining());
 
   if (!ok) {
-   this.locked = true;
+   this.moveslocked = true;
    this.emit("movesLocked");
   }
  }
@@ -324,11 +317,6 @@ this.game.startGame();
   this._resolveStreetViewReady = null;
  }
 
- lockRoundUI() {
-  this.locked = true;
-  this.emit("inputLocked");
-
- }
  
  finishGuess(point) {
   return this.applyGuess(this.playerId, point);
