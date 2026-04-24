@@ -294,8 +294,6 @@ applyGuess(playerId, point) {
  const result = this.game.setGuess(playerId, point);
  if (!result) return;
 
- this.game.applyResult(result);
-
  this.emit("guessResolved", result);
 
  this.handlePlayerFinished(playerId, result);
