@@ -52,80 +52,68 @@ export class GameFlow {
  }
 
  // ROUND MODEL
- getCurrentRound() {
-  return this._currentRound;
- }
+getCurrentRound() {
+ return this._currentRound;
+}
 
- setCurrentRound(round) {
-  this._currentRound = this.normalizeRound(round);
- }
+setCurrentRound(round) {
+ this._currentRound = this.normalizeRound(round);
+}
 
- normalizeRound(r) {
-  if (!r) {
-   return {
-    index: 0,
-    status: "running",
-    actualLocation: null,
-    initiator: null,
-    guesses: {}
-   };
-  }
-
+normalizeRound(r) {
+ if (!r) {
   return {
-   index: r.index,
-   status: r.status,
-   actualLocation: r.actualLocation,
-   initiator: r.initiator,
-   guesses: r.guesses || {}
+   index: 0,
+   status: "running",
+   actualLocation: null,
+   initiator: null,
+   guesses: {}
   };
  }
+
+ return {
+  index: r.index ?? 0,
+  status: r.status ?? "running",
+  actualLocation: r.actualLocation ?? null,
+  initiator: r.initiator ?? null,
+  guesses: r.guesses ?? {}
+ };
+}
 
  // NETWORK
 bindNetwork() {
  if (!this.network) return;
 
- console.log("🌐 bindNetwork active");
-
  this.network.onRoom((room) => {
 
-  // =========================
-  // HARD GUARD (Firebase safety)
-  // =========================
   if (!room || !room.game) return;
 
   const game = room.game;
-  const rawRound = game.round;
 
-  // 🔒 защита от null / undefined / partial
-  if (!rawRound) return;
-
-  const round = this.normalizeRound(rawRound);
-
-  console.log("📡 [Network Round Safe]", round);
-
-  // =========================
-  // GAME START
-  // =========================
   if (game.started && !this._started) {
    this._started = true;
-
    this.game.startGame();
    this.emit("gameStarted", this.game.getState());
   }
 
-  // =========================
-  // SAFE CURRENT ROUND SET
-  // =========================
+  const round = game.round;
+
+  // ❗️ HARD GUARD
+  if (!round) return;
+  if (typeof round !== "object") return;
+
   this.setCurrentRound(round);
+
   const current = this.getCurrentRound();
 
+  if (!current) return;
+
   // =========================
-  // GUEST AUTO START SAFETY
+  // GUEST START FIX
   // =========================
   if (this.playerId !== "p1") {
 
    const canStart =
-    current &&
     current.index != null &&
     current.actualLocation &&
     current.index !== this._currentRoundIndex;
@@ -133,21 +121,18 @@ bindNetwork() {
    if (canStart) {
     this._currentRoundIndex = current.index;
 
-    console.log("📡 FORCE START ROUND (GUEST)", current);
-
     this.startRoundWithLocation(current.actualLocation);
    }
   }
 
   // =========================
-  // WAITING STATE
+  // WAITING
   // =========================
   if (current.status === "waiting") {
 
    const isInitiator = this.playerId === current.initiator;
 
    if (isInitiator) {
-    this.locked = true;
     this.emit("roundWaiting");
    }
 
@@ -169,7 +154,7 @@ bindNetwork() {
   }
 
   // =========================
-  // AUTO FINISH (SAFE GUARD)
+  // AUTO FINISH
   // =========================
   const guesses = current.guesses || {};
   const guessCount = Object.keys(guesses).length;
@@ -183,7 +168,7 @@ bindNetwork() {
   }
 
   // =========================
-  // FINISH STATE
+  // FINISH
   // =========================
   if (current.status === "finished" && !this._roundFinishing) {
    this._timerStarted = false;
@@ -256,31 +241,31 @@ this.game.startGame();
  // GUESSES
 applyGuess(playerId, point) {
  if (this.locked) return;
+
  const result = this.game.setGuess(playerId, point);
  if (!result) return;
+
  this.emit("guessResolved", result);
- if (this.playerId !== "p1") {
-  this.network.sendGuess({
-   playerId,
-   result
-  });
-  return;
- }
+
  this.handlePlayerFinished(playerId, result);
 }
 
  
- handlePlayerFinished(playerId, result) {
- const round = this.getCurrentRound();
+handlePlayerFinished(playerId, result) {
 
- const guesses = {
-  ...round.guesses,
+ const round = this.getCurrentRound();
+ if (!round) return;
+
+ const guesses = round.guesses || {};
+
+ const nextGuesses = {
+  ...guesses,
   [playerId]: result
  };
 
  const next = this.normalizeRound({
   ...round,
-  guesses
+  guesses: nextGuesses
  });
 
  this.setCurrentRound(next);
