@@ -12,7 +12,6 @@ import { db } from "./firebaseApp.js";
 export class FirebaseRoomController {
  constructor() {
   this.db = db;
-
   this.roomId = null;
   this.roomRef = null;
 
@@ -73,7 +72,6 @@ export class FirebaseRoomController {
   });
 
   this.bind();
-
   return room;
  }
 
@@ -94,45 +92,38 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // GAME STATE
+ // CONFIG
  // =========================
- startGame(config) {
-  return update(this.roomRef, {
-   "game/started": true,
-   "game/config": config
-  });
+ setDraftConfig(cfg) {
+  return update(this.roomRef, { draftConfig: cfg });
  }
 
- setRound(round) {
-  return update(this.roomRef, {
-   "game/round": round
-  });
- }
-
- updateGame(patch) {
-  const flat = {};
-  for (const k in patch) {
-   flat[`game/${k}`] = patch[k];
-  }
-  return update(this.roomRef, flat);
- }
-
- updatePlayer(id, patch) {
-  const flat = {};
-  for (const k in patch) {
-   flat[`players/${id}/${k}`] = patch[k];
-  }
-  return update(this.roomRef, flat);
- }
-
+ // =========================
+ // READY
+ // =========================
  setGuestReady() {
   return update(this.roomRef, {
    "players/guest/ready": true
   });
  }
 
- async getRoom() {
-  const snap = await get(this.roomRef);
-  return snap.val();
+ // =========================
+ // START GAME
+ // =========================
+ startGame(config) {
+  return update(this.roomRef, {
+   "game/started": true,
+   "game/config": config,
+   "game/round": null
+  });
+ }
+
+ // =========================
+ // ROUND SYNC (CRITICAL)
+ // =========================
+ setRound(round) {
+  return update(this.roomRef, {
+   "game/round": round
+  });
  }
 }
