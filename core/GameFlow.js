@@ -74,7 +74,7 @@ this._roundFinishing = false;
 bindNetwork() {
  if (!this.network) return;
 
- console.log("🌐 [GameFlow] bindNetwork active");
+ console.log("🌐 bindNetwork active");
 
  this.network.onRoom?.((room) => {
 
@@ -90,14 +90,12 @@ bindNetwork() {
   if (game.started && !this._started) {
    this._started = true;
 
-   console.log("🚀 GAME START (STATE)");
-
    this.game.startGame();
    this.emit("gameStarted", this.game.getState());
   }
 
   // =========================
-  // ROUND START (ONLY GUEST)
+  // ROUND START (GUEST ONLY)
   // =========================
   if (
    this.playerId !== "p1" &&
@@ -107,32 +105,29 @@ bindNetwork() {
   ) {
    this._currentRoundIndex = round.index;
 
-   console.log("🎯 ROUND START");
-
    this.startRoundFromNetwork(round);
   }
 
   // =========================
-  // WAIT STATE (IMPORTANT)
+  // WAIT STATE → START TIMER UI (NO STATE CHANGE)
   // =========================
   if (round.status === "waiting") {
+
+   console.log("⏳ WAIT STATE");
+
    this.locked = true;
    this.emit("roundWaiting");
-  }
 
-  // =========================
-  // TIMER STATE (CRITICAL FIX)
-  // =========================
-  if (round.status === "timer") {
-
-   if (!this.roundLocked) {
-    this.roundLocked = true;
-
-    console.log("⏱️ TIMER START (SYNC)");
+   // ⚠️ ВАЖНО: таймер НЕ из Firebase, только UI
+   if (!this._timerStarted) {
+    this._timerStarted = true;
 
     this.roundTimer.start(
      10,
-     () => this.updateRound({ status: "finished" }),
+     () => {
+      // локально НЕ меняем state
+      // ждём finished от сервера
+     },
      (t) => this.emit("roundTimerTick", t)
     );
 
@@ -141,16 +136,16 @@ bindNetwork() {
   }
 
   // =========================
-  // FINISH STATE
+  // FINISHED STATE
   // =========================
   if (round.status === "finished" && !this._roundFinishing) {
-   console.log("🏁 FINISH FROM STATE");
+
+   console.log("🏁 FINISHED STATE");
 
    this.finishRoundFromState("networkFinish");
   }
  });
 }
-
 
  // =========================================================
  // GAME START
@@ -313,10 +308,14 @@ updateRound(patch) {
 
  const current = this.game.getState().currentRound;
 
- this.network.setRound({
+ const updated = {
   ...current,
   ...patch
- });
+ };
+
+ console.log("📡 setRound", updated);
+
+ this.network.setRound(updated);
 }
 
  
@@ -327,46 +326,33 @@ handlePlayerFinished(playerId, result) {
  this.emit("inputLocked");
 
  // =========================
- // FIRST PLAYER → WAIT
+ // FIRST GUESS → [waiting]
  // =========================
  if (this.finishedPlayers.size === 1) {
 
-  console.log("⏳ FIRST GUESS → WAIT");
+  console.log("➡️ FIRST GUESS → WAITING");
 
   this.locked = true;
   this.emit("roundWaiting");
 
-this.updateRound({
- status: "waiting"
-});
+  this.updateRound({
+   status: "waiting",
+   lastGuess: result
+  });
 
   return;
  }
 
  // =========================
- // SECOND PLAYER → START TIMER
- // =========================
- if (this.mode === "duel" && this.finishedPlayers.size === 2) {
-
-  console.log("⏱️ START TIMER STATE");
-
-this.updateRound({
- status: "timer"
-});
-
-  return;
- }
-
- // =========================
- // ALL FINISHED
+ // ALL GUESSED → [finished]
  // =========================
  if (this.finishedPlayers.size >= this.game.players.length) {
 
-  console.log("🏁 ALL FINISHED");
+  console.log("➡️ ALL GUESSED → FINISHED");
 
-this.updateRound({
- status: "finished"
-});
+  this.updateRound({
+   status: "finished"
+  });
 
   return;
  }
@@ -387,15 +373,13 @@ finishRound(reason = "manual") {
  this.locked = true;
  this.roundLocked = false;
  this.finishedPlayers.clear();
+ this._timerStarted = false;
 
  const state = this.game.getState();
 
- const isLast =
-  state.rounds.length >= this.game.config.rules.rounds;
-
  this.emit("roundResultShown", { state, reason });
 
- if (isLast) {
+ if (state.rounds.length >= this.game.config.rules.rounds) {
   this.game.endGame();
   this.emit("gameEnded", state);
  }
