@@ -86,9 +86,11 @@ bindNetwork() {
 
  this.network.onRoom((room) => {
 
-  if (!room || !room.game) return;
-
   const game = room.game;
+  if (!game) return;
+
+  const round = game.round;
+  if (!round) return;
 
   if (game.started && !this._started) {
    this._started = true;
@@ -96,20 +98,13 @@ bindNetwork() {
    this.emit("gameStarted", this.game.getState());
   }
 
-  const round = game.round;
-
-  // ❗️ HARD GUARD
-  if (!round) return;
-  if (typeof round !== "object") return;
-
   this.setCurrentRound(round);
 
   const current = this.getCurrentRound();
-
   if (!current) return;
 
   // =========================
-  // GUEST START FIX
+  // GUEST START
   // =========================
   if (this.playerId !== "p1") {
 
@@ -120,7 +115,6 @@ bindNetwork() {
 
    if (canStart) {
     this._currentRoundIndex = current.index;
-
     this.startRoundWithLocation(current.actualLocation);
    }
   }
@@ -156,8 +150,7 @@ bindNetwork() {
   // =========================
   // AUTO FINISH
   // =========================
-  const guesses = current.guesses || {};
-  const guessCount = Object.keys(guesses).length;
+  const guessCount = Object.keys(current.guesses || {}).length;
 
   if (
    this.playerId === "p1" &&
@@ -174,7 +167,6 @@ bindNetwork() {
    this._timerStarted = false;
    this.finishRoundFromState("networkFinish");
   }
-
  });
 }
 
