@@ -215,15 +215,14 @@ this.game.startGame();
  }
 
  // GUESSES
- applyGuess(playerId, point) {
-if (round.guesses[playerId]) return;
-  const result = this.game.setGuess(playerId, point);
-  if (!result) return;
-
-  this.emit("guessResolved", result);
-
-  this.handlePlayerFinished(playerId, result);
- }
+applyGuess(playerId, point) {
+ const round = this.getCurrentRound();
+ if (round.guesses[playerId]) return;
+ const result = this.game.setGuess(playerId, point);
+ if (!result) return;
+ this.emit("guessResolved", result);
+ this.handlePlayerFinished(playerId, result);
+}
 
  handlePlayerFinished(playerId, result) {
 
