@@ -261,7 +261,7 @@ handlePlayerFinished(playerId, result) {
 
  this.setCurrentRound(next);
 
- // ❗️ host-only game rules (waiting/finish logic)
+ // 🔥 ВАЖНО: ВСЕ игроки теперь инициируют updateRound
  if (!round.initiator) {
   this.updateRound({
    ...next,
@@ -271,7 +271,10 @@ handlePlayerFinished(playerId, result) {
   return;
  }
 
- this.updateRound(next);
+ this.updateRound({
+  ...next,
+  status: "waiting"   // ← КЛЮЧЕВО
+ });
 }
 
  updateRound(patch) {
