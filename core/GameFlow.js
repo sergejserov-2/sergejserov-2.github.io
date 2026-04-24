@@ -132,7 +132,7 @@ bindNetwork() {
 
    console.log("🏁 [GameFlow] ROUND FINISH FROM STATE");
 
-   this.finishRound("networkFinish");
+   this.finishRoundFromState("networkFinish");
   }
  });
 
@@ -349,25 +349,34 @@ handlePlayerFinished(playerId) {
  this.emit("inputLocked");
 
  // =========================
- // ALL PLAYERS FINISHED → AUTHORITATIVE FINISH
+ // ALL PLAYERS FINISHED → PUSH STATE ONLY (DUEL SAFE)
  // =========================
  if (this.finishedPlayers.size >= this.game.players.length) {
 
+  console.log("🏁 [GameFlow] ALL PLAYERS FINISHED");
+
   if (this.mode === "duel") {
+
+   const currentRound = this.game.getState().currentRound;
+
    this.network?.updateGame?.({
     round: {
-     ...this.game.getState().currentRound,
+     ...currentRound,
      status: "finished"
     }
    });
+
+   // ❗ важно: НЕ finishRound здесь
+   return;
   }
 
+  // SOLO → сразу локальный финал
   this.finishRound("allFinished");
   return;
  }
 
  // =========================
- // FIRST CLICK → WAITING STATE
+ // FIRST FINISH → WAIT STATE
  // =========================
  this.locked = true;
  this.emit("roundWaiting");
@@ -379,12 +388,19 @@ handlePlayerFinished(playerId) {
 
   this.roundLocked = true;
 
+  console.log("⏱️ [GameFlow] START ROUND TIMER");
+
   this.roundTimer.start(
    10,
    () => {
+
+    console.log("⏱️ [GameFlow] DUEL TIMER EXPIRED");
+
+    const currentRound = this.game.getState().currentRound;
+
     this.network?.updateGame?.({
      round: {
-      ...this.game.getState().currentRound,
+      ...currentRound,
       status: "finished"
      }
     });
@@ -433,7 +449,13 @@ finishRound(reason = "manual") {
 
 
 
+finishRoundFromState(reason = "networkFinish") {
+ if (this._roundFinishing) return;
 
+ console.log("🏁 [GameFlow] finishRoundFromState", reason);
+
+ this.finishRound(reason);
+}
 
 
 
