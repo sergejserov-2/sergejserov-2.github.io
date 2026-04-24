@@ -2,6 +2,7 @@ import { FirebaseRoomController } from "../server/FirebaseRoomController.js";
 import { buildGameApp } from "./shared/buildGameApp.js";
 
 export async function createDuelApp(config) {
+
  console.log("🟢 DUEL INIT");
 
  const url = new URL(window.location.href);
@@ -10,6 +11,8 @@ export async function createDuelApp(config) {
 
  const room = new FirebaseRoomController();
  await room.joinRoom(roomId);
+
+ console.log("🟢 ROOM JOINED");
 
  const gameFlow = buildGameApp({
   config,
@@ -21,12 +24,21 @@ export async function createDuelApp(config) {
  let started = false;
 
  room.onRoom((state) => {
+
   const game = state.game;
+
   if (!game) return;
 
   if (game.started && !started) {
    started = true;
-   gameFlow.startGameFromNetwork();
+
+   console.log("🔥 DUEL START");
+
+   if (role === "host") {
+    gameFlow.startGame();
+   } else {
+    gameFlow.startGameFromNetwork();
+   }
   }
  });
 
