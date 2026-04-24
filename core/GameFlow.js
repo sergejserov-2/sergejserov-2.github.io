@@ -353,6 +353,23 @@ applyGuess(playerId, point) {
 }
 
 
+updateGame(patch) {
+ if (!this.network?.updateGame) return;
+
+ const currentState = this.game.getState();
+
+ const updated = {
+  ...currentState,
+  round: {
+   ...currentState.currentRound,
+   ...patch
+  }
+ };
+
+ console.log("📡 [GameFlow] updateGame", patch);
+
+ this.network.updateGame(updated);
+}
 
  
 handlePlayerFinished(playerId, result) {
