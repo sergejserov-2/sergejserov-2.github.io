@@ -108,7 +108,7 @@ export class GameFlow {
   this.startRound();
  }
 
- startGameFromNetwork() {
+startGameFromNetwork() {
   if (this._started) return;
 
   this._started = true;
@@ -120,7 +120,10 @@ export class GameFlow {
 
   this.finishedPlayers.clear();
   this.roundLocked = false;
- }
+
+  // 💥 ВАЖНО: ГОСТЬ ДОЛЖЕН ЖДАТЬ ROUND
+  this.startRound();
+}
 
  // =========================================================
  // ROUND START
