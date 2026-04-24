@@ -10,14 +10,14 @@ export class GameFlow {
  }) {
 
   // =========================
-  // CORE DOMAIN
+  // CORE
   // =========================
   this.game = game;
   this.generator = generator;
   this.area = area;
 
   // =========================
-  // SERVICES (НЕ ТЕРЯЕМ)
+  // SERVICES (НЕ ТРОГАЕМ)
   // =========================
   this.timer = services.timer;
   this.roundTimer = services.timer;
@@ -31,7 +31,7 @@ export class GameFlow {
   this.playerId = playerId;
 
   // =========================
-  // STATE FLAGS
+  // STATE
   // =========================
   this.listeners = {};
 
@@ -44,7 +44,7 @@ export class GameFlow {
   this._roundFinishing = false;
 
   // =========================
-  // NETWORK BUFFER (FIX GUEST)
+  // NETWORK BUFFER (DUEL FIX)
   // =========================
   this._resolveRoundStart = null;
   this._pendingRoundLocation = null;
@@ -54,9 +54,9 @@ export class GameFlow {
   this.bindNetwork();
  }
 
- // =========================
- // EVENT SYSTEM
- // =========================
+ // =========================================================
+ // EVENTS
+ // =========================================================
  on(event, cb) {
   (this.listeners[event] ||= []).push(cb);
  }
@@ -65,9 +65,9 @@ export class GameFlow {
   this.listeners[event]?.forEach(cb => cb(data));
  }
 
- // =========================
- // NETWORK BIND
- // =========================
+ // =========================================================
+ // NETWORK
+ // =========================================================
  bindNetwork() {
   if (!this.network) return;
 
@@ -88,13 +88,10 @@ export class GameFlow {
   });
  }
 
- // =========================
- // =========================
- // 🧠 CONTRACT: START GAME
- // =========================
- // =========================
+ // =========================================================
+ // CONTRACT: GAME START
+ // =========================================================
 
- // HOST ENTRY POINT
  startGame() {
   if (this._started) return;
 
@@ -111,7 +108,6 @@ export class GameFlow {
   this.startRound();
  }
 
- // GUEST ENTRY POINT
  startGameFromNetwork() {
   if (this._started) return;
 
@@ -124,13 +120,11 @@ export class GameFlow {
 
   this.finishedPlayers.clear();
   this.roundLocked = false;
-
-  // guest НЕ стартует раунд сам
  }
 
- // =========================
+ // =========================================================
  // ROUND START
- // =========================
+ // =========================================================
  async startRound() {
   this.lockRoundUI();
 
@@ -140,7 +134,7 @@ export class GameFlow {
    return this.startRoundWithLocation(location);
   }
 
-  // HOST = источник истины
+  // HOST
   if (this.playerId === "p1") {
    const location = await this.generator.generate(this.area);
 
@@ -149,15 +143,15 @@ export class GameFlow {
    return this.startRoundWithLocation(location);
   }
 
-  // GUEST = ждёт сеть
+  // GUEST
   const location = await this.waitForRoundFromNetwork();
 
   return this.startRoundWithLocation(location);
  }
 
- // =========================
- // NETWORK ROUND BUFFER (FIX)
- // =========================
+ // =========================================================
+ // NETWORK ROUND BUFFER
+ // =========================================================
  waitForRoundFromNetwork() {
   return new Promise((resolve) => {
    this._resolveRoundStart = resolve;
@@ -182,9 +176,9 @@ export class GameFlow {
   this._resolveRoundStart = null;
  }
 
- // =========================
- // ROUND INIT
- // =========================
+// =========================================================
+ // ROUND CORE
+ // =========================================================
  async startRoundWithLocation(location) {
   this.game.startRound(location);
 
@@ -194,18 +188,14 @@ export class GameFlow {
 
   this.emit("loadingFinished");
 
- // =========================
-  // TIMER (SERVICE)
-  // =========================
+  // TIMER SERVICE
   this.timer.start(
    this.game.config.rules.time,
    () => this.finishRound("timeout"),
    (t) => this.emit("timerTick", t)
   );
 
-  // =========================
-  // MOVES (SERVICE)
-  // =========================
+  // MOVES SERVICE
   this.moves.reset(this.game.config.rules.moves);
 
   this.emit("movesUpdated", this.moves.getRemaining());
@@ -216,9 +206,9 @@ export class GameFlow {
   this.emit("roundStarted", this.game.getState());
  }
 
- // =========================
+ // =========================================================
  // STREET VIEW SYNC
- // =========================
+ // =========================================================
  waitForStreetViewReady() {
   return new Promise(res => {
    this._resolveStreetViewReady = res;
@@ -230,9 +220,9 @@ export class GameFlow {
   this._resolveStreetViewReady = null;
  }
 
- // =========================
+ // =========================================================
  // GUESS SYSTEM
- // =========================
+ // =========================================================
  finishGuess(point) {
   if (this.locked || this.roundLocked) return;
 
@@ -272,9 +262,9 @@ export class GameFlow {
   this.applyGuess(playerId, guess);
  }
 
- // =========================
+ // =========================================================
  // DUEL FLOW
- // =========================
+ // =========================================================
  handlePlayerFinished(playerId) {
   this.finishedPlayers.add(playerId);
 
@@ -300,9 +290,9 @@ export class GameFlow {
   }
  }
 
- // =========================
- // MOVES SERVICE HOOK
- // =========================
+ // =========================================================
+ // MOVES
+ // =========================================================
  registerMove() {
   if (this.locked) return;
 
@@ -315,9 +305,9 @@ export class GameFlow {
   }
  }
 
- // =========================
+ // =========================================================
  // ROUND END
- // =========================
+ // =========================================================
  finishRound(reason = "manual") {
   if (this._roundFinishing) return;
 
@@ -346,9 +336,9 @@ export class GameFlow {
   this._roundFinishing = false;
  }
 
- // =========================
+ // =========================================================
  // SYNC
- // =========================
+ // =========================================================
  syncRoundComplete() {
   this.roundLocked = false;
   this.finishedPlayers.clear();
@@ -356,11 +346,24 @@ export class GameFlow {
   this.emit("roundSyncComplete");
  }
 
- // =========================
+ // =========================================================
  // NEXT ROUND
- // =========================
+ // =========================================================
  nextRound() {
   if (this.game.getState().status === "ended") return;
   return this.startRound();
  }
+
+// =========================================================
+ // LEGACY COMPATIBILITY (ВАЖНО)
+ // =========================================================
+
+ lockRoundUI() {
+  this.locked = true;
+  this.roundLocked = false;
+  this.finishedPlayers.clear();
+
+  this.emit("inputLocked");
+  this.emit("loadingStarted");
+}
 }
