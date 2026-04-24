@@ -419,6 +419,7 @@ const round = this._networkRound;
  console.log("📊 FINAL ROUND DATA", round);
 
  this.emit("roundResultShown", {
+  state,
   round // 👈 ВАЖНО: передаем полный раунд
  });
 
