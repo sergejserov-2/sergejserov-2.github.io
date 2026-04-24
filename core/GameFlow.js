@@ -45,8 +45,6 @@ export class GameFlow {
   this.roundLocked = false;
 
   this.finishedPlayers = new Set();
-  this._initiatorId = null;
-
   this._started = false;
 this._currentRoundIndex = null;
 this._roundFinishing = false;
@@ -117,17 +115,17 @@ bindNetwork() {
     this.emit("roundWaiting");
    }
 
-   if (!this._timerStarted) {
-    this._timerStarted = true;
+this.roundTimer.start(
+ 10,
+ () => {
+  console.log("⏱ TIMER → FINISH");
 
-    this.roundTimer.start(
-     10,
-     () => {}, // ничего не пишем в state
-     (t) => this.emit("roundTimerTick", t)
-    );
-
-    this.emit("roundTimerStart");
-   }
+  this.updateRound({
+   status: "finished"
+  });
+ },
+ (t) => this.emit("roundTimerTick", t)
+);
   }
 
   // =========================
@@ -309,39 +307,55 @@ handlePlayerFinished(playerId, result) {
  this.emit("inputLocked");
 
  const state = this.game.getState();
- const current = state.currentRound || {};
- const guesses = current.guesses || {};
+ const current = state?.currentRound ?? {};
+ const guesses = current?.guesses ?? {};
+
+ const nextGuesses = {
+  ...guesses,
+  [playerId]: result
+ };
+
+ const guessCount = Object.keys(nextGuesses).length;
+ const playersCount = this.game.players.length;
 
  // =========================
- // FIRST GUESS → WAIT STATE
+ // FIRST GUESS → WAITING
  // =========================
- if (!this._initiatorId) {
+ if (!current.status || current.status === "running") {
 
-  this._initiatorId = playerId;
+  console.log("➡️ FIRST GUESS → WAITING");
 
   this.locked = true;
 
   this.updateRound({
    status: "waiting",
    initiator: playerId,
-   lastGuess: result,
-   guesses: {
-    ...guesses,
-    [playerId]: result
-   }
+   guesses: nextGuesses
   });
 
   return;
  }
 
  // =========================
- // NEXT GUESSES → SYNC ONLY
+ // SECOND GUESS → FINISHED
+ // =========================
+ if (guessCount >= playersCount) {
+
+  console.log("🏁 ALL GUESSES → FINISHED");
+
+  this.updateRound({
+   status: "finished",
+   guesses: nextGuesses
+  });
+
+  return;
+ }
+
+ // =========================
+ // OTHERWISE → JUST SYNC
  // =========================
  this.updateRound({
-  guesses: {
-   ...guesses,
-   [playerId]: result
-  }
+  guesses: nextGuesses
  });
 }
 
@@ -361,7 +375,6 @@ finishRound(reason = "manual") {
  this.roundLocked = false;
 
  this._timerStarted = false;
- this._initiatorId = null;
 
  const state = this.game.getState();
 
