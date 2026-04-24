@@ -224,31 +224,32 @@ applyGuess(playerId, point) {
  this.handlePlayerFinished(playerId, result);
 }
 
- handlePlayerFinished(playerId, result) {
+handlePlayerFinished(playerId, result) {
+ const round = this.getCurrentRound();
 
-  const round = this.getCurrentRound();
+ const guesses = {
+  ...round.guesses,
+  [playerId]: result
+ };
 
-  const guesses = round.guesses;
-  guesses[playerId] = result;
+ const next = this.normalizeRound({
+  ...round,
+  guesses
+ });
 
-  const next = this.normalizeRound({
-   ...round,
-   guesses
+ this.setCurrentRound(next);
+
+ if (!round.initiator) {
+  this.updateRound({
+   ...next,
+   initiator: playerId,
+   status: "waiting"
   });
-
-  this.setCurrentRound(next);
-
-  if (!round.initiator) {
-   this.updateRound({
-    ...next,
-    initiator: playerId,
-    status: "waiting"
-   });
-   return;
-  }
-
-  this.updateRound(next);
+  return;
  }
+
+ this.updateRound(next);
+}
 
  updateRound(patch) {
   if (this.playerId !== "p1") return;
