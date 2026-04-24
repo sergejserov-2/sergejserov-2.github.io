@@ -102,12 +102,11 @@ bindNetwork() {
   if (
    this.playerId !== "p1" &&
    round.location &&
-   round.status !== "finished"
+   round.status === "running"
   ) {
 
    const roundIndex = round.index;
 
-   // guard against duplicate triggers
    if (this._currentRoundIndex !== roundIndex) {
 
     console.log("🎯 [GameFlow] ROUND START FROM STATE", {
@@ -117,8 +116,46 @@ bindNetwork() {
 
     this._currentRoundIndex = roundIndex;
 
-    // 👉 HERE IS THE ACTUAL CALL
     this.startRoundFromNetwork(round);
+   }
+  }
+
+  // =========================
+  // ROUND WAIT STATE (IMPORTANT FIX)
+  // =========================
+  if (
+   round.status === "waiting" &&
+   this.mode === "duel"
+  ) {
+
+   // игрок уже нажал "угадать" → показать waiting UI
+   console.log("⏳ [GameFlow] ROUND WAIT STATE");
+
+   this.locked = true;
+   this.emit("roundWaiting");
+  }
+
+  // =========================
+  // ROUND TIMER SYNC (IMPORTANT FIX)
+  // =========================
+  if (
+   round.status === "timer" &&
+   this.mode === "duel"
+  ) {
+
+   console.log("⏱️ [GameFlow] ROUND TIMER START FROM STATE");
+
+   if (!this.roundLocked) {
+
+    this.roundLocked = true;
+
+    this.roundTimer.start(
+     10,
+     () => this.finishRound("duelTimeout"),
+     (t) => this.emit("roundTimerTick", t)
+    );
+
+    this.emit("roundTimerStart");
    }
   }
 
@@ -135,33 +172,8 @@ bindNetwork() {
    this.finishRoundFromState("networkFinish");
   }
  });
-
- // =========================
- // GUESSES SYNC
- // =========================
- this.network.onGuess?.((data) => {
-  this.applyExternalGuess(data);
- });
-
- // =========================
- // ROUND COMPLETE SYNC (optional legacy)
- // =========================
- this.network.onRoundComplete?.(() => {
-  this.syncRoundComplete?.();
- });
-
- // =========================
- // GAME START LEGACY FALLBACK
- // =========================
- this.network.onStart?.(() => {
-  if (!this._started) {
-   this._started = true;
-
-   this.game.startGame();
-   this.emit("gameStarted", this.game.getState());
-  }
- });
 }
+
 
  // =========================================================
  // GAME START
@@ -336,78 +348,56 @@ applyGuess(playerId, point) {
 
  this.emit("guessResolved", result);
 
- this.handlePlayerFinished(playerId);
+ // ❗️ ВАЖНО: теперь только локальный хендлинг
+ this.handlePlayerFinished(playerId, result);
 }
 
 
 
  
-handlePlayerFinished(playerId) {
+handlePlayerFinished(playerId, result) {
 
  this.finishedPlayers.add(playerId);
 
  this.emit("inputLocked");
 
  // =========================
- // CASE 1: FIRST FINISH (ANY PLAYER)
+ // FIRST PLAYER → WAIT STATE
  // =========================
  if (this.finishedPlayers.size === 1) {
 
-  console.log("⏳ FIRST FINISH → WAIT STATE");
+  console.log("⏳ [GameFlow] FIRST FINISH → WAIT");
 
   this.locked = true;
-
   this.emit("roundWaiting");
 
-  // отправляем состояние в сеть
+  // пишем ТОЛЬКО состояние waiting
   if (this.mode === "duel") {
-   this.network?.updateGame?.({
-    round: {
-     ...this.game.getState().currentRound,
-     status: "waiting"
-    }
+   this.updateGame({
+    status: "waiting",
+    lastGuess: result
    });
   }
 
-  // запускаем таймер ТОЛЬКО у тех, кто НЕ нажал
-  if (this.mode === "duel") {
-
-   this.roundLocked = true;
-
-   this.roundTimer.start(
-    10,
-    () => {
-     console.log("⏱ TIMER END → FINISH ROUND");
-
-     this.network?.updateGame?.({
-      round: {
-       ...this.game.getState().currentRound,
-       status: "finished"
-      }
-     });
-
-     this.finishRound("duelTimeout");
-    },
-    (t) => this.emit("roundTimerTick", t)
-   );
-
-   this.emit("roundTimerStart");
-  }
+  // запускаем таймер ТОЛЬКО у остальных через state sync
+  return;
  }
 
  // =========================
- // CASE 2: ALL PLAYERS FINISHED
+ // ALL PLAYERS FINISHED
  // =========================
  if (this.finishedPlayers.size >= this.game.players.length) {
 
-  console.log("🏁 ALL PLAYERS FINISHED");
+  console.log("🏁 [GameFlow] ALL PLAYERS FINISHED");
 
-  this.network?.updateGame?.({
-   round: {
-    ...this.game.getState().currentRound,
+  if (this.mode === "duel") {
+
+   this.updateGame({
     status: "finished"
-   }
-  });
+   });
+
+   return; // finish придёт из bindNetwork
+  }
 
   this.finishRound("allFinished");
  }
