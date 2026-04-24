@@ -75,28 +75,30 @@ bindNetwork() {
  console.log("🌐 [GameFlow] bindNetwork active");
 
  // =========================
- // HOST → GUEST ROUND SYNC (FIX)
+ // ROUND STATE SYNC (CRITICAL FIX)
  // =========================
  this.network.onRoom?.((room) => {
+
   const round = room?.game?.round;
+  if (!round) return;
 
-  if (!round?.location) return;
-
-  console.log("🌍 [GameFlow] ROOM ROUND UPDATE", round);
-
-  // ❗ важно: только guest реагирует
+  // HOST → ignore (already authoritative)
   if (this.playerId !== "p1") {
-   this.startRoundFromNetwork(round);
+
+   // =========================
+   // START ROUND
+   // =========================
+   if (round.location && round.status !== "finished") {
+    this.startRoundFromNetwork(round);
+   }
+
+   // =========================
+   // END ROUND SYNC (FIX)
+   // =========================
+   if (round.status === "finished") {
+    this.finishRound("networkFinish");
+   }
   }
- });
-
- // =========================
- // ROUND START SIGNAL (legacy / optional)
- // =========================
- this.network.onRoundStarted?.((data) => {
-  console.log("🌐 [GameFlow] onRoundStarted", data);
-
-  this.startRoundFromNetwork(data);
  });
 
  // =========================
@@ -105,7 +107,7 @@ bindNetwork() {
  this.network.onGuess?.((data) => {
   this.applyExternalGuess(data);
  });
- 
+
  // =========================
  // ROUND COMPLETE
  // =========================
@@ -315,6 +317,9 @@ applyGuess(playerId, point) {
  this.handlePlayerFinished(playerId);
 }
 
+
+
+ 
 handlePlayerFinished(playerId) {
 
  this.finishedPlayers.add(playerId);
@@ -322,12 +327,17 @@ handlePlayerFinished(playerId) {
  this.emit("inputLocked");
 
  // =========================
- // CASE 1: ALL PLAYERS FINISHED
+ // ALL PLAYERS FINISHED → AUTHORITATIVE FINISH
  // =========================
  if (this.finishedPlayers.size >= this.game.players.length) {
 
   if (this.mode === "duel") {
-   this.network?.sendRoundComplete?.();
+   this.network?.updateGame?.({
+    round: {
+     ...this.game.getState().currentRound,
+     status: "finished"
+    }
+   });
   }
 
   this.finishRound("allFinished");
@@ -335,14 +345,13 @@ handlePlayerFinished(playerId) {
  }
 
  // =========================
- // CASE 2: FIRST PLAYER → WAITING STATE
+ // FIRST CLICK → WAITING STATE
  // =========================
  this.locked = true;
-
  this.emit("roundWaiting");
 
  // =========================
- // START DUEL TIMER IF NOT RUNNING
+ // START DUEL TIMER (ONLY ONCE)
  // =========================
  if (!this.roundLocked && this.mode === "duel") {
 
@@ -350,13 +359,25 @@ handlePlayerFinished(playerId) {
 
   this.roundTimer.start(
    10,
-   () => this.finishRound("duelTimeout"),
+   () => {
+    this.network?.updateGame?.({
+     round: {
+      ...this.game.getState().currentRound,
+      status: "finished"
+     }
+    });
+
+    this.finishRound("duelTimeout");
+   },
    (t) => this.emit("roundTimerTick", t)
   );
 
   this.emit("roundTimerStart");
  }
 }
+
+
+ 
 
  finishRound(reason = "manual") {
 
