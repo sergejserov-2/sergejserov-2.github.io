@@ -12,17 +12,20 @@ import { db } from "./firebaseApp.js";
 export class FirebaseRoomController {
  constructor() {
   this.db = db;
+
   this.roomId = null;
   this.roomRef = null;
 
+  // =========================
+  // SINGLE SOURCE LISTENER
+  // =========================
   this.listeners = {
-   players: [],
-   draftConfig: []
+   room: []
   };
  }
 
  // =========================
- // CREATE
+ // CREATE ROOM
  // =========================
  async createRoom(initialConfig = {}) {
   const roomsRef = ref(this.db, "rooms");
@@ -35,16 +38,23 @@ export class FirebaseRoomController {
    roomId: this.roomId,
 
    players: {
-    host: { connected: true, ready: false },
-    guest: { connected: false, ready: false }
+    host: {
+     connected: true,
+     ready: false
+    },
+    guest: {
+     connected: false,
+     ready: false
+    }
    },
+
+   draftConfig: initialConfig,
 
    game: {
     started: false,
-    config: null
-   },
-
-   draftConfig: initialConfig
+    config: null,
+    round: null
+   }
   });
 
   this.bind();
@@ -56,7 +66,7 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // JOIN
+ // JOIN ROOM
  // =========================
  async joinRoom(roomId) {
   this.roomId = roomId;
@@ -67,6 +77,7 @@ export class FirebaseRoomController {
 
   if (!room) throw new Error("Room not found");
 
+  // mark guest connected
   await update(this.roomRef, {
    "players/guest/connected": true
   });
@@ -77,78 +88,103 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // BIND
+ // STATE SUBSCRIPTION
  // =========================
  bind() {
   onValue(this.roomRef, (snap) => {
    const room = snap.val();
    if (!room) return;
 
-   this.listeners.players.forEach(cb =>
-    cb({
-     ...room.players,
-     game: room.game
-    })
-   );
-
-   this.listeners.draftConfig.forEach(cb =>
-    cb(room.draftConfig || {})
-   );
+   this.listeners.room.forEach(cb => cb(room));
   });
  }
 
  // =========================
- // STATE UPDATE
+ // LISTEN API
  // =========================
- setDraftConfig(cfg) {
-  return update(this.roomRef, { draftConfig: cfg });
+ onRoom(cb) {
+  this.listeners.room.push(cb);
  }
 
+ // =========================
+ // DRAFT CONFIG
+ // =========================
+ setDraftConfig(cfg) {
+  return update(this.roomRef, {
+   draftConfig: cfg
+  });
+ }
+
+ // =========================
+ // PLAYER READY
+ // =========================
  setGuestReady() {
   return update(this.roomRef, {
    "players/guest/ready": true
   });
  }
 
+ // =========================
+ // GAME CONTROL
+ // =========================
  startGame(config) {
-  return update(this.roomRef, {
+  const flat = {
    "game/started": true,
-   "game/config": config
+   "game/config": config,
+   "game/round": null
+  };
+
+  return update(this.roomRef, flat);
+ }
+
+ // =========================
+ // ROUND CONTROL
+ // =========================
+ setRound(round) {
+  const flat = {
+   "game/round": round
+  };
+
+  return update(this.roomRef, flat);
+ }
+
+ clearRound() {
+  return update(this.roomRef, {
+   "game/round": null
   });
  }
 
  // =========================
- // LISTEN
+ // SAFE GAME PATCH (IMPORTANT)
  // =========================
- onPlayers(cb) {
-  this.listeners.players.push(cb);
+ updateGame(patch) {
+  const flat = {};
+
+  for (const key in patch) {
+   flat[game/${key}] = patch[key];
+  }
+
+  return update(this.roomRef, flat);
  }
 
- onDraftConfig(cb) {
-  this.listeners.draftConfig.push(cb);
+ // =========================
+ // PLAYER PATCH HELPERS
+ // =========================
+ updatePlayer(playerId, patch) {
+  const flat = {};
+
+  for (const key in patch) {
+   flat[`players/${playerId}/${key}`] = patch[key];
+  }
+
+  return update(this.roomRef, flat);
  }
 
-// =========================
-// ROUND STATE
-// =========================
-setRound(round) {
- return update(this.roomRef, {
-  "game/round": round
- });
-}
-
-onRound(cb) {
- this.listeners.round ??= [];
-
- this.listeners.round.push(cb);
-
- onValue(ref(this.db, `rooms/${this.roomId}/game/round`), (snap) => {
-  cb(snap.val());
- });
-}
-
-
-
-
- 
+ // =========================
+ // RAW ACCESS
+ // =========================
+ async getRoom() {
+  const snap = await get(this.roomRef);
+  return snap.val();
+ }
 }
