@@ -80,7 +80,7 @@ bindNetwork() {
   const game = room?.game;
   if (!game) return;
 
-  const round = game.round;
+const round = this._networkRound || state.rounds.at(-1);
   if (!round) return;
 
   // ✅ ВСЕГДА сохраняем актуальный state
@@ -362,7 +362,7 @@ handlePlayerFinished(playerId, result) {
 
  this.emit("inputLocked");
 
- const round = this._networkRound || {};
+const round = this._networkRound || state.rounds.at(-1);
  const guesses = round.guesses || {};
 
  const nextGuesses = {
@@ -414,7 +414,7 @@ finishRound(reason = "manual") {
 
  const state = this.game.getState();
 
-const round = this._networkRound;
+const round = this._networkRound || state.rounds.at(-1);
 
  console.log("📊 FINAL ROUND DATA", round);
 
