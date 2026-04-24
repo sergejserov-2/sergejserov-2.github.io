@@ -110,12 +110,12 @@ export class GameFlow {
 
     const canStart =
      current.index != null &&
-     current.actual &&
+     current.actualLocation &&
      current.index !== this._currentRoundIndex;
 
     if (canStart) {
      this._currentRoundIndex = current.index;
-     this.startRoundWithLocation(current.actual);
+     this.startRoundWithLocation(current.actualLocation);
     }
    }
 
