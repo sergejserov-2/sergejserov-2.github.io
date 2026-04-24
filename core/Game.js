@@ -72,19 +72,4 @@ applyResult(result) {
  reset() {
   this.gameState.reset();
  }
-
-syncRoundFromNetwork(round) {
-
- if (!this.state || !this.state.currentRound) {
-  console.warn("⚠️ syncRoundFromNetwork skipped (no state yet)");
-  return;
- }
-
- const current = this.state.currentRound;
-
- current.guesses = round.guesses || {};
- current.initiator = round.initiator;
- current.status = round.status;
-}
- 
 }
