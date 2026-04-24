@@ -274,7 +274,7 @@ const start = document.getElementById("start");
 const link = document.getElementById("duelLink");
 
 // =========================
-// MODE SWITCH
+// MODE BUTTONS
 // =========================
 document.querySelectorAll("[data-mode]").forEach(btn => {
  btn.onclick = async () => {
@@ -285,50 +285,73 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
   btn.classList.add("active");
   mode = btn.dataset.mode;
 
-  // SOLO
+  // =========================
+  // SOLO MODE RESET UI
+  // =========================
   if (mode === "solo") {
    roomController = null;
+   redirected = false;
 
    start.textContent = "Начать игру";
    start.disabled = false;
 
    link.value = "";
    link.disabled = true;
+
    return;
   }
 
-  // DUEL
+  // =========================
+  // DUEL INIT
+  // =========================
   start.textContent = "Создание комнаты...";
   start.disabled = true;
 
   roomController = new FirebaseRoomController();
+
   const room = await roomController.createRoom(buildConfig());
 
   link.value = room.inviteLink;
   link.disabled = false;
 
-  roomController.onPlayers((players) => {
+  // =========================
+  // STATE LISTENER (NEW API)
+  // =========================
+  roomController.onRoom((roomState) => {
 
    if (redirected) return;
 
+   const players = roomState.players;
+   const game = roomState.game;
+
    const guestConnected = players?.guest?.connected;
    const guestReady = players?.guest?.ready;
-   const started = players?.game?.started;
+   const started = game?.started;
 
+   // =========================
+   // UI STATE: guest joined
+   // =========================
    if (guestConnected && !guestReady) {
     start.textContent = "Гость подключился";
+    start.disabled = true;
    }
 
+   // =========================
+   // UI STATE: guest ready
+   // =========================
    if (guestReady && !started) {
     start.textContent = "START GAME";
     start.disabled = false;
    }
 
-   if (started) {
+   // =========================
+   // GAME START → REDIRECT HOST
+   // =========================
+   if (started && !redirected) {
     redirected = true;
 
     window.location.href =
-     `/play.html?room=${room.roomId}&role=host`;
+     /play.html?room=${roomState.roomId}&role=host;
    }
   });
 
@@ -343,12 +366,78 @@ start.onclick = () => {
 
  if (mode === "duel") {
   start.disabled = true;
+
+  // state-driven start
   roomController.startGame(buildConfig());
+
   return;
  }
 
  localStorage.setItem("gameConfig", JSON.stringify(buildConfig()));
  window.location.href = "/play.html";
+};
+
+// =========================
+// AREA BUTTONS
+// =========================
+document.querySelectorAll("[data-area]").forEach(btn => {
+ btn.onclick = () => {
+  document.querySelectorAll("[data-area]")
+   .forEach(x => x.classList.remove("active"));
+
+  btn.classList.add("active");
+  area = btn.dataset.area;
+ };
+});
+
+// =========================
+// ROUNDS BUTTONS
+// =========================
+document.querySelectorAll("[data-rounds]").forEach(btn => {
+ btn.onclick = () => {
+  document.querySelectorAll("[data-rounds]")
+   .forEach(x => x.classList.remove("active"));
+
+  btn.classList.add("active");
+  rounds = +btn.dataset.rounds;
+ };
+});
+
+// =========================
+// TIMER TOGGLE
+// =========================
+document.getElementById("timeOn").onclick = () => {
+ timeEnabled = true;
+ timeInput.disabled = false;
+
+ document.getElementById("timeOn").classList.add("active");
+ document.getElementById("timeOff").classList.remove("active");
+};
+
+document.getElementById("timeOff").onclick = () => {
+ timeEnabled = false;
+ timeInput.disabled = true;
+document.getElementById("timeOff").classList.add("active");
+ document.getElementById("timeOn").classList.remove("active");
+};
+
+// =========================
+// MOVES TOGGLE
+// =========================
+document.getElementById("movesOn").onclick = () => {
+ movesEnabled = true;
+ movesInput.disabled = false;
+
+ document.getElementById("movesOn").classList.add("active");
+ document.getElementById("movesOff").classList.remove("active");
+};
+
+document.getElementById("movesOff").onclick = () => {
+ movesEnabled = false;
+ movesInput.disabled = true;
+
+ document.getElementById("movesOff").classList.add("active");
+ document.getElementById("movesOn").classList.remove("active");
 };
 </script>
 </body>
