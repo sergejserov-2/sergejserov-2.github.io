@@ -246,6 +246,7 @@ applyGuess(playerId, point) {
  if (!result) return;
 
  this.emit("guessResolved", result);
+  this.network.updateGuess(playerId, result);
 
  this.handlePlayerFinished(playerId, result);
 }
@@ -256,20 +257,19 @@ handlePlayerFinished(playerId, result) {
  const round = this.getCurrentRound();
  if (!round) return;
 
- const guesses = round.guesses || {};
-
- const nextGuesses = {
-  ...guesses,
+ const guesses = {
+  ...round.guesses,
   [playerId]: result
  };
 
  const next = this.normalizeRound({
   ...round,
-  guesses: nextGuesses
+  guesses
  });
 
  this.setCurrentRound(next);
 
+ // ❗️ host-only game rules (waiting/finish logic)
  if (!round.initiator) {
   this.updateRound({
    ...next,
