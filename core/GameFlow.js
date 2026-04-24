@@ -9,36 +9,18 @@ export class GameFlow {
   playerId = "p1"
  }) {
 
-  console.log("🧠 [GameFlow] constructor", {
-   mode,
-   playerId,
-   hasNetwork: !!network
-  });
-
-  // =========================
-  // CORE
-  // =========================
   this.game = game;
   this.generator = generator;
   this.area = area;
 
-  // =========================
-  // SERVICES
-  // =========================
   this.timer = services.timer;
   this.roundTimer = services.timer;
   this.moves = services.moves;
 
-  // =========================
-  // MODE
-  // =========================
   this.mode = mode;
   this.network = network;
   this.playerId = playerId;
 
-  // =========================
-  // STATE FLAGS
-  // =========================
   this.listeners = {};
 
   this.locked = false;
@@ -46,14 +28,8 @@ export class GameFlow {
   this._roundFinishing = false;
   this._timerStarted = false;
 
-  // =========================
-  // SINGLE SOURCE ROUND
-  // =========================
   this._currentRound = null;
 
-  // =========================
-  // NETWORK
-  // =========================
   this._resolveStreetViewReady = null;
 
   this.bindNetwork();
@@ -63,7 +39,9 @@ export class GameFlow {
  // EVENTS
  // =========================================================
  on(event, cb) {
-  if (!this.listeners[event]) this.listeners[event] = [];
+  if (!this.listeners[event]) {
+   this.listeners[event] = [];
+  }
   this.listeners[event].push(cb);
  }
 
@@ -77,7 +55,7 @@ export class GameFlow {
  }
 
  // =========================================================
- // ROUND STATE (SOURCE OF TRUTH)
+ // ROUND MODEL
  // =========================================================
  getCurrentRound() {
   return this._currentRound;
@@ -87,14 +65,23 @@ export class GameFlow {
   this._currentRound = this.normalizeRound(round);
  }
 
- normalizeRound(r = {}) {
+ normalizeRound(r) {
+  if (!r) {
+   return {
+    index: 0,
+    status: "running",
+    actualLocation: null,
+    initiator: null,
+    guesses: {}
+   };
+  }
+
   return {
-   index: r.index ?? 0,
-   status: r.status ?? "running",
-   actualLocation: r.actualLocation ?? r.location ?? null,
-   location: r.location ?? r.actualLocation ?? null,
-   initiator: r.initiator ?? null,
-   guesses: r.guesses ?? {}
+   index: r.index,
+   status: r.status,
+   actualLocation: r.actualLocation,
+   initiator: r.initiator,
+   guesses: r.guesses || {}
   };
  }
 
@@ -104,8 +91,6 @@ export class GameFlow {
  bindNetwork() {
   if (!this.network) return;
 
-  console.log("🌐 bindNetwork active");
-
   this.network.onRoom((room) => {
 
    const game = room.game;
@@ -113,8 +98,6 @@ export class GameFlow {
 
    const round = game.round;
    if (!round) return;
-
-   console.log("📡 [Network Round]", round);
 
    // =========================
    // GAME START
@@ -126,11 +109,27 @@ export class GameFlow {
    }
 
    // =========================
-   // APPLY NETWORK STATE
+   // SYNC ROUND (SOURCE OF TRUTH)
    // =========================
    this.setCurrentRound(round);
 
    const current = this.getCurrentRound();
+
+   // =========================
+   // GUARANTEED GUEST START
+   // =========================
+   if (this.playerId !== "p1") {
+
+    const canStart =
+     current.index !== this._currentRoundIndex &&
+     current.actualLocation;
+
+    if (canStart) {
+     this._currentRoundIndex = current.index;
+
+     this.startRoundWithLocation(current.actualLocation);
+    }
+   }
 
    // =========================
    // WAITING STATE
@@ -174,7 +173,7 @@ export class GameFlow {
     this.updateRound({ status: "finished" });
    }
 
-                      // =========================
+   // =========================
    // FINISH
    // =========================
    if (current.status === "finished" && !this._roundFinishing) {
@@ -191,15 +190,14 @@ export class GameFlow {
   if (this._started) return;
 
   this._started = true;
-
-  this.game.startGame();
+this.game.startGame();
   this.emit("gameStarted", this.game.getState());
 
   this.startRound();
  }
 
  // =========================================================
- // ROUND START
+ // ROUND START (HOST)
  // =========================================================
  async startRound() {
   this.lockRoundUI();
@@ -221,10 +219,6 @@ export class GameFlow {
   }
 
   this.startRoundWithLocation(location);
- }
-
- startRoundFromNetwork(round) {
-  this.startRoundWithLocation(round.actualLocation || round.location);
  }
 
  // =========================================================
@@ -275,10 +269,8 @@ export class GameFlow {
 
   const round = this.getCurrentRound();
 
-  const guesses = {
-   ...round.guesses,
-   [playerId]: result
-  };
+  const guesses = round.guesses;
+  guesses[playerId] = result;
 
   const next = this.normalizeRound({
    ...round,
@@ -316,7 +308,7 @@ export class GameFlow {
  // =========================================================
  // FINISH
  // =========================================================
- finishRound(reason = "manual") {
+ finishRound(reason) {
 
   if (this._roundFinishing) return;
 
@@ -357,7 +349,9 @@ export class GameFlow {
    this.locked = true;
    this.emit("movesLocked");
   }
- }// =========================================================
+ }
+
+ // =========================================================
  // STREET VIEW
  // =========================================================
  waitForStreetViewReady() {
