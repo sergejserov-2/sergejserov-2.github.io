@@ -32,36 +32,40 @@ export async function createDuelApp(config) {
  console.log("🟢 GAME APP BUILT");
 
  // =========================
- // STATE FLAG
+ // GUARD
  // =========================
- let startedOnce = false;
+ let started = false;
 
  // =========================
  // SINGLE SOURCE OF TRUTH
  // =========================
  room.onRoom((state) => {
+  if (!state) return;
+
+  const game = state.game;
+  if (!game) return;
 
   console.log("📡 ROOM STATE UPDATE", state);
 
-  const game = state.game;
-
-  if (!game) return;
-
   // =========================
-  // START CONDITION
+  // GAME START
   // =========================
-  if (game.started && !startedOnce) {
-   startedOnce = true;
+  if (game.started && !started) {
+   started = true;
 
    console.log("🔥 DUEL START TRIGGERED");
 
-   if (role === "host") {
-    gameFlow.startGame();
-   }
+   // ⚠️ ВАЖНО:
+   // одинаково для host и guest
+   gameFlow.startGameFromNetwork?.();
+  }
 
-   if (role === "guest") {
-    gameFlow.startGameFromNetwork?.();
-   }
+  // =========================
+  // ROUND SYNC
+  // =========================
+  if (game.round) {
+   // безопасный контракт: GameFlow сам решает host/guest
+   gameFlow.startRoundFromNetwork?.(game.round);
   }
  });
 
