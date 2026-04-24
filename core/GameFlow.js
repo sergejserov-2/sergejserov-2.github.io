@@ -87,69 +87,104 @@ export class GameFlow {
  // NETWORK BIND
  // =========================================================
  bindNetwork() {
-  if (!this.network) return;
+ if (!this.network) return;
 
-  this.network.onRoom?.((room) => {
-   const game = room?.game;
-   const round = game?.round;
+ console.log("🌐 bindNetwork active");
 
-   if (!round) return;
+ this.network.onRoom?.((room) => {
+  const game = room?.game;
+  if (!game) return;
 
-   this.setCurrentRound(round);
+  const round = game.round;
+  if (!round) return;
 
-   // START GAME
-   if (game.started && !this._started) {
-    this._started = true;
-    this.game.startGame();
-    this.emit("gameStarted", this.game.getState());
-   }
+  console.log("📡 [Network Round]", round);
 
-   // ROUND START FOR GUEST
-   if (
-    this.playerId !== "p1" &&
-    round.status === "running" &&
-    this._currentRound?.index !== round.index
-   ) {
-    this.startRoundFromNetwork(round);
-   }
+  // =========================
+  // GAME START
+  // =========================
+  if (game.started && !this._started) {
+   this._started = true;
 
-   // TIMER WAITING STATE
-   if (round.status === "waiting") {
+   this.game.startGame();
+   this.emit("gameStarted", this.game.getState());
+  }
+
+  // =========================
+  // ROUND START (GUEST)
+  // =========================
+  if (
+   this.playerId !== "p1" &&
+   round.location &&
+   round.status === "running" &&
+   this._currentRoundIndex !== round.index
+  ) {
+   console.log("📡 START ROUND FROM NETWORK (GUEST)");
+
+   this._currentRoundIndex = round.index;
+   this.startRoundFromNetwork(round);
+  }
+
+  // =========================
+  // WAITING STATE
+  // =========================
+  if (round.status === "waiting") {
+   const isInitiator = this.playerId === round.initiator;
+
+   if (isInitiator) {
+    this.locked = true;
     this.emit("roundWaiting");
-
-    if (!this._timerStarted) {
-     this._timerStarted = true;
-
-     this.roundTimer.start(
-      10,
-      () => {
-       if (this.playerId === "p1") {
-        this.updateRound({ status: "finished" });
-       }
-      },
-      (t) => this.emit("roundTimerTick", t)
-     );
-
-     this.emit("roundTimerStart");
-    }
    }
 
-   // AUTO FINISH
-   const guesses = round.guesses || {};
-   if (
-    this.playerId === "p1" &&
-    Object.keys(guesses).length >= this.game.players.length &&
-    round.status !== "finished"
-   ) {
-    this.updateRound({ status: "finished" });
-   }
+   if (!this._timerStarted) {
+    this._timerStarted = true;
 
-   // FINISH
-   if (round.status === "finished" && !this._roundFinishing) {
-    this.finishRoundFromState("network");
+    console.log("⏱️ START TIMER FROM NETWORK STATE");
+
+    this.roundTimer.start(
+     10,
+     () => {
+      console.log("⏱️ TIMER DONE → FINISH");
+
+      if (this.playerId === "p1") {
+       this.updateRound({ status: "finished" });
+      }
+     },
+     (t) => this.emit("roundTimerTick", t)
+    );
+
+    this.emit("roundTimerStart");
    }
-  });
- }
+  }
+
+  // =========================
+  // AUTO FINISH (ALL GUESSES)
+  // =========================
+  const guesses = round.guesses || {};
+  const guessCount = Object.keys(guesses).length;
+
+  if (
+   this.playerId === "p1" &&
+   round.status !== "finished" &&
+   guessCount >= this.game.players.length
+  ) {
+   console.log("🏁 ALL GUESSES → FINISH");
+
+   this.updateRound({ status: "finished" });
+  }
+
+  // =========================
+  // FINISH STATE
+  // =========================
+  if (round.status === "finished" && !this._roundFinishing) {
+   console.log("🏁 FINISH FROM NETWORK");
+
+   this._timerStarted = false;
+
+   this.finishRoundFromState("networkFinish");
+  }
+ });
+}
 
  // =========================================================
  // START GAME
