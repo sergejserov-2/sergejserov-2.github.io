@@ -98,9 +98,8 @@ bindNetwork() {
    this.emit("gameStarted", this.game.getState());
   }
 
-  this.setCurrentRound(round);
-
-  const current = this.getCurrentRound();
+this.setCurrentRound(round);
+const current = this.getRoundForUI();
   if (!current) return;
 
   // =========================
@@ -277,19 +276,20 @@ handlePlayerFinished(playerId, result) {
  });
 }
 
- updateRound(patch) {
-  if (this.playerId !== "p1") return;
-  if (!this.network?.setRound) return;
+updateRound(patch) {
+ if (this.playerId !== "p1") return;
+ if (!this.network?.setRound) return;
 
-  const next = this.normalizeRound({
-   ...this.getCurrentRound(),
-   ...patch
-  });
+ const base = this.getCurrentRound() || {};
 
-  this.setCurrentRound(next);
+ const next = this.normalizeRound({
+  ...base,
+  ...patch
+ });
 
-  this.network.setRound(next);
- }
+ this.setCurrentRound(next);
+ this.network.setRound(next);
+}
 
  // FINISH
  finishRound(reason) {
@@ -347,4 +347,35 @@ handlePlayerFinished(playerId, result) {
  finishGuess(point) {
   return this.applyGuess(this.playerId, point);
  }
+
+
+
+
+getRoundForUI() {
+ const r = this.getCurrentRound();
+
+ if (!r) {
+  return {
+   index: 0,
+   status: "running",
+   actual: null,
+   guesses: {}
+  };
+ }
+
+ return {
+  index: r.index ?? 0,
+  status: r.status ?? "running",
+  actual: r.actualLocation ?? null,
+  guesses: r.guesses ?? {}
+ };
+}
+
+ emitUI(event, data) {
+ this.emit(event, data);
+}
+
+
+
+ 
 }
