@@ -106,6 +106,103 @@ bindNetwork() {
   this.applyExternalGuess(data);
  });
 
+
+applyGuess(playerId, point) {
+ if (this.roundLocked) return;
+
+ const result = this.game.setGuess(playerId, point);
+ if (!result) return;
+
+ this.game.applyResult(result);
+
+ this.emit("guessResolved", result);
+
+ this.handlePlayerFinished(playerId);
+}
+
+handlePlayerFinished(playerId) {
+
+ this.finishedPlayers.add(playerId);
+
+ this.emit("inputLocked");
+
+ // =========================
+ // CASE 1: ALL PLAYERS FINISHED
+ // =========================
+ if (this.finishedPlayers.size >= this.game.players.length) {
+
+  if (this.mode === "duel") {
+   this.network?.sendRoundComplete?.();
+  }
+
+  this.finishRound("allFinished");
+  return;
+ }
+
+ // =========================
+ // CASE 2: FIRST PLAYER → WAITING STATE
+ // =========================
+ this.locked = true;
+
+ this.emit("roundWaiting");
+
+ // =========================
+ // START DUEL TIMER IF NOT RUNNING
+ // =========================
+ if (!this.roundLocked && this.mode === "duel") {
+
+  this.roundLocked = true;
+
+  this.roundTimer.start(
+   10,
+   () => this.finishRound("duelTimeout"),
+   (t) => this.emit("roundTimerTick", t)
+  );
+
+  this.emit("roundTimerStart");
+ }
+}
+
+ finishRound(reason = "manual") {
+
+ if (this._roundFinishing) return;
+ this._roundFinishing = true;
+
+ this.timer.clear();
+ this.roundTimer.clear();
+
+ this.locked = true;
+ this.roundLocked = false;
+ this.finishedPlayers.clear();
+
+ const state = this.game.getState();
+
+ const isLast =
+  state.rounds.length >= this.game.config.rules.rounds;
+
+ this.emit("roundResultShown", { state, reason });
+
+ if (isLast) {
+  this.game.endGame();
+  this.emit("gameEnded", state);
+ }
+
+ this._roundFinishing = false;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
  // =========================
  // ROUND COMPLETE
  // =========================
