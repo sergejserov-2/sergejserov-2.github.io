@@ -92,6 +92,49 @@ emit(event, data) {
   };
  }
 
+validateRoundForNetwork(round) {
+ if (!round) {
+  throw new Error("ROUND INVALID: round is null");
+ }
+
+ if (round.index == null) {
+  throw new Error("ROUND INVALID: missing index");
+ }
+
+ if (!round.status) {
+  throw new Error("ROUND INVALID: missing status");
+ }
+
+ if (!round.actualLocation) {
+  throw new Error("ROUND INVALID: missing actualLocation");
+ }
+
+ if (!round.guesses) {
+  round.guesses = {};
+ }
+
+ // КЛЮЧЕВО: Firebase НЕ принимает undefined
+ if (round.initiator === undefined) {
+  round.initiator = null;
+ }
+
+ return {
+  index: round.index,
+  status: round.status,
+  actualLocation: round.actualLocation,
+  guesses: round.guesses,
+  initiator: round.initiator
+ };
+}
+
+
+
+
+
+
+
+
+ 
  // =========================================================
  bindNetwork() {
   if (!this.network) return;
@@ -287,15 +330,19 @@ emit(event, data) {
   });
  }
 
- updateRound(patch) {
-  if (this.playerId !== "p1") return;
-  if (!this.network.setRound) return;
+updateRound(patch) {
+ if (this.playerId !== "p1") return;
+ if (!this.network?.setRound) return;
 
-  this.network.setRound({
-   ...this.getCurrentRound(),
-   ...patch
-  });
- }
+ const merged = {
+  ...this.getCurrentRound(),
+  ...patch
+ };
+
+ const safeRound = this.validateRoundForNetwork(merged);
+
+ this.network.setRound(safeRound);
+}
 
  // =========================================================
  finishRound(reason = "manual") {
