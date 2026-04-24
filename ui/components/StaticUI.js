@@ -40,17 +40,12 @@ export class StaticUI {
  // =========================
 
  showRoundResult(vm = {}) {
-  console.log("🧾 [StaticUI] showRoundResult CALLED", vm);
-
   const root = this.roundRoot;
   if (!root) return;
 
   const container = root.querySelector(".players-score");
 
-  // vm.round уже НОРМАЛИЗОВАН в UIBuilder
   const guesses = vm.guesses || [];
-
-  console.log("🧾 guesses parsed:", guesses);
 
   this.renderPlayerBars(container, guesses);
  }
@@ -77,6 +72,10 @@ export class StaticUI {
 
   this.stopRoundDelay();
  }
+
+ // =========================
+ // PLAYER BARS
+ // =========================
 
  renderPlayerBars(container, list = []) {
   if (!container) return;
@@ -138,5 +137,46 @@ export class StaticUI {
   });
 
   container.appendChild(wrap);
+ }
+
+ // =========================
+ // TIMER BAR
+ // =========================
+
+startRoundDelay(duration, onFinish) {
+  this.stopRoundDelay();
+
+  const bar = this.roundRoot?.querySelector(".round-timer-bar");
+  if (!bar) return;
+
+  bar.style.transition = "none";
+  bar.style.transform = "scaleX(1)";
+
+  const start = performance.now();
+
+  const animate = (now) => {
+   const progress = Math.max(0, 1 - (now - start) / duration);
+
+   bar.style.transform = `scaleX(${progress})`;
+
+   if (progress > 0) {
+    this.delayFrame = requestAnimationFrame(animate);
+   } else {
+    this.stopRoundDelay();
+    onFinish?.();
+   }
+  };
+
+  this.delayFrame = requestAnimationFrame(animate);
+ }
+
+ stopRoundDelay() {
+  if (this.delayFrame) {
+   cancelAnimationFrame(this.delayFrame);
+   this.delayFrame = null;
+  }
+
+  const bar = this.roundRoot?.querySelector(".round-timer-bar");
+  if (bar) bar.style.transform = "scaleX(0)";
  }
 }
