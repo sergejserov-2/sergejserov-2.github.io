@@ -190,24 +190,6 @@ bindNetwork() {
   this.startRound();
  }
 
- startGameFromNetwork() {
-  console.log("🌐 [GameFlow] startGameFromNetwork ENTER", {
-   playerId: this.playerId
-  });
-
-  if (this._started) {
-   console.log("🌐 [GameFlow] already started EXIT");
-   return;
-  }
-
-  this._started = true;
-
-  console.log("🌐 [GameFlow] game.startGame()");
-  this.game.startGame();
-
-  console.log("🌐 [GameFlow] emit gameStarted");
-  this.emit("gameStarted", this.game.getState());
- }
 
  // =========================================================
  // ROUND START
