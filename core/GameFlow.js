@@ -75,6 +75,7 @@ bindNetwork() {
  console.log("🌐 bindNetwork active");
 
  this.network.onRoom?.((room) => {
+
   const game = room?.game;
   if (!game) return;
 
@@ -92,7 +93,7 @@ bindNetwork() {
   }
 
   // =========================
-  // ROUND START (guest sync)
+  // ROUND START (guest)
   // =========================
   if (
    this.playerId !== "p1" &&
@@ -105,54 +106,103 @@ bindNetwork() {
   }
 
   // =========================
-  // WAITING STATE
+  // SYNC GUESSES (CRITICAL)
+  // =========================
+  const state = this.game.getState();
+  if (state.currentRound) {
+   state.currentRound.guesses = round.guesses || {};
+  }
+
+  // =========================
+  // HOST STATE MACHINE
+  // =========================
+  if (this.playerId === "p1") {
+
+   const guesses = round.guesses || {};
+   const guessCount = Object.keys(guesses).length;
+   const playersCount = this.game.players.length;
+
+   // FIRST GUESS → WAITING
+   if (
+    guessCount === 1 &&
+    round.status === "running"
+   ) {
+    console.log("➡️ HOST → WAITING");
+
+    this.updateRound({
+     ...round,
+     status: "waiting",
+     initiator: Object.keys(guesses)[0]
+    });
+   }
+
+   // TIMER START
+   if (round.status === "waiting" && !this._timerStarted) {
+
+    this._timerStarted = true;
+
+    this.roundTimer.start(
+     10,
+     () => {
+      console.log("⏱ HOST TIMER → FINISH");
+
+      this.updateRound({
+       ...round,
+       status: "finished"
+      });
+     },
+     (t) => this.emit("roundTimerTick", t)
+    );
+
+    this.emit("roundTimerStart");
+   }
+
+   // ALL GUESSES → FINISH
+   if (
+    guessCount >= playersCount &&
+    round.status !== "finished"
+   ) {
+    console.log("🏁 HOST → FINISHED");
+
+    this.updateRound({
+     ...round,
+     status: "finished"
+    });
+   }
+  }
+
+  // =========================
+  // WAITING UI
   // =========================
   if (round.status === "waiting") {
+
    const isInitiator = this.playerId === round.initiator;
 
    if (isInitiator) {
     this.locked = true;
     this.emit("roundWaiting");
    }
-
-this.roundTimer.start(
- 10,
- () => {
-  console.log("⏱ TIMER → FINISH");
-
-  this.updateRound({
-   status: "finished"
-  });
- },
- (t) => this.emit("roundTimerTick", t)
-);
   }
 
   // =========================
-  // AUTO FINISH CONDITION (ВАЖНО)
-  // =========================
-  const guesses = round.guesses || {};
-  const guessCount = Object.keys(guesses).length;
-
-  if (
-   round.status !== "finished" &&
-   guessCount >= this.game.players.length
-  ) {
-   this.updateRound({
-    status: "finished"
-   });
-  }
-
-  // =========================
-  // FINISH STATE
+  // FINISH
   // =========================
   if (round.status === "finished" && !this._roundFinishing) {
+
    this._timerStarted = false;
+
    this.finishRoundFromState("networkFinish");
   }
  });
 }
 
+
+
+
+
+
+
+ 
  // =========================================================
  // GAME START
  // =========================================================
@@ -286,22 +336,23 @@ applyGuess(playerId, point) {
  this.handlePlayerFinished(playerId, result);
 }
 
-updateRound(patch) {
+
+ 
+updateRound(round) {
  if (!this.network?.setRound) return;
 
- const state = this.game.getState();
- const current = state.currentRound || {};
+ if (this.playerId !== "p1") {
+  console.log("🚫 skip updateRound (not host)");
+  return;
+ }
 
- const updated = {
-  ...current,
-  ...patch
- };
+ console.log("📡 HOST setRound", round);
 
- console.log("📡 setRound", updated);
-
- this.network.setRound(updated);
+ this.network.setRound(round);
 }
- 
+
+
+
 handlePlayerFinished(playerId, result) {
 
  this.emit("inputLocked");
@@ -315,50 +366,13 @@ handlePlayerFinished(playerId, result) {
   [playerId]: result
  };
 
- const guessCount = Object.keys(nextGuesses).length;
- const playersCount = this.game.players.length;
+ console.log("📡 send guess", playerId);
 
- // =========================
- // FIRST GUESS → WAITING
- // =========================
- if (!current.status || current.status === "running") {
-
-  console.log("➡️ FIRST GUESS → WAITING");
-
-  this.locked = true;
-
-  this.updateRound({
-   status: "waiting",
-   initiator: playerId,
-   guesses: nextGuesses
-  });
-
-  return;
- }
-
- // =========================
- // SECOND GUESS → FINISHED
- // =========================
- if (guessCount >= playersCount) {
-
-  console.log("🏁 ALL GUESSES → FINISHED");
-
-  this.updateRound({
-   status: "finished",
-   guesses: nextGuesses
-  });
-
-  return;
- }
-
- // =========================
- // OTHERWISE → JUST SYNC
- // =========================
- this.updateRound({
+ this.network?.setRound({
+  ...current,
   guesses: nextGuesses
  });
 }
-
  
 
 
@@ -372,13 +386,18 @@ finishRound(reason = "manual") {
  this.roundTimer.clear();
 
  this.locked = true;
- this.roundLocked = false;
-
- this._timerStarted = false;
 
  const state = this.game.getState();
 
- this.emit("roundResultShown", { state, reason });
+ // ❗ ГАРАНТИЯ: все guesses уже в state.currentRound
+ const round = state.currentRound;
+
+ console.log("📊 FINAL ROUND DATA", round);
+
+ this.emit("roundResultShown", {
+  state,
+  round // 👈 ВАЖНО: передаем полный раунд
+ });
 
  if (state.rounds.length >= this.game.config.rules.rounds) {
   this.game.endGame();
@@ -388,6 +407,8 @@ finishRound(reason = "manual") {
  this._currentRoundIndex = null;
  this._roundFinishing = false;
 }
+
+
 
 
 
