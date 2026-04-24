@@ -20,8 +20,6 @@ export class MapOverviewUI {
  }
 
  async render(round) {
-  console.log("🗺 [MapOverviewUI] render CALLED", round);
-
   if (!this.map || !round) return;
 
   await this.adapter.waitReady(this.map);
@@ -33,12 +31,10 @@ export class MapOverviewUI {
 
   const actualColor = this.uiBuilder.getActualColor();
 
-  // ✅ теперь ВСЕГДА массив нормализованных точек
   const guesses = round.guesses || [];
 
   const points = [actual];
 
-  // если нет догадок — просто точка
   if (!guesses.length) {
    this.markers.push(
     this.adapter.createMarker(this.map, actual, {
