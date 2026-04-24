@@ -86,40 +86,49 @@ bindNetwork() {
 
  console.log("🌐 bindNetwork active");
 
- // =========================
- // GUESS FROM GUEST → HOST
- // =========================
- if (this.network.onGuess) {
-  this.network.onGuess((data) => {
-   if (this.playerId !== "p1") return;
-
-   const { playerId, result } = data || {};
-   if (!playerId || !result) return;
-
-   this.handlePlayerFinished(playerId, result);
-  });
- }
-
  this.network.onRoom((room) => {
+
+  // =========================
+  // HARD GUARD (Firebase safety)
+  // =========================
+  if (!room || !room.game) return;
+
   const game = room.game;
-  if (!game) return;
+  const rawRound = game.round;
 
-  const round = game.round;
-  if (!round) return;
+  // 🔒 защита от null / undefined / partial
+  if (!rawRound) return;
 
+  const round = this.normalizeRound(rawRound);
+
+  console.log("📡 [Network Round Safe]", round);
+
+  // =========================
+  // GAME START
+  // =========================
   if (game.started && !this._started) {
    this._started = true;
+
    this.game.startGame();
    this.emit("gameStarted", this.game.getState());
   }
 
-  const current = this.getCurrentRound();
+  // =========================
+  // SAFE CURRENT ROUND SET
+  // =========================
   this.setCurrentRound(round);
+  const current = this.getCurrentRound();
 
+  // =========================
+  // GUEST AUTO START SAFETY
+  // =========================
   if (this.playerId !== "p1") {
+
    const canStart =
-    current.index !== this._currentRoundIndex &&
-    current.actualLocation;
+    current &&
+    current.index != null &&
+    current.actualLocation &&
+    current.index !== this._currentRoundIndex;
 
    if (canStart) {
     this._currentRoundIndex = current.index;
@@ -129,11 +138,16 @@ bindNetwork() {
     this.startRoundWithLocation(current.actualLocation);
    }
   }
+
+  // =========================
+  // WAITING STATE
+  // =========================
   if (current.status === "waiting") {
 
    const isInitiator = this.playerId === current.initiator;
 
    if (isInitiator) {
+    this.locked = true;
     this.emit("roundWaiting");
    }
 
@@ -154,7 +168,11 @@ bindNetwork() {
    }
   }
 
-  const guessCount = Object.keys(current.guesses).length;
+  // =========================
+  // AUTO FINISH (SAFE GUARD)
+  // =========================
+  const guesses = current.guesses || {};
+  const guessCount = Object.keys(guesses).length;
 
   if (
    this.playerId === "p1" &&
@@ -164,10 +182,14 @@ bindNetwork() {
    this.updateRound({ status: "finished" });
   }
 
+  // =========================
+  // FINISH STATE
+  // =========================
   if (current.status === "finished" && !this._roundFinishing) {
    this._timerStarted = false;
    this.finishRoundFromState("networkFinish");
   }
+
  });
 }
 
