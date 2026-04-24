@@ -47,7 +47,8 @@ export class GameFlow {
   this.finishedPlayers = new Set();
 
   this._started = false;
-  this._roundFinishing = false;
+this._currentRoundIndex = null;
+this._roundFinishing = false;
   this._finished = false;
   
   this._resolveRoundStart = null;
@@ -75,52 +76,90 @@ bindNetwork() {
 
  console.log("🌐 [GameFlow] bindNetwork active");
 
- // =========================
- // ROUND STATE SYNC (CRITICAL FIX)
- // =========================
  this.network.onRoom?.((room) => {
 
-  const round = room?.game?.round;
+  const game = room?.game;
+  if (!game) return;
+
+  const round = game.round;
   if (!round) return;
 
-  // HOST → ignore (already authoritative)
-  if (this.playerId !== "p1") {
+  // =========================
+  // GAME START (STATE DRIVEN)
+  // =========================
+  if (game.started && !this._started) {
+   this._started = true;
 
-   // =========================
-   // START ROUND
-   // =========================
-   if (round.location && round.status !== "finished") {
+   console.log("🚀 [GameFlow] GAME START (STATE)");
+
+   this.game.startGame();
+   this.emit("gameStarted", this.game.getState());
+  }
+
+  // =========================
+  // ROUND START (STATE DRIVEN)
+  // =========================
+  if (
+   this.playerId !== "p1" &&
+   round.location &&
+   round.status !== "finished"
+  ) {
+
+   const roundIndex = round.index;
+
+   // guard against duplicate triggers
+   if (this._currentRoundIndex !== roundIndex) {
+
+    console.log("🎯 [GameFlow] ROUND START FROM STATE", {
+     roundIndex,
+     playerId: this.playerId
+    });
+
+    this._currentRoundIndex = roundIndex;
+
+    // 👉 HERE IS THE ACTUAL CALL
     this.startRoundFromNetwork(round);
    }
+  }
 
-   // =========================
-   // END ROUND SYNC (FIX)
-   // =========================
-    if (round.status === "finished" && !this._finished) {
-     this.finishRound("networkFinish");
-    }
+  // =========================
+  // ROUND FINISH (STATE DRIVEN)
+  // =========================
+  if (
+   round.status === "finished" &&
+   !this._roundFinishing
+  ) {
+
+   console.log("🏁 [GameFlow] ROUND FINISH FROM STATE");
+
+   this.finishRound("networkFinish");
   }
  });
 
  // =========================
- // GUESSES
+ // GUESSES SYNC
  // =========================
  this.network.onGuess?.((data) => {
   this.applyExternalGuess(data);
  });
 
  // =========================
- // ROUND COMPLETE
+ // ROUND COMPLETE SYNC (optional legacy)
  // =========================
  this.network.onRoundComplete?.(() => {
-  this.syncRoundComplete();
+  this.syncRoundComplete?.();
  });
 
  // =========================
- // GAME START
+ // GAME START LEGACY FALLBACK
  // =========================
  this.network.onStart?.(() => {
-  this.startGameFromNetwork();
+  if (!this._started) {
+   this._started = true;
+
+   this.game.startGame();
+   this.emit("gameStarted", this.game.getState());
+  }
  });
 }
 
@@ -378,14 +417,11 @@ handlePlayerFinished(playerId) {
 }
 
 
- 
+finishRound(reason = "manual") {
 
- finishRound(reason = "manual") {
-
- if (this._roundFinishing || this._finished) return;
+ if (this._roundFinishing) return;
 
  this._roundFinishing = true;
- this._finished = true;
 
  this.timer.clear();
  this.roundTimer.clear();
@@ -406,6 +442,10 @@ handlePlayerFinished(playerId) {
   this.emit("gameEnded", state);
  }
 
+ // =========================
+ // RESET ROUND STATE (CRITICAL)
+ // =========================
+ this._currentRoundIndex = null;
  this._roundFinishing = false;
 }
 
