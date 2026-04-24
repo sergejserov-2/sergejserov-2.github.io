@@ -85,6 +85,7 @@ bindNetwork() {
 
   // ✅ ВСЕГДА сохраняем актуальный state
   this._networkRound = round;
+  this.game.syncRoundFromNetwork(round);
 
   // =========================
   // GAME START
