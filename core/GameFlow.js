@@ -30,6 +30,8 @@ export class GameFlow {
   this._resolveStreetViewReady = null;
   this._resolveRoundStart = null;
 
+  this._pendingRoundLocation = null; // 🔥 FIX
+
   this._roundFinishing = false;
   this._started = false;
 
@@ -67,7 +69,7 @@ export class GameFlow {
  }
 
  // =========================
- // START (ЕДИНАЯ ТОЧКА)
+ // START
  // =========================
  start({ role }) {
   if (this._started) return;
@@ -113,6 +115,8 @@ export class GameFlow {
   if (this.playerId === "p1") {
    const location = await this.generator.generate(this.area);
 
+   console.log("📡 SEND ROUND", location);
+
    this.network?.sendRoundStarted?.({ location });
 
    return this.startRoundWithLocation(location);
@@ -120,11 +124,28 @@ export class GameFlow {
 
   // GUEST
   const location = await this.waitForRoundFromNetwork();
+
   return this.startRoundWithLocation(location);
  }
 
+ // =========================
+ // 🔥 FIX: BUFFERED WAIT
+ // =========================
  waitForRoundFromNetwork() {
-  return new Promise(res => {
+  return new Promise((res) => {
+
+   // если уже пришло раньше
+   if (this._pendingRoundLocation) {
+    const loc = this._pendingRoundLocation;
+
+    this._pendingRoundLocation = null;
+
+    console.log("📦 USE PENDING ROUND", loc);
+
+    res(loc);
+    return;
+   }
+
    this._resolveRoundStart = res;
   });
  }
@@ -132,10 +153,23 @@ export class GameFlow {
  startRoundFromNetwork({ location }) {
   if (this.playerId === "p1") return;
 
-  this._resolveRoundStart?.(location);
+  console.log("📥 ROUND RECEIVED", location);
+
+  // если ещё не ждём — сохраняем
+  if (!this._resolveRoundStart) {
+   console.log("📦 STORE PENDING ROUND");
+
+   this._pendingRoundLocation = location;
+   return;
+  }
+
+  this._resolveRoundStart(location);
   this._resolveRoundStart = null;
  }
 
+ // =========================
+ // ROUND START
+ // =========================
  async startRoundWithLocation(location) {
   console.log("🌍 ROUND START", location);
 
@@ -161,7 +195,7 @@ export class GameFlow {
   this.emit("roundStarted", this.game.getState());
  }
 
- // =========================
+// =========================
  // STREET VIEW
  // =========================
  waitForStreetViewReady() {
@@ -195,6 +229,7 @@ export class GameFlow {
  // =========================
  finishGuess(point) {
   if (this.locked || this.roundLocked) return;
+
   const payload = {
    playerId: this.playerId,
    guess: point
