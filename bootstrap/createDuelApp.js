@@ -1,5 +1,5 @@
 import { FirebaseRoomController } from "../server/FirebaseRoomController.js";
-import { buildGameApp } from "./buildGameApp.js";
+import { buildGameApp } from "./shared/buildGameApp.js";
 
 export async function createDuelApp(config) {
  console.log("🟢 [DUEL] INIT");
