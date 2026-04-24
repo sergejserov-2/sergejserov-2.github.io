@@ -48,7 +48,8 @@ export class GameFlow {
 
   this._started = false;
   this._roundFinishing = false;
-
+  this._finished = false;
+  
   this._resolveRoundStart = null;
   this._pendingRoundLocation = null;
 
@@ -95,9 +96,9 @@ bindNetwork() {
    // =========================
    // END ROUND SYNC (FIX)
    // =========================
-   if (round.status === "finished") {
-    this.finishRound("networkFinish");
-   }
+    if (round.status === "finished" && !this._finished) {
+     this.finishRound("networkFinish");
+    }
   }
  });
 
@@ -381,8 +382,10 @@ handlePlayerFinished(playerId) {
 
  finishRound(reason = "manual") {
 
- if (this._roundFinishing) return;
+ if (this._roundFinishing || this._finished) return;
+
  this._roundFinishing = true;
+ this._finished = true;
 
  this.timer.clear();
  this.roundTimer.clear();
@@ -405,7 +408,6 @@ handlePlayerFinished(playerId) {
 
  this._roundFinishing = false;
 }
-
 
 
 
