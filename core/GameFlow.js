@@ -85,7 +85,7 @@ bindNetwork() {
 
   // ✅ ВСЕГДА сохраняем актуальный state
   this._networkRound = round;
-  this.game.syncRoundFromNetwork(round);
+  this.syncRoundFromNetwork(round);
 
   // =========================
   // GAME START
@@ -269,6 +269,47 @@ async startRoundWithLocation(location) {
 
  this.emit("roundStarted", this.game.getState());
 }
+
+
+
+
+
+
+
+
+
+
+
+syncRoundFromNetwork(round) {
+ if (!this.game) return;
+
+ const state = this.game.getState?.();
+
+ if (!state) return;
+
+ if (!state.currentRound) {
+  state.currentRound = {
+   guesses: {},
+   initiator: null,
+   status: null
+  };
+ }
+
+ state.currentRound.guesses = round.guesses || {};
+ state.currentRound.initiator = round.initiator;
+ state.currentRound.status = round.status;
+}
+
+
+
+
+
+
+
+
+
+
+
 
  
 // =========================
