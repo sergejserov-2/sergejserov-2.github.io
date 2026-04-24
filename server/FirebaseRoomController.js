@@ -161,7 +161,7 @@ export class FirebaseRoomController {
   const flat = {};
 
   for (const key in patch) {
-   flat[game/${key}] = patch[key];
+   flat[`game/${key}`] = patch[key];
   }
 
   return update(this.roomRef, flat);
