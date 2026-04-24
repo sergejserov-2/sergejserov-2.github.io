@@ -69,34 +69,57 @@ export class GameFlow {
  }
 
  // =========================================================
- bindNetwork() {
-  if (!this.network) {
-   console.log("🌐 [GameFlow] no network");
-   return;
+bindNetwork() {
+ if (!this.network) return;
+
+ console.log("🌐 [GameFlow] bindNetwork active");
+
+ // =========================
+ // HOST → GUEST ROUND SYNC (FIX)
+ // =========================
+ this.network.onRoom?.((room) => {
+  const round = room?.game?.round;
+
+  if (!round?.location) return;
+
+  console.log("🌍 [GameFlow] ROOM ROUND UPDATE", round);
+
+  // ❗ важно: только guest реагирует
+  if (this.playerId !== "p1") {
+   this.startRoundFromNetwork(round);
   }
+ });
 
-  console.log("🌐 [GameFlow] bindNetwork active");
+ // =========================
+ // ROUND START SIGNAL (legacy / optional)
+ // =========================
+ this.network.onRoundStarted?.((data) => {
+  console.log("🌐 [GameFlow] onRoundStarted", data);
 
-  this.network.onRoundStarted?.((data) => {
-   console.log("🌐 [GameFlow] network roundStarted", data);
-   this.startRoundFromNetwork(data);
-  });
+  this.startRoundFromNetwork(data);
+ });
 
-  this.network.onGuess?.((data) => {
-   console.log("🌐 [GameFlow] network guess", data);
-   this.applyExternalGuess(data);
-  });
+ // =========================
+ // GUESSES
+ // =========================
+ this.network.onGuess?.((data) => {
+  this.applyExternalGuess(data);
+ });
 
-  this.network.onRoundComplete?.(() => {
-   console.log("🌐 [GameFlow] network roundComplete");
-   this.syncRoundComplete();
-  });
+ // =========================
+ // ROUND COMPLETE
+ // =========================
+ this.network.onRoundComplete?.(() => {
+  this.syncRoundComplete();
+ });
 
-  this.network.onStart?.(() => {
-   console.log("🌐 [GameFlow] network START event");
-   this.startGameFromNetwork();
-  });
- }
+ // =========================
+ // GAME START
+ // =========================
+ this.network.onStart?.(() => {
+  this.startGameFromNetwork();
+ });
+}
 
  // =========================================================
  // GAME START
