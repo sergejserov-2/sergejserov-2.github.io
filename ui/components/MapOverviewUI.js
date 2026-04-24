@@ -19,8 +19,21 @@ export class MapOverviewUI {
   });
  }
 
- async render(round) {
-  if (!this.map || !round) return;
+async render(round) {
+  console.log("🗺️ [MapOverviewUI] render CALLED", round);
+
+  if (!this.map) {
+    console.log("❌ map missing");
+    return;
+  }
+
+  if (!round) {
+    console.log("❌ round missing");
+    return;
+  }
+
+  console.log("🗺️ actualLocation:", round.actualLocation);
+  console.log("🗺️ guesses RAW:", round.guesses);
 
   await this.adapter.waitReady(this.map);
 
