@@ -126,4 +126,11 @@ export class FirebaseRoomController {
    "game/round": round
   });
  }
+ 
+ updateGuess(playerId, result) {
+ return update(this.roomRef, {
+  [game/round/guesses/${playerId}]: result
+ });
+}
+ 
 }
