@@ -67,9 +67,14 @@ export class GameFlow {
   this.listeners[event].push(cb);
  }
 
- emit(event, data) {
-  this.listeners[event].forEach(cb => cb(data));
- }
+emit(event, data) {
+  const cbs = this.listeners[event];
+  if (!cbs) return;
+
+  for (let i = 0; i < cbs.length; i++) {
+    cbs[i](data);
+  }
+}
 
  // =========================================================
  getCurrentRound() {
