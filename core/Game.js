@@ -72,4 +72,15 @@ applyResult(result) {
  reset() {
   this.gameState.reset();
  }
+
+syncRoundFromNetwork(round) {
+ const current = this.state.currentRound;
+
+ if (!current) return;
+
+ current.guesses = round.guesses || {};
+ current.initiator = round.initiator;
+ current.status = round.status;
+}
+ 
 }
