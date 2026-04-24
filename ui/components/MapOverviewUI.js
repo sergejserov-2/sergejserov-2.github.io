@@ -47,18 +47,21 @@ const guesses = round.guesses
    return;
   }
 
-  for (const g of guesses) {
-   const color = this.uiBuilder.getPlayerColor(g.playerId);
+for (const g of guesses) {
 
-   this.markers.push(
-    this.adapter.createMarker(this.map, g, {
-     color,
-     scale: 1
-    })
-   );
+ const point = g.guess || g;
 
-   points.push(g);
-  }
+ const color = this.uiBuilder.getPlayerColor(g.playerId);
+
+ this.markers.push(
+  this.adapter.createMarker(this.map, point, {
+   color,
+   scale: 1
+  })
+ );
+
+ points.push(point);
+}
 
   this.fitToAll(points);
 
@@ -66,14 +69,14 @@ const guesses = round.guesses
 
   for (const g of guesses) {
    const color = this.uiBuilder.getPlayerColor(g.playerId);
-
+const point = g.guess || g;
    await this.adapter.animateLine(
-    this.map,
-    g,
-    actual,
-    color,
-    actualColor
-   );
+ this.map,
+ point,
+ actual,
+ color,
+ actualColor
+);
   }
 
   this.markers.push(
