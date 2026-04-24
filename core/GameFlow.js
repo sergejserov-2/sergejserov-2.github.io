@@ -8,18 +8,31 @@ export class GameFlow {
   network = null,
   playerId = "p1"
  }) {
+
+  // =========================
+  // CORE DOMAIN
+  // =========================
   this.game = game;
   this.generator = generator;
   this.area = area;
 
+  // =========================
+  // SERVICES (НЕ ТЕРЯЕМ)
+  // =========================
   this.timer = services.timer;
-  this.moves = services.moves;
   this.roundTimer = services.timer;
+  this.moves = services.moves;
 
+  // =========================
+  // MODE / NETWORK
+  // =========================
   this.mode = mode;
-  this.network = network; // теперь = roomController
+  this.network = network;
   this.playerId = playerId;
 
+  // =========================
+  // STATE FLAGS
+  // =========================
   this.listeners = {};
 
   this.locked = false;
@@ -27,18 +40,22 @@ export class GameFlow {
 
   this.finishedPlayers = new Set();
 
+  this._started = false;
+  this._roundFinishing = false;
+
+  // =========================
+  // NETWORK BUFFER (FIX GUEST)
+  // =========================
+  this._resolveRoundStart = null;
+  this._pendingRoundLocation = null;
+
   this._resolveStreetViewReady = null;
 
-  this._started = false;
-  this._lastRoundIndex = -1;
-
-  this._gameStartedHandled = false;
-
-  this.bindState();
+  this.bindNetwork();
  }
 
  // =========================
- // EVENTS
+ // EVENT SYSTEM
  // =========================
  on(event, cb) {
   (this.listeners[event] ||= []).push(cb);
@@ -49,112 +66,126 @@ export class GameFlow {
  }
 
  // =========================
- // STATE BINDING (CORE)
+ // NETWORK BIND
  // =========================
- bindState() {
+ bindNetwork() {
   if (!this.network) return;
 
-  this.network.onRoom((room) => {
-   if (!room) return;
+  this.network.onRoundStarted?.((data) => {
+   this.startRoundFromNetwork(data);
+  });
 
-   const game = room.game;
+  this.network.onGuess?.((data) => {
+   this.applyExternalGuess(data);
+  });
 
-   // =========================
-   // GAME START
-   // =========================
-   if (game?.started && !this._gameStartedHandled) {
-    this._gameStartedHandled = true;
+  this.network.onRoundComplete?.(() => {
+   this.syncRoundComplete();
+  });
 
-    console.log("🔥 GAME START (STATE)");
-
-    this.game.startGame();
-    this.emit("gameStarted", this.game.getState());
-   }
-
-   // =========================
-   // ROUND START
-   // =========================
-   const round = game?.round;
-
-   if (!round) return;
-
-   if (round.index === this._lastRoundIndex) return;
-
-   this._lastRoundIndex = round.index;
-
-   console.log("🌍 ROUND STATE RECEIVED", round);
-
-   this.startRoundWithLocation(round.location);
+  this.network.onStart?.(() => {
+   this.startGameFromNetwork();
   });
  }
 
  // =========================
- // ENTRY POINT
  // =========================
- start({ role }) {
+ // 🧠 CONTRACT: START GAME
+ // =========================
+ // =========================
+
+ // HOST ENTRY POINT
+ startGame() {
   if (this._started) return;
 
   this._started = true;
 
-  console.log("🚀 GAMEFLOW START", {
-   role,
-   mode: this.mode
-  });
+  console.log("🚀 GAMEFLOW START (HOST)");
+
+  this.game.startGame();
+  this.emit("gameStarted", this.game.getState());
+
+  this.finishedPlayers.clear();
+  this.roundLocked = false;
+
+  this.startRound();
+ }
+
+ // GUEST ENTRY POINT
+ startGameFromNetwork() {
+  if (this._started) return;
+
+  this._started = true;
+
+  console.log("🚀 GAMEFLOW START (GUEST)");
+
+  this.game.startGame();
+  this.emit("gameStarted", this.game.getState());
+
+  this.finishedPlayers.clear();
+  this.roundLocked = false;
+
+  // guest НЕ стартует раунд сам
+ }
+
+ // =========================
+ // ROUND START
+ // =========================
+ async startRound() {
+  this.lockRoundUI();
 
   // SOLO
   if (this.mode === "solo") {
-   this.game.startGame();
-   this.emit("gameStarted", this.game.getState());
+   const location = await this.generator.generate(this.area);
+   return this.startRoundWithLocation(location);
+  }
 
-   this.startNextRoundSolo();
+  // HOST = источник истины
+  if (this.playerId === "p1") {
+   const location = await this.generator.generate(this.area);
+
+   this.network?.sendRoundStarted?.({ location });
+
+   return this.startRoundWithLocation(location);
+  }
+
+  // GUEST = ждёт сеть
+  const location = await this.waitForRoundFromNetwork();
+
+  return this.startRoundWithLocation(location);
+ }
+
+ // =========================
+ // NETWORK ROUND BUFFER (FIX)
+ // =========================
+ waitForRoundFromNetwork() {
+  return new Promise((resolve) => {
+   this._resolveRoundStart = resolve;
+
+   if (this._pendingRoundLocation) {
+    resolve(this._pendingRoundLocation);
+    this._pendingRoundLocation = null;
+    this._resolveRoundStart = null;
+   }
+  });
+ }
+
+ startRoundFromNetwork({ location }) {
+  if (this.playerId === "p1") return;
+
+  if (!this._resolveRoundStart) {
+   this._pendingRoundLocation = location;
    return;
   }
 
-  // DUEL → только host инициирует
-  if (role === "host") {
-   this.network.startGame?.(this.game.config);
-   this.startNextRound();
-  }
+  this._resolveRoundStart(location);
+  this._resolveRoundStart = null;
  }
 
  // =========================
- // ROUND CONTROL (HOST ONLY)
+ // ROUND INIT
  // =========================
- async startNextRound() {
-  const location = await this.generator.generate(this.area);
-
-  const round = {
-   index: this._lastRoundIndex + 1,
-   location
-  };
-
-  console.log("📡 PUSH ROUND", round);
-
-  this.network.setRound(round);
- }
-
- async startNextRoundSolo() {
-  const location = await this.generator.generate(this.area);
-  this.startRoundWithLocation({ location, index: 0 });
- }
-
- // =========================
- // ROUND CORE
- // =========================
- lockRoundUI() {
-  this.locked = true;
-  this.roundLocked = false;
-  this.finishedPlayers.clear();
-
-  this.emit("inputLocked");
-  this.emit("loadingStarted");
- }
-
- async startRoundWithLocation(round) {
-  const location = round.location;
-
-  this.lockRoundUI();
-
+ async startRoundWithLocation(location) {
   this.game.startRound(location);
 
   this.emit("streetViewSetLocation", location);
@@ -163,22 +194,30 @@ export class GameFlow {
 
   this.emit("loadingFinished");
 
+ // =========================
+  // TIMER (SERVICE)
+  // =========================
   this.timer.start(
    this.game.config.rules.time,
    () => this.finishRound("timeout"),
    (t) => this.emit("timerTick", t)
   );
 
+  // =========================
+  // MOVES (SERVICE)
+  // =========================
   this.moves.reset(this.game.config.rules.moves);
+
   this.emit("movesUpdated", this.moves.getRemaining());
 
   this.locked = false;
+
   this.emit("inputUnlocked");
   this.emit("roundStarted", this.game.getState());
  }
 
  // =========================
- // STREET VIEW
+ // STREET VIEW SYNC
  // =========================
  waitForStreetViewReady() {
   return new Promise(res => {
@@ -192,7 +231,77 @@ export class GameFlow {
  }
 
  // =========================
- // MOVES (НЕ ПОТЕРЯЛИ)
+ // GUESS SYSTEM
+ // =========================
+ finishGuess(point) {
+  if (this.locked || this.roundLocked) return;
+
+  const payload = {
+   playerId: this.playerId,
+   guess: point
+  };
+
+  if (this.mode === "duel") {
+   this.network?.sendGuess?.(payload);
+  }
+
+  this.applyGuess(this.playerId, point);
+ }
+
+ applyGuess(playerId, point) {
+  if (this.roundLocked) return;
+
+  const result = this.game.setGuess(playerId, point);
+  if (!result) return;
+
+  this.game.applyResult(result);
+
+  this.emit("guessResolved", result);
+
+  if (this.mode === "solo") {
+   this.locked = true;
+   this.finishRound("guess");
+   return;
+  }
+
+  this.handlePlayerFinished(playerId);
+ }
+
+ applyExternalGuess({ playerId, guess }) {
+  if (this.locked) return;
+  this.applyGuess(playerId, guess);
+ }
+
+ // =========================
+ // DUEL FLOW
+ // =========================
+ handlePlayerFinished(playerId) {
+  this.finishedPlayers.add(playerId);
+
+  this.locked = true;
+
+  this.emit("inputLocked");
+  this.emit("roundWaiting");
+
+  if (this.finishedPlayers.size >= this.game.players.length) {
+   this.network?.sendRoundComplete?.();
+   this.finishRound("allFinished");
+   return;
+  }
+
+  if (!this.roundLocked) {
+   this.roundLocked = true;
+
+   this.roundTimer.start(
+    10,
+    () => this.finishRound("duelTimeout"),
+    (t) => this.emit("roundTimerTick", t)
+   );
+  }
+ }
+
+ // =========================
+ // MOVES SERVICE HOOK
  // =========================
  registerMove() {
   if (this.locked) return;
@@ -200,56 +309,58 @@ export class GameFlow {
   const ok = this.moves.consume();
 
   this.emit("movesUpdated", this.moves.getRemaining());
+
   if (!ok || this.moves.isLocked()) {
    this.emit("movesLocked");
   }
  }
 
  // =========================
- // GUESS (НЕ ПОТЕРЯЛИ)
- // =========================
- finishGuess(point) {
-  if (this.locked || this.roundLocked) return;
-
-  const result = this.game.setGuess(this.playerId, point);
-  if (!result) return;
-
-  this.game.applyResult(result);
-
-  this.emit("guessResolved", result);
-
-  this.handleFinish();
- }
-
- handleFinish() {
-  this.locked = true;
-
-  this.emit("inputLocked");
-  this.emit("roundWaiting");
- }
-
- // =========================
  // ROUND END
  // =========================
  finishRound(reason = "manual") {
+  if (this._roundFinishing) return;
+
+  this._roundFinishing = true;
+
   this.timer.clear();
   this.roundTimer.clear();
 
   this.locked = true;
+  this.roundLocked = false;
+
+  this.emit("inputLocked");
 
   const state = this.game.getState();
 
   const isLast =
    state.rounds.length >= this.game.config.rules.rounds;
 
-  this.emit("roundResultShown", {
-   state,
-   reason
-  });
+  this.emit("roundResultShown", { state, reason });
 
   if (isLast) {
    this.game.endGame();
    this.emit("gameEnded", this.game.getState());
   }
+
+  this._roundFinishing = false;
+ }
+
+ // =========================
+ // SYNC
+ // =========================
+ syncRoundComplete() {
+  this.roundLocked = false;
+  this.finishedPlayers.clear();
+
+  this.emit("roundSyncComplete");
+ }
+
+ // =========================
+ // NEXT ROUND
+ // =========================
+ nextRound() {
+  if (this.game.getState().status === "ended") return;
+  return this.startRound();
  }
 }
