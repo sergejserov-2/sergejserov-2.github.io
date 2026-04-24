@@ -31,7 +31,9 @@ export class MapOverviewUI {
 
   const actualColor = this.uiBuilder.getActualColor();
 
-  const guesses = round.guesses || [];
+const guesses = round.guesses
+ ? Object.values(round.guesses)
+ : [];
 
   const points = [actual];
 
