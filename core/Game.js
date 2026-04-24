@@ -74,9 +74,13 @@ applyResult(result) {
  }
 
 syncRoundFromNetwork(round) {
- const current = this.state.currentRound;
 
- if (!current) return;
+ if (!this.state || !this.state.currentRound) {
+  console.warn("⚠️ syncRoundFromNetwork skipped (no state yet)");
+  return;
+ }
+
+ const current = this.state.currentRound;
 
  current.guesses = round.guesses || {};
  current.initiator = round.initiator;
