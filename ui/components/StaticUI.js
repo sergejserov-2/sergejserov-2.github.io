@@ -39,18 +39,28 @@ export class StaticUI {
  // ROUND RESULT
  // =========================
 
- showRoundResult(vm = {}) {
+showRoundResult(vm = {}) {
+  console.log("🧾 [StaticUI] showRoundResult CALLED", vm);
+
   const root = this.roundRoot;
-  if (!root) return;
+  console.log("🧾 roundRoot:", root);
+
+  if (!root) {
+    console.log("❌ roundRoot missing");
+    return;
+  }
 
   const container = root.querySelector(".players-score");
+  console.log("🧾 container:", container);
 
-const guesses = vm.guesses
- ? Object.values(vm.guesses)
- : [];
+  const guesses = vm.guesses
+    ? Object.values(vm.guesses)
+    : [];
+
+  console.log("🧾 guesses parsed:", guesses);
 
   this.renderPlayerBars(container, guesses);
- }
+}
 
  // =========================
  // GAME RESULT
