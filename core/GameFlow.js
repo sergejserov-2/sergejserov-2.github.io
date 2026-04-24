@@ -132,7 +132,7 @@ bindNetwork() {
 
     this.roundTimer.start(
      10,
-     () => this.updateGame({ status: "finished" }),
+     () => this.updateRound({ status: "finished" }),
      (t) => this.emit("roundTimerTick", t)
     );
 
@@ -308,23 +308,15 @@ applyGuess(playerId, point) {
  this.handlePlayerFinished(playerId, result);
 }
 
-updateGame(patch) {
- if (!this.network?.updateGame) return;
+updateRound(patch) {
+ if (!this.network?.setRound) return;
 
- const state = this.game.getState();
- const round = state.currentRound;
+ const current = this.game.getState().currentRound;
 
- const updated = {
-  ...state,
-  round: {
-   ...round,
-   ...patch
-  }
- };
-
- console.log("📡 updateGame", patch);
-
- this.network.updateGame(updated);
+ this.network.setRound({
+  ...current,
+  ...patch
+ });
 }
 
  
@@ -344,10 +336,9 @@ handlePlayerFinished(playerId, result) {
   this.locked = true;
   this.emit("roundWaiting");
 
-  this.updateGame({
-   status: "waiting",
-   lastGuess: result
-  });
+this.updateRound({
+ status: "waiting"
+});
 
   return;
  }
@@ -359,9 +350,9 @@ handlePlayerFinished(playerId, result) {
 
   console.log("⏱️ START TIMER STATE");
 
-  this.updateGame({
-   status: "timer"
-  });
+this.updateRound({
+ status: "timer"
+});
 
   return;
  }
@@ -373,9 +364,9 @@ handlePlayerFinished(playerId, result) {
 
   console.log("🏁 ALL FINISHED");
 
-  this.updateGame({
-   status: "finished"
-  });
+this.updateRound({
+ status: "finished"
+});
 
   return;
  }
