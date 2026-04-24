@@ -360,10 +360,12 @@ handlePlayerFinished(playerId) {
 
  
 
- finishRound(reason = "manual") {
+finishRound(reason = "manual") {
 
- if (this._roundFinishing) return;
+ if (this._roundFinishing || this.locked === "final") return;
+
  this._roundFinishing = true;
+ this.locked = "final";
 
  this.timer.clear();
  this.roundTimer.clear();
