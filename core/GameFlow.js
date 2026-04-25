@@ -24,16 +24,24 @@ export class GameFlow {
   this.listeners = {};
 
   // =========================
-  // STATE FLAGS (CORE FIX)
+  // STATE FLAGS (SAFE CORE)
   // =========================
   this._started = false;
   this._roundFinishing = false;
 
   this._timerStarted = false;
+
+  this._currentRound = null;
+
+  // 🔥 HOST SNAPSHOT (SOURCE OF TRUTH)
+  this._hostSnapshot = null;
+
+  // 🔥 ROUND GUARDS
   this._roundIndex = null;
   this._startingRound = false;
-  this._currentRound = null;
   this._roundReady = false;
+  this._roundLocked = false;
+
   this._resolveStreetViewReady = null;
 
   this.bindNetwork();
@@ -85,144 +93,146 @@ export class GameFlow {
  }
 
  // =========================
- // NETWORK (STATE MACHINE CORE)
+ // NETWORK CORE (FIXED)
  // =========================
-bindNetwork() {
- if (!this.network) return;
+ bindNetwork() {
+  if (!this.network) return;
 
- this.network.onRoom((room) => {
+  this.network.onRoom((room) => {
 
-  const game = room.game;
-  if (!game) return;
+   const game = room.game;
+   if (!game) return;
 
-  const rawRound = game.round;
-  if (!rawRound) return;
+   const rawRound = game.round;
+   if (!rawRound) return;
 
-  // =========================
-  // GAME START
-  // =========================
-  if (game.started && !this._started) {
-   this._started = true;
-   this.game.startGame();
-   this.emit("gameStarted", this.game.getState());
-  }
-
-  // =========================
-  // NORMALIZE
-  // =========================
-  const current = this.normalizeRound(rawRound);
-
-  // =========================
-  // 🔥 ROUND READY GATE (CRITICAL FIX)
-  // =========================
-  this._roundReady =
-   current.index != null &&
-   current.actualLocation != null;
-
-  // sync core state
-  this.game.syncRoundFromNetwork?.(current);
-  this.setCurrentRound(current);
-
-  const guesses = current.guesses || {};
-  const guessKeys = Object.keys(guesses);
-  const guessCount = guessKeys.length;
-
-  // =========================
-  // HOST LOGIC (p1 ONLY)
-  // =========================
-  if (this.playerId === "p1") {
-
-   // 👉 INITIATOR RULE (SAFE)
-   if (
-    this._roundReady &&
-    guessCount > 0 &&
-    !current.initiator
-   ) {
-    const first = guessKeys[0];
-
-    this.updateRound({
-     initiator: first,
-     status: "waiting"
-    });
+   // =========================
+   // GAME START
+   // =========================
+   if (game.started && !this._started) {
+    this._started = true;
+    this.game.startGame();
+    this.emit("gameStarted", this.game.getState());
    }
 
-   // 👉 AUTO FINISH
-   if (
-    current.status !== "finished" &&
-    guessCount >= this.game.players.length
-   ) {
-    this.updateRound({ status: "finished" });
+   // =========================
+   // NORMALIZE SNAPSHOT
+   // =========================
+   const current = this.normalizeRound(rawRound);
+
+   // 🔥 HOST SNAPSHOT AUTHORITY
+   if (this.playerId === "p1") {
+    this._hostSnapshot = structuredClone(current);
    }
-  }
 
-  // =========================
-  // GUEST START GUARD
-  // =========================
-  if (this.playerId !== "p1") {
-
-   const shouldStart =
-    this._roundReady &&
+   // =========================
+   // ROUND READY GATE
+   // =========================
+   this._roundReady =
     current.index != null &&
-    current.actualLocation &&
-    this._roundIndex !== current.index;
+    current.actualLocation != null;
 
-   if (shouldStart && !this._startingRound) {
+   this.setCurrentRound(current);
+   this.game.syncRoundFromNetwork?.(current);
 
-    this._startingRound = true;
-    this._roundIndex = current.index;
+   const guesses = current.guesses || {};
+   const guessKeys = Object.keys(guesses);
+   const guessCount = guessKeys.length;
 
-    this.startRoundWithLocation(current.actualLocation)
-     .finally(() => {
-      this._startingRound = false;
+   // =========================
+   // HOST ONLY LOGIC
+   // =========================
+   if (this.playerId === "p1") {
+
+    // INITIATOR RULE
+    if (
+     this._roundReady &&
+     guessCount > 0 &&
+     !current.initiator
+    ) {
+     this.updateRound({
+      initiator: guessKeys[0],
+      status: "waiting"
      });
-   }
-  }
+    }
 
-  // =========================
-  // WAITING (ONLY WHEN READY)
-  // =========================
-  if (current.status === "waiting") {
-
-   this.emit("roundState", "waiting");
-
-   if (current.initiator === this.playerId) {
-    this.emit("roundWaiting");
+    // AUTO FINISH
+    if (
+     current.status !== "finished" &&
+     guessCount >= this.game.players.length
+    ) {
+     this.updateRound({ status: "finished" });
+    }
    }
 
-   if (!this._timerStarted) {
-    this._timerStarted = true;
+   // =========================
+   // GUEST ROUND START (SAFE)
+   // =========================
+   if (this.playerId !== "p1") {
 
-    this.roundTimer.start(
-     10,
-     () => {
-      if (this.playerId === "p1") {
-       this.updateRound({ status: "finished" });
-      }
-     },
-     (t) => this.emit("timerTick", t)
-    );
+    const snap = this._hostSnapshot;
 
-    this.emit("timerStarted");
+    const shouldStart =
+     snap &&
+     snap.index !== this._roundIndex;
+
+    if (shouldStart && !this._startingRound) {
+
+     this._startingRound = true;
+     this._roundIndex = snap.index;
+
+     this.startRoundWithLocation(snap.actualLocation)
+      .finally(() => {
+       this._startingRound = false;
+      });
+    }
    }
-  }
 
-  // =========================
-  // FINISH (SAFE ONLY)
-  // =========================
-  if (
-   current.status === "finished" &&
-   !this._roundFinishing &&
-   this._roundReady
-  ) {
-   this._timerStarted = false;
-   this.emit("timerStopped");
-   this.finishRoundFromState("networkFinish");
-  }
- });
-}
- 
+   // =========================
+   // WAITING STATE (ONLY INITIATOR UI)
+   // =========================
+   if (current.status === "waiting") {
+
+   const snap = this._hostSnapshot || current;
+
+    if (snap.initiator === this.playerId) {
+     this.emit("roundWaiting");
+    }
+
+    if (!this._timerStarted) {
+     this._timerStarted = true;
+
+     this.roundTimer.start(
+      10,
+      () => {
+       if (this.playerId === "p1") {
+        this.updateRound({ status: "finished" });
+       }
+      },
+      (t) => this.emit("timerTick", t)
+     );
+
+     this.emit("timerStarted");
+    }
+   }
+
+   // =========================
+   // FINISH (SAFE GUARD)
+   // =========================
+   if (
+    current.status === "finished" &&
+    !this._roundFinishing &&
+    this._roundReady
+   ) {
+    this._timerStarted = false;
+    this.emit("timerStopped");
+    this.finishRoundFromState("networkFinish");
+   }
+  });
+ }
+
  // =========================
- // GAME START
+ // START GAME
  // =========================
  startGame() {
   if (this._started) return;
@@ -235,7 +245,7 @@ bindNetwork() {
  }
 
  // =========================
- // ROUND START (HOST)
+ // ROUND START (HOST ONLY)
  // =========================
  async startRound() {
 
@@ -264,6 +274,7 @@ bindNetwork() {
  async startRoundWithLocation(location) {
 
   this._timerStarted = false;
+  this._roundLocked = false;
 
   this.game.startRound(location);
 
@@ -281,28 +292,25 @@ bindNetwork() {
 
   this.moves.reset(this.game.config.rules.moves);
 
-  this.moveslocked = false;
-
   this.emit("roundStarted", this.game.getState());
  }
 
  // =========================
- // GUESSES
+ // GUESSES (SAFE)
  // =========================
-applyGuess(playerId, point) {
- if (this.locked) return;
+ applyGuess(playerId, point) {
 
- // 🔥 BLOCK DESYNC GUESSES
- if (!this._roundReady) return;
+  if (this._roundLocked) return;
+  if (!this._roundReady) return;
 
- const result = this.game.setGuess(playerId, point);
- if (!result) return;
+  const result = this.game.setGuess(playerId, point);
+  if (!result) return;
 
- this.emit("guessResolved", result);
- this.network.updateGuess(playerId, result);
+  this.emit("guessResolved", result);
+  this.network.updateGuess(playerId, result);
 
- this.handlePlayerFinished(playerId, result);
-}
+  this.handlePlayerFinished(playerId, result);
+ }
 
  handlePlayerFinished(playerId, result) {
 
@@ -338,6 +346,9 @@ applyGuess(playerId, point) {
   });
  }
 
+ // =========================
+ // UPDATE ROUND (HOST ONLY)
+ // =========================
  updateRound(patch) {
   if (this.playerId !== "p1") return;
   if (!this.network?.setRound) return;
@@ -354,42 +365,40 @@ applyGuess(playerId, point) {
  }
 
  // =========================
- // FINISH
+ // FINISH ROUND
  // =========================
-finishRound(reason) {
+ finishRound(reason) {
 
- if (this._roundFinishing) return;
+  if (this._roundFinishing) return;
+  if (!this._roundReady) return;
 
- // 🔥 safety gate
- if (!this._roundReady) return;
+  this._roundFinishing = true;
 
- this._roundFinishing = true;
+  this.timer.clear();
+  this.roundTimer.clear();
 
- this.timer.clear();
- this.roundTimer.clear();
+  this._timerStarted = false;
+  this._roundLocked = true;
 
- this._timerStarted = false;
+  this.emit("timerStopped");
 
- this.emit("timerStopped");
+  const snap = this._hostSnapshot || this.getCurrentRound();
 
- const round = this.getRoundForUI();
- const state = this.game.getState();
+  this.emit("roundResultShown", {
+   state: this.game.getState(),
+   round: this.getRoundForUIFromSnapshot?.(snap) || this.getRoundForUI()
+  });
 
- this.emit("roundResultShown", {
-  state,
-  round
- });
-
- this._roundFinishing = false;
-}
+  this._roundFinishing = false;
+ }
 
  finishRoundFromState(reason) {
   if (this._roundFinishing) return;
   this.finishRound(reason);
  }
 
- // =========================
- // NEXT ROUND
+// =========================
+ // NEXT ROUND (SAFE)
  // =========================
  async nextRound() {
 
@@ -431,18 +440,15 @@ finishRound(reason) {
   this._roundFinishing = false;
  }
 
-// =========================
+ // =========================
  // MOVES
  // =========================
  registerMove() {
-  if (this.moveslocked) return;
-
   const ok = this.moves.consume();
 
   this.emit("movesUpdated", this.moves.getRemaining());
 
   if (!ok) {
-   this.moveslocked = true;
    this.emit("movesLocked", this.moves.IsLocked());
   }
  }
