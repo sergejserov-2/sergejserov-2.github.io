@@ -197,6 +197,24 @@ if (current.status === "finished" && hasIndex) {
   reason: "network"
  });
 }
+
+// если хост НЕ получил network finished, но сам его инициировал
+if (
+ this.playerId === "p1" &&
+ this._hostFinishedLocally &&
+ this._resultEmittedForRound !== this._hostFinishedLocally
+) {
+ this._resultEmittedForRound = this._hostFinishedLocally;
+
+ this.emit("roundResultShown", {
+  state: this.game.getState(),
+  round: this.getRoundForUI(),
+  reason: "host-fallback"
+ });
+}
+
+
+   
   });
  }
 
