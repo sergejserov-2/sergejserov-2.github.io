@@ -188,14 +188,15 @@ this._resultEmittedForRound = current.index;
  this._timerStarted = false;
  this.emit("timerStopped");
 
-  const isLastRound = this.game.isGameEnded?.();
+const totalRounds = this.game.config?.rules?.rounds || 0;
+ const isLastRound = current.index >= totalRounds;
 
-  if (isLastRound) {
-    this.game.commitRound?.(); // важно!
+ if (isLastRound) {
+  this.game.commitRound?.(); // важно сохранить последний раунд
 
-    this.emit("gameEnded", this.game.getState());
-    return;
-  }
+  this.emit("gameEnded", this.game.getState());
+  return;
+ }
 
  
  this.emit("roundResultShown", {
