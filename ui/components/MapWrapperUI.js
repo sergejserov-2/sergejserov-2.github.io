@@ -41,7 +41,7 @@ export class MapWrapperUI {
             };
 
             this.lastGuessPoint = point;
-            this.placeGuessMarker(point);
+            this.placeGuessMarker(point, playerId);
         });
 
         this.initResize();
@@ -141,7 +141,7 @@ bindPolygonButton(el) {
     // =========================
     // MARKER
     // =========================
-    placeGuessMarker(point) {
+    placeGuessMarker(point, playerId) {
         if (!this.map || !point) return;
 
         this.clearGuessMarker();
