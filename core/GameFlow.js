@@ -33,7 +33,7 @@ export class GameFlow {
 
   this._roundIndex = null;
   this._lastFinishedRoundIndex = null;
-
+this._resultEmittedForRound = null;
   this._resolveStreetViewReady = null;
 
   this.bindNetwork();
@@ -259,6 +259,9 @@ startGame() {
  // =========================
  async startRoundWithLocation(location) {
 
+ this._resultEmittedForRound = null; // 🔥 FIX
+
+ this._timerStarted = false;
   this._timerStarted = false;
 
   this.game.startRound(location);
@@ -345,31 +348,34 @@ startGame() {
  // =========================
  // FINISH
  // =========================
- finishRound(reason) {
-  if (this._roundFinishing) return;
+finishRound(reason) {
+ if (this._roundFinishing) return;
 
-  this._roundFinishing = true;
+ this._roundFinishing = true;
 
-  this.timer.clear();
-  this.roundTimer.clear();
+ this.timer.clear();
+ this.roundTimer.clear();
 
-  this._timerStarted = false;
+ this._timerStarted = false;
 
-  if (!this._resultShown) {
-   this._resultShown = true;
+ const round = this.getRoundForUI();
+ const state = this.game.getState();
 
-   const round = this.getRoundForUI();
-   const state = this.game.getState();
+ // 🔥 CRITICAL FIX: гарантируем 1 раз на каждый round.index
+ const roundIndex = this._currentRound?.index;
 
-   this.emit("roundResultShown", {
-    state,
-    round,
-    reason
-   });
-  }
+ if (this._resultEmittedForRound !== roundIndex) {
+  this._resultEmittedForRound = roundIndex;
 
-  this._roundFinishing = false;
+  this.emit("roundResultShown", {
+   state,
+   round,
+   reason
+  });
  }
+
+ this._roundFinishing = false;
+}
 
  finishRoundFromState(reason) {
   if (this._roundFinishing) return;
