@@ -83,18 +83,11 @@ export class GameFlow {
  // NETWORK
 bindNetwork() {
  if (!this.network) return;
-
  this.network.onRoom((room) => {
-
   const game = room.game;
   if (!game) return;
-
   const rawRound = game.round;
   if (!rawRound) return;
-
-  // =========================
-  // GAME START
-  // =========================
   if (game.started && !this._started) {
    this._started = true;
    this.game.startGame();
@@ -105,12 +98,8 @@ bindNetwork() {
   // NORMALIZE + SYNC SOURCE OF TRUTH
   // =========================
   const current = this.normalizeRound(rawRound);
-
-  // 🔥 IMPORTANT: sync into local game state FIRST
   this.game.syncRoundFromNetwork?.(current);
-
   this.setCurrentRound(current);
-
   const guesses = current.guesses || {};
   const guessKeys = Object.keys(guesses);
   const guessCount = guessKeys.length;
@@ -126,25 +115,16 @@ bindNetwork() {
   // HOST LOGIC (p1 only minimal authority)
   // =========================
   if (this.playerId === "p1") {
-
-   // 👉 ensure waiting state is broadcasted once guesses start
-   if (
-    guessCount > 0 &&
-    current.status === "running"
-   ) {
+   if ( guessCount > 0 && current.status === "running" ) {
     this.updateRound({
      initiator: current.initiator,
      status: "waiting"
     });
    }
-
-   // 👉 auto finish
    if (
     current.status !== "finished" &&
     guessCount >= this.game.players.length
-   ) {
-    this.updateRound({ status: "finished" });
-   }
+   ) { this.updateRound({ status: "finished" }); }
   }
 
   // =========================
@@ -167,7 +147,6 @@ bindNetwork() {
 // WAITING (UI ONLY FOR INITIATOR)
 // =========================
 if (current.status === "waiting") {
-
  // 🔥 UI waiting ТОЛЬКО у инициатора
  if (this.playerId === current.initiator) {
   this.emit("roundWaiting");
@@ -178,7 +157,6 @@ if (current.status === "waiting") {
  // =========================
  if (!this._timerStarted) {
   this._timerStarted = true;
-
   this.roundTimer.start(
    10,
    () => {
@@ -186,12 +164,8 @@ if (current.status === "waiting") {
      this.updateRound({ status: "finished" });
     }
    },
-   (t) => {
-    // 🔥 синхронный таймер для всех
-    this.emit("timerTick", t);
-   }
+   (t) => { this.emit("timerTick", t); }
   );
-
   this.emit("roundTimerStart");
  }
 }
@@ -209,11 +183,9 @@ if (current.status === "waiting") {
  // GAME START
  startGame() {
   if (this._started) return;
-
   this._started = true;
   this.game.startGame();
   this.emit("gameStarted", this.game.getState());
-
   this.startRound();
  }
 
@@ -221,7 +193,6 @@ if (current.status === "waiting") {
  async startRound() {
 
   const location = await this.generator.generate(this.area);
-
   const round = this.normalizeRound({
    index: this.game.getState().rounds.length + 1,
    actualLocation: location,
@@ -231,7 +202,6 @@ if (current.status === "waiting") {
   });
 
   this.setCurrentRound(round);
-
   if (this.mode === "duel" && this.playerId === "p1") {
    this.network.setRound(round);
   }
@@ -241,14 +211,10 @@ if (current.status === "waiting") {
 
  // CORE ROUND
  async startRoundWithLocation(location) {
-
   this._timerStarted = false;
-
   this.game.startRound(location);
   this.emit("streetViewSetLocation", location);
-
   await this.waitForStreetViewReady();
-
   this.emit("loadingFinished");
 
   this.timer.start(
@@ -258,45 +224,27 @@ if (current.status === "waiting") {
   );
 
   this.moves.reset(this.game.config.rules.moves);
-
   this.moveslocked = false;
-
   this.emit("roundStarted", this.game.getState());
  }
 
  // GUESSES
  applyGuess(playerId, point) {
   if (this.locked) return;
-
   const result = this.game.setGuess(playerId, point);
   if (!result) return;
-
   this.emit("guessResolved", result);
   this.network.updateGuess(playerId, result);
-
   this.handlePlayerFinished(playerId, result);
  }
 
 handlePlayerFinished(playerId, result) {
-
  const round = this.getCurrentRound();
  if (!round) return;
-
- const guesses = {
-  ...round.guesses,
-  [playerId]: result
- };
-
- const next = this.normalizeRound({
-  ...round,
-  guesses
- });
-
+ const guesses = { ...round.guesses, [playerId]: result };
+ const next = this.normalizeRound({ ...round, guesses });
  this.setCurrentRound(next);
-
- // ❗ ВАЖНО: только хост управляет round
  if (this.playerId !== "p1") return;
-
  if (!round.initiator) {
   this.updateRound({
    ...next,
@@ -305,52 +253,30 @@ handlePlayerFinished(playerId, result) {
   });
   return;
  }
-
- this.updateRound({
-  ...next,
-  status: "waiting"
- });
+ this.updateRound({ ...next, status: "waiting" });
 }
 
  
  updateRound(patch) {
   if (this.playerId !== "p1") return;
   if (!this.network?.setRound) return;
-
   const base = this.getCurrentRound() || {};
-
-  const next = this.normalizeRound({
-   ...base,
-   ...patch
-  });
-
+  const next = this.normalizeRound({ ...base, ...patch });
   this.setCurrentRound(next);
   this.network.setRound(next);
  }
 
  // FINISH
 finishRound(reason) {
-
  if (this._roundFinishing) return;
-
  this._roundFinishing = true;
-
  this.timer.clear();
  this.roundTimer.clear();
-
  const round = this.getRoundForUI();
  const state = this.game.getState();
-
- console.log("🏁 ROUND FINISH → UI", { round, state });
-
- this.emit("roundResultShown", {
-  state,
-  round
- });
-
+ this.emit("roundResultShown", { state, round });
  this._roundFinishing = false;
 }
-
  finishRoundFromState(reason) {
   if (this._roundFinishing) return;
   this.finishRound(reason);
@@ -359,11 +285,8 @@ finishRound(reason) {
  // MOVES
  registerMove() {
   if (this.moveslocked) return;
-
   const ok = this.moves.consume();
-
   this.emit("movesUpdated", this.moves.getRemaining());
-
   if (!ok) {
    this.moveslocked = true;
    this.emit("movesLocked", this.moves.IsLocked());
@@ -391,7 +314,6 @@ finishRound(reason) {
  // =========================
 getRoundForUI() {
  const r = this.getCurrentRound();
-
  if (!r) {
   return {
    index: 0,
@@ -400,13 +322,10 @@ getRoundForUI() {
    guesses: []
   };
  }
-
  return {
   index: r.index ?? 0,
   status: r.status ?? "running",
   actualLocation: r.actualLocation ?? null,
-
-  // 🔥 ВОТ КЛЮЧЕВОЕ
   guesses: this.convertGuessesToArray(r.guesses)
  };
 }
