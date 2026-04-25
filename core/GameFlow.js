@@ -99,6 +99,10 @@ this._lastFinishedRoundIndex = null;
 bindNetwork() {
  if (!this.network) return;
 
+ // 🔥 INIT (once)
+ this._roundTransitioning = false;
+ this._lastFinishedRoundIndex = null;
+
  this.network.onRoom((room) => {
 
   const game = room.game;
@@ -117,7 +121,7 @@ bindNetwork() {
   }
 
   // =========================
-  // NORMALIZE (HOST SOURCE OF TRUTH)
+  // NORMALIZE
   // =========================
   const current = this.normalizeRound(rawRound);
 
@@ -125,21 +129,21 @@ bindNetwork() {
   const guessKeys = Object.keys(guesses);
   const guessCount = guessKeys.length;
 
-  const hasLocation = current.actualLocation != null;
   const hasIndex = current.index != null;
+  const hasLocation = current.actualLocation != null;
 
   // =========================
-  // 🔥 SYNC CORE STATE (NO SIDE EFFECTS YET)
+  // SYNC CORE (NO SIDE EFFECTS)
   // =========================
   this.game.syncRoundFromNetwork?.(current);
   this.setCurrentRound(current);
 
   // =========================
-  // HOST LOGIC (ONLY p1 WRITES STATE)
+  // HOST LOGIC (ONLY p1 WRITES)
   // =========================
   if (this.playerId === "p1") {
 
-   // INITIATOR LOCK (ONLY ONCE)
+   // INITIATOR (once)
    if (
     hasIndex &&
     hasLocation &&
@@ -162,22 +166,20 @@ bindNetwork() {
   }
 
   // =========================
-  // GUEST START (CRITICAL FIX)
+  // GUEST START (STRICT RULE)
   // =========================
-
   if (this.playerId !== "p1") {
 
-   const canStartRound =
+   const shouldStart =
     hasIndex &&
     hasLocation &&
     this._roundIndex !== current.index;
 
-   if (canStartRound && !this._startingRound) {
+   if (shouldStart && !this._startingRound) {
 
     this._startingRound = true;
     this._roundIndex = current.index;
 
-    // 🔥 IMPORTANT: SINGLE ENTRY POINT
     this.startRoundWithLocation(current.actualLocation)
      .finally(() => {
       this._startingRound = false;
@@ -186,14 +188,16 @@ bindNetwork() {
   }
 
   // =========================
-  // WAITING UI (HOST INITIATOR ONLY)
+  // WAITING
   // =========================
   if (current.status === "waiting") {
 
+   // UI только инициатору
    if (current.initiator === this.playerId) {
     this.emit("roundWaiting");
    }
 
+   // таймер всем (но старт один раз)
    if (!this._timerStarted) {
     this._timerStarted = true;
 
@@ -211,38 +215,40 @@ bindNetwork() {
    }
   }
 
-// =========================
-// FINISH (DEDUPED TRANSITION)
-// =========================
+  // =========================
+  // FINISH (DEDUP + HOST ONLY NEXT ROUND)
+  // =========================
   if (
    current.status === "finished" &&
    hasIndex &&
    this._lastFinishedRoundIndex !== current.index
   ) {
-  
-   // mark once per round
+
+   // 🔥 защита от повторного входа
    this._lastFinishedRoundIndex = current.index;
-  
+
    this._timerStarted = false;
    this.emit("timerStopped");
-  
+
    this.finishRoundFromState("networkFinish");
-  
-   // 🔥 CRITICAL: ONLY HOST TRIGGERS NEXT ROUND
+
+   // 🔥 ТОЛЬКО ХОСТ ДВИГАЕТ РАУНД
    if (this.playerId === "p1") {
-  
+
     if (!this._roundTransitioning) {
      this._roundTransitioning = true;
-  
-     setTimeout(() => {
-      this.nextRound().finally(() => {
-       this._roundTransitioning = false;
-      });
-     }, 0);
+
+     // microtask → чтобы UI успел показать результат
+     Promise.resolve().then(() => {
+      this.nextRound()
+       .finally(() => {
+        this._roundTransitioning = false;
+       });
+     });
     }
    }
   }
- }
+ });
 }
  // =========================
  // START GAME
