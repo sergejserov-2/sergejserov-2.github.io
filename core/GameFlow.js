@@ -89,8 +89,8 @@ bindNetwork() {
   const game = room.game;
   if (!game) return;
 
-  const round = game.round;
-  if (!round) return;
+  const rawRound = game.round;
+  if (!rawRound) return;
 
   // =========================
   // GAME START
@@ -101,23 +101,33 @@ bindNetwork() {
    this.emit("gameStarted", this.game.getState());
   }
 
-  // 🔥 ВСЕГДА берём источник истины из Firebase
-  const source = this.normalizeRound(round);
+  // =========================
+  // NORMALIZE + SYNC CORE FIX
+  // =========================
+  const source = this.normalizeRound(rawRound);
 
-  // кэш для UI
+  // 🔥 CRITICAL: sync GameState FIRST (иначе host видит stale guesses)
+  this.game.syncRoundFromNetwork?.(source);
+
+  // cache for UI
   this.setCurrentRound(source);
 
+  const state = this.game.getState();
+  const current = source;
+
+  if (!current) return;
+
+  const guesses = current.guesses || {};
+  const guessCount = Object.keys(guesses).length;
+
   // =========================
-  // HOST LOGIC (ТОЛЬКО p1)
+  // HOST LOGIC (p1 ONLY)
   // =========================
   if (this.playerId === "p1") {
-   const guesses = source.guesses || {};
-   const guessIds = Object.keys(guesses);
-   const guessCount = guessIds.length;
 
-   // 👉 первый guess → initiator + waiting
-   if (!source.initiator && guessCount > 0) {
-    const firstPlayerId = guessIds[0];
+   // 👉 FIRST GUESS → SET INITIATOR + WAITING
+   if (!current.initiator && guessCount > 0) {
+    const firstPlayerId = Object.keys(guesses)[0];
 
     this.updateRound({
      initiator: firstPlayerId,
@@ -125,9 +135,9 @@ bindNetwork() {
     });
    }
 
-   // 👉 все сходили → finish
+   // 👉 AUTO FINISH
    if (
-    source.status !== "finished" &&
+    current.status !== "finished" &&
     guessCount >= this.game.players.length
    ) {
     this.updateRound({ status: "finished" });
@@ -135,25 +145,25 @@ bindNetwork() {
   }
 
   // =========================
-  // GUEST START
+  // GUEST START (DUEL ONLY)
   // =========================
   if (this.playerId !== "p1") {
 
    const canStart =
-    source.index != null &&
-    source.actualLocation &&
-    source.index !== this._currentRoundIndex;
+    current.index != null &&
+    current.actualLocation &&
+    current.index !== this._currentRoundIndex;
 
    if (canStart) {
-    this._currentRoundIndex = source.index;
-    this.startRoundWithLocation(source.actualLocation);
+    this._currentRoundIndex = current.index;
+    this.startRoundWithLocation(current.actualLocation);
    }
   }
 
   // =========================
-  // WAITING (для ВСЕХ)
+  // WAITING (GLOBAL)
   // =========================
-  if (source.status === "waiting") {
+  if (current.status === "waiting") {
 
    this.emit("roundWaiting");
 
@@ -177,7 +187,7 @@ bindNetwork() {
   // =========================
   // FINISH
   // =========================
-  if (source.status === "finished" && !this._roundFinishing) {
+  if (current.status === "finished" && !this._roundFinishing) {
    this._timerStarted = false;
    this.finishRoundFromState("networkFinish");
   }
