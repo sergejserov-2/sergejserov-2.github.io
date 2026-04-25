@@ -241,38 +241,39 @@ export class GameFlow {
   this.handlePlayerFinished(playerId, result);
  }
 
- handlePlayerFinished(playerId, result) {
+handlePlayerFinished(playerId, result) {
 
   const round = this.getCurrentRound();
   if (!round) return;
 
   const guesses = {
-   ...round.guesses,
-   [playerId]: result
+    ...round.guesses,
+    [playerId]: result
   };
 
   const next = this.normalizeRound({
-   ...round,
-   guesses
+    ...round,
+    guesses
   });
 
   this.setCurrentRound(next);
 
+  if (this.playerId !== "p1") return;
+
   if (!round.initiator) {
-   this.updateRound({
-    ...next,
-    initiator: playerId,
-    status: "waiting"
-   });
-   return;
+    this.updateRound({
+      ...next,
+      initiator: playerId,
+      status: "waiting"
+    });
+    return;
   }
 
   this.updateRound({
-   ...next,
-   status: "waiting"
+    ...next,
+    status: "waiting"
   });
- }
-
+}
  updateRound(patch) {
   if (this.playerId !== "p1") return;
   if (!this.network?.setRound) return;
