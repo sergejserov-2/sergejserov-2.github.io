@@ -296,13 +296,24 @@ bindNetwork() {
  // =========================
  // GUESSES (SAFE)
  // =========================
- applyGuess(playerId, point) {
-
+applyGuess(playerId, point) {
+ console.log("🔥 APPLY GUESS ENTER", {
+  playerId,
+  point,
+  locked: this.locked,
+  roundReady: this._roundReady
+ });
+ 
   if (this._roundLocked) return;
   if (!this._roundReady) return;
+ 
+ const result = this.game.setGuess(playerId, point);
 
-  const result = this.game.setGuess(playerId, point);
-  if (!result) return;
+ console.log("🔥 SET GUESS RESULT", result);
+
+ if (!result) return;
+
+ console.log("🔥 SENDING TO NETWORK");
 
   this.emit("guessResolved", result);
   this.network.updateGuess(playerId, result);
