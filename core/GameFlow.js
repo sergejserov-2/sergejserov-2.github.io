@@ -201,6 +201,39 @@ export class GameFlow {
   });
  }
 
+
+
+
+startGame() {
+ if (this._started) return;
+
+ this._started = true;
+
+ this.game.startGame();
+
+ this.emit("gameStarted", this.game.getState());
+
+ // 🔥 ТОЛЬКО HOST СОЗДАЁТ ПЕРВЫЙ РАУНД
+ if (this.playerId === "p1") {
+  this.startRound(); // → создаст round через network
+ }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
  // =========================
  // HOST: СОЗДАНИЕ РАУНДА
  // =========================
