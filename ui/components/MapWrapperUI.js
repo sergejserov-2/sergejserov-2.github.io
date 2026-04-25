@@ -146,7 +146,7 @@ bindPolygonButton(el) {
 
         this.clearGuessMarker();
 
-       const color = this.uiBuilder.getPlayerColor(g.playerId);
+       const color = this.uiBuilder.getPlayerColor(playerId);
 
         this.guessMarker = this.adapter.createMarker(
             this.map,
