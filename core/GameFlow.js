@@ -152,11 +152,12 @@ export class GameFlow {
    // =========================
    // WAITING (UNCHANGED)
    // =========================
-   if (current.status === "waiting") {
-
-    if (current.initiator === this.playerId) {
-     this.emit("roundWaiting");
-    }
+if (current.status === "waiting") {
+  if (this._currentRound?.status === "finished") return;
+  if (current.initiator === this.playerId) {
+    this.emit("roundWaiting");
+  }
+}
 
     if (!this._timerStarted) {
      this._timerStarted = true;
