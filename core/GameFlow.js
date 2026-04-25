@@ -365,30 +365,32 @@ applyGuess(playerId, point) {
  // =========================
  // FINISH ROUND
  // =========================
- finishRound(reason) {
+finishRound(reason) {
+ if (this._roundFinishing) return;
 
-  if (this._roundFinishing) return;
-  if (!this._roundReady) return;
+ this._roundFinishing = true;
 
-  this._roundFinishing = true;
+ this.timer.clear();
+ this.roundTimer.clear();
 
-  this.timer.clear();
-  this.roundTimer.clear();
+ this._timerStarted = false;
 
-  this._timerStarted = false;
-  this._roundLocked = true;
+ // 🔥 КЛЮЧ: защита от двойного эмита
+ if (!this._resultShown) {
+  this._resultShown = true;
 
-  this.emit("timerStopped");
-
-  const snap = this._hostSnapshot || this.getCurrentRound();
+  const round = this.getRoundForUI();
+  const state = this.game.getState();
 
   this.emit("roundResultShown", {
-   state: this.game.getState(),
-   round: this.getRoundForUIFromSnapshot?.(snap) || this.getRoundForUI()
+   state,
+   round,
+   reason
   });
-
-  this._roundFinishing = false;
  }
+
+ this._roundFinishing = false;
+}
 
  finishRoundFromState(reason) {
   if (this._roundFinishing) return;
@@ -398,24 +400,25 @@ applyGuess(playerId, point) {
 // =========================
  // NEXT ROUND (SAFE)
  // =========================
- async nextRound() {
+async nextRound() {
 
-  if (this._roundFinishing) return;
+ this._resultShown = false; // 🔥 CRITICAL RESET
+ this._roundFinishing = false;
 
-  this.timer.clear();
-  this.roundTimer.clear();
+ this.timer.clear();
+ this.roundTimer.clear();
 
-  this._timerStarted = false;
+ this._timerStarted = false;
 
-  this.game.commitRound?.();
+ this.game.commitRound?.();
 
-  if (this.game.isGameEnded()) {
-   this.endGame();
-   return;
-  }
-
-  await this.startRound();
+ if (this.game.isGameEnded()) {
+  this.endGame();
+  return;
  }
+
+ await this.startRound();
+}
 
  // =========================
  // END GAME
