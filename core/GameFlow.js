@@ -178,29 +178,25 @@ export class GameFlow {
 // =========================
 // 💥 RESULT SCREEN FIX (SYNC PER CLIENT)
 // =========================
-const isRoundComplete =
- hasIndex &&
- Object.keys(current.guesses || {}).length >= this.game.players.length;
-
-const isFinished =
- current.status === "finished" || isRoundComplete;
-
-if (isFinished) {
-
+if (
+ current.status === "finished" && hasIndex
+) {
+console.log("1");
  // 🔥 локальный дедуп (НЕ network-based)
  if (this._resultEmittedForRound === current.index) return;
-
+console.log("2");
  this._resultEmittedForRound = current.index;
 
  this._timerStarted = false;
  this.emit("timerStopped");
-
+console.log("3");
  // 🔥 важно: эмитим ВСЕГДА локально
  this.emit("roundResultShown", {
   state: this.game.getState(),
   round: this.getRoundForUI(),
   reason: "network"
  });
+ console.log("4");
 }
   });
  }
