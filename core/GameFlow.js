@@ -157,7 +157,6 @@ if (current.status === "waiting") {
   if (current.initiator === this.playerId) {
     this.emit("roundWaiting");
   }
-}
 
     if (!this._timerStarted) {
      this._timerStarted = true;
