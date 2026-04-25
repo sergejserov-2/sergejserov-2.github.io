@@ -103,8 +103,6 @@ export class UIFlow {
   // WAITING (DUEL)
   // =========================
 this.gameFlow.on("roundWaiting", () => {
-  const round = this.gameFlow.getCurrentRound();
-  if (round?.status !== "waiting") return;
   this.screenManager.show("waiting");
 });
 
