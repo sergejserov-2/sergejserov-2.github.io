@@ -176,7 +176,7 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
 
    this.staticUI.showGameResult(vm);
 
-   const last = state.rounds?.at(-1);
+  const last = state.rounds?.at(-1) || state.currentRound;
 
    if (last) {
     requestAnimationFrame(() => {
