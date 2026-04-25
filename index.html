@@ -86,6 +86,13 @@ h2 {
     background: #4ea1ff;
 }
 
+
+.btn.wait,
+.btn.disabled {
+    pointer-events: none;
+    cursor: default;
+}
+    
 /* =========================
    ROUNDS
 ========================= */
@@ -452,26 +459,19 @@ document.getElementById("movesOff").onclick = () => {
 };
 
 function setStartButtonState({ text, state }) {
-  // state: "idle" | "waiting" | "ready"
-
   start.textContent = text;
 
   start.classList.remove("wait", "disabled");
 
   if (state === "ready") {
-    start.disabled = false;
-    start.style.cursor = "pointer";
+    return;
   }
 
   if (state === "waiting") {
-    start.disabled = true;
-    start.style.cursor = "not-allowed";
     start.classList.add("wait");
   }
 
   if (state === "disabled") {
-    start.disabled = true;
-    start.style.cursor = "not-allowed";
     start.classList.add("disabled");
   }
 }
