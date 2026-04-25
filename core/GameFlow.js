@@ -95,141 +95,139 @@ export class GameFlow {
  // =========================
  // NETWORK CORE (FIXED)
  // =========================
- bindNetwork() {
-  if (!this.network) return;
+bindNetwork() {
+ if (!this.network) return;
 
-  this.network.onRoom((room) => {
+ this.network.onRoom((room) => {
+  const game = room.game;
+  if (!game) return;
 
-   const game = room.game;
-   if (!game) return;
+  const rawRound = game.round;
+  if (!rawRound) return;
 
-   const rawRound = game.round;
-   if (!rawRound) return;
+  // =========================
+  // GAME START
+  // =========================
+  if (game.started && !this._started) {
+   this._started = true;
+   this.game.startGame();
+   this.emit("gameStarted", this.game.getState());
+  }
 
-   // =========================
-   // GAME START
-   // =========================
-   if (game.started && !this._started) {
-    this._started = true;
-    this.game.startGame();
-    this.emit("gameStarted", this.game.getState());
-   }
+  // =========================
+  // NORMALIZE
+  // =========================
+  const current = this.normalizeRound(rawRound);
 
-   // =========================
-   // NORMALIZE SNAPSHOT
-   // =========================
-   const current = this.normalizeRound(rawRound);
+  const guesses = current.guesses || {};
+  const guessKeys = Object.keys(guesses);
+  const guessCount = guessKeys.length;
 
-   // 🔥 HOST SNAPSHOT AUTHORITY
-   if (this.playerId === "p1") {
-    this._hostSnapshot = structuredClone(current);
-   }
+  // =========================
+  // 🔥 SEPARATE FLAGS (CRITICAL FIX)
+  // =========================
 
-   // =========================
-   // ROUND READY GATE
-   // =========================
-   this._roundReady =
-    current.index != null &&
+  const roundMetaReady =
+    current.index != null;
+
+  const roundViewReady =
     current.actualLocation != null;
 
-   this.setCurrentRound(current);
-   this.game.syncRoundFromNetwork?.(current);
+  // sync core state
+  this.game.syncRoundFromNetwork?.(current);
+  this.setCurrentRound(current);
 
-   const guesses = current.guesses || {};
-   const guessKeys = Object.keys(guesses);
-   const guessCount = guessKeys.length;
+  // =========================
+  // HOST LOGIC
+  // =========================
+  if (this.playerId === "p1") {
 
-   // =========================
-   // HOST ONLY LOGIC
-   // =========================
-   if (this.playerId === "p1") {
-
-    // INITIATOR RULE
-    if (
-     this._roundReady &&
-     guessCount > 0 &&
-     !current.initiator
-    ) {
-     this.updateRound({
-      initiator: guessKeys[0],
-      status: "waiting"
-     });
-    }
-
-    // AUTO FINISH
-    if (
-     current.status !== "finished" &&
-     guessCount >= this.game.players.length
-    ) {
-     this.updateRound({ status: "finished" });
-    }
-   }
-
-   // =========================
-   // GUEST ROUND START (SAFE)
-   // =========================
-   if (this.playerId !== "p1") {
-
-    const snap = this._hostSnapshot;
-
-    const shouldStart =
-     snap &&
-     snap.index !== this._roundIndex;
-
-    if (shouldStart && !this._startingRound) {
-
-     this._startingRound = true;
-     this._roundIndex = snap.index;
-
-     this.startRoundWithLocation(snap.actualLocation)
-      .finally(() => {
-       this._startingRound = false;
-      });
-    }
-   }
-
-   // =========================
-   // WAITING STATE (ONLY INITIATOR UI)
-   // =========================
-   if (current.status === "waiting") {
-
-   const snap = this._hostSnapshot || current;
-
-    if (snap.initiator === this.playerId) {
-     this.emit("roundWaiting");
-    }
-
-    if (!this._timerStarted) {
-     this._timerStarted = true;
-
-     this.roundTimer.start(
-      10,
-      () => {
-       if (this.playerId === "p1") {
-        this.updateRound({ status: "finished" });
-       }
-      },
-      (t) => this.emit("timerTick", t)
-     );
-
-     this.emit("timerStarted");
-    }
-   }
-
-   // =========================
-   // FINISH (SAFE GUARD)
-   // =========================
+   // INITIATOR SET (SAFE)
    if (
-    current.status === "finished" &&
-    !this._roundFinishing &&
-    this._roundReady
+    roundMetaReady &&
+    guessCount > 0 &&
+    !current.initiator
    ) {
-    this._timerStarted = false;
-    this.emit("timerStopped");
-    this.finishRoundFromState("networkFinish");
+    const first = guessKeys[0];
+
+    this.updateRound({
+     initiator: first,
+     status: "waiting"
+    });
    }
-  });
- }
+
+   // AUTO FINISH
+   if (
+    current.status !== "finished" &&
+    guessCount >= this.game.players.length
+   ) {
+    this.updateRound({ status: "finished" });
+   }
+  }
+
+  // =========================
+  // GUEST START (FIXED)
+  // =========================
+  if (this.playerId !== "p1") {
+
+   // ❗️ IMPORTANT: ONLY actualLocation controls panorama start
+   const shouldStart =
+    roundViewReady &&
+    current.index != null &&
+    this._roundIndex !== current.index;
+
+   if (shouldStart && !this._startingRound) {
+
+    this._startingRound = true;
+    this._roundIndex = current.index;
+
+    this.startRoundWithLocation(current.actualLocation)
+     .finally(() => {
+      this._startingRound = false;
+     });
+   }
+  }
+
+  // =========================
+  // WAITING (ONLY INITIATOR UI)
+  // =========================
+  if (current.status === "waiting") {
+
+   if (current.initiator === this.playerId) {
+    this.emit("roundWaiting");
+   }
+
+   if (!this._timerStarted) {
+    this._timerStarted = true;
+
+    this.roundTimer.start(
+     10,
+     () => {
+      if (this.playerId === "p1") {
+       this.updateRound({ status: "finished" });
+      }
+     },
+     (t) => this.emit("timerTick", t)
+    );
+
+    this.emit("timerStarted");
+   }
+  }
+
+  // =========================
+  // FINISH (SAFE)
+  // =========================
+  if (
+   current.status === "finished" &&
+   !this._roundFinishing &&
+   roundMetaReady
+  ) {
+   this._timerStarted = false;
+   this.emit("timerStopped");
+   this.finishRoundFromState("networkFinish");
+  }
+ });
+}
 
  // =========================
  // START GAME
