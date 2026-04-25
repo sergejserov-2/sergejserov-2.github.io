@@ -101,38 +101,36 @@ bindNetwork() {
    this.emit("gameStarted", this.game.getState());
   }
 
-  this.setCurrentRound(round);
+  // 🔥 ВСЕГДА берём источник истины из Firebase
+  const source = this.normalizeRound(round);
 
-  const current = this.getCurrentRound();
-  if (!current) return;
+  // кэш для UI
+  this.setCurrentRound(source);
 
   // =========================
-  // 🔥 HOST LOGIC (FIX)
+  // HOST LOGIC (ТОЛЬКО p1)
   // =========================
   if (this.playerId === "p1") {
-   const guesses = current.guesses || {};
+   const guesses = source.guesses || {};
    const guessIds = Object.keys(guesses);
    const guessCount = guessIds.length;
 
    // 👉 первый guess → initiator + waiting
-   if (!current.initiator && guessCount > 0) {
+   if (!source.initiator && guessCount > 0) {
     const firstPlayerId = guessIds[0];
 
     this.updateRound({
      initiator: firstPlayerId,
      status: "waiting"
     });
-
-    return;
    }
 
    // 👉 все сходили → finish
    if (
-    current.status !== "finished" &&
+    source.status !== "finished" &&
     guessCount >= this.game.players.length
    ) {
     this.updateRound({ status: "finished" });
-    return;
    }
   }
 
@@ -142,20 +140,20 @@ bindNetwork() {
   if (this.playerId !== "p1") {
 
    const canStart =
-    current.index != null &&
-    current.actualLocation &&
-    current.index !== this._currentRoundIndex;
+    source.index != null &&
+    source.actualLocation &&
+    source.index !== this._currentRoundIndex;
 
    if (canStart) {
-    this._currentRoundIndex = current.index;
-    this.startRoundWithLocation(current.actualLocation);
+    this._currentRoundIndex = source.index;
+    this.startRoundWithLocation(source.actualLocation);
    }
   }
 
   // =========================
-  // WAITING (🔥 теперь для всех)
+  // WAITING (для ВСЕХ)
   // =========================
-  if (current.status === "waiting") {
+  if (source.status === "waiting") {
 
    this.emit("roundWaiting");
 
@@ -179,7 +177,7 @@ bindNetwork() {
   // =========================
   // FINISH
   // =========================
-  if (current.status === "finished" && !this._roundFinishing) {
+  if (source.status === "finished" && !this._roundFinishing) {
    this._timerStarted = false;
    this.finishRoundFromState("networkFinish");
   }
