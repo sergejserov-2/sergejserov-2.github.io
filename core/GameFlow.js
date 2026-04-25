@@ -163,29 +163,35 @@ bindNetwork() {
    }
   }
 
-  // =========================
-  // WAITING STATE (GLOBAL)
-  // =========================
-  if (current.status === "waiting") {
+ // =========================
+// WAITING (GLOBAL)
+// =========================
+if (current.status === "waiting") {
 
-   this.emit("roundWaiting");
+ this.emit("roundWaiting");
 
-   if (!this._timerStarted) {
-    this._timerStarted = true;
+ // 🔥 КЛЮЧ: синхронизируем HUD таймер с roundTimer
+ this.emit("timerTick", this.roundTimer.getRemaining?.() ?? 10);
 
-    this.roundTimer.start(
-     10,
-     () => {
-      if (this.playerId === "p1") {
-       this.updateRound({ status: "finished" });
-      }
-     },
-     (t) => this.emit("roundTimerTick", t)
-    );
+ if (!this._timerStarted) {
+  this._timerStarted = true;
 
-    this.emit("roundTimerStart");
+  this.roundTimer.start(
+   10,
+   () => {
+    if (this.playerId === "p1") {
+     this.updateRound({ status: "finished" });
+    }
+   },
+   (t) => {
+    // 🔥 ВАЖНО: тот же HUD pipeline
+    this.emit("timerTick", t);
    }
-  }
+  );
+
+  this.emit("roundTimerStart");
+ }
+}
 
   // =========================
   // FINISH
