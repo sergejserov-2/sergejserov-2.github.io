@@ -132,7 +132,8 @@ export function buildGameApp({ config, mode, room, role }) {
  const mapWrapperUI = new MapWrapperUI({
   adapter: mapAdapter,
   element: mapEl,
-  uiBuilder
+  uiBuilder,
+  playerId: gameFlow.playerId
  });
 
  const streetViewUI = new StreetViewUI({
