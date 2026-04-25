@@ -40,6 +40,7 @@ export class StaticUI {
  // =========================
 
  showRoundResult(vm = {}) {
+    console.log("RoundinStaticUI");
   const root = this.roundRoot;
   if (!root) return;
 
