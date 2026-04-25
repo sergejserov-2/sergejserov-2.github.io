@@ -1,20 +1,18 @@
 export class MapWrapperUI {
-    constructor({ adapter, element, uiBuilder }) {
+    constructor({ adapter, element, uiBuilder, playerId }) {
         this.adapter = adapter;
         this.uiBuilder = uiBuilder;
         this.element = element;
-
+        this.playerId = playerId;
+        
         this.map = null;
-
         this.isLocked = false;
         this.lastGuessPoint = null;
-
         this.guessMarker = null;
-
         this.area = null;
         this.polygon = null;
-
         this.onGuess = null;
+
     }
 
     // =========================
@@ -41,7 +39,7 @@ export class MapWrapperUI {
             };
 
             this.lastGuessPoint = point;
-            this.placeGuessMarker(point, playerId);
+            this.placeGuessMarker(point, this.playerId);
         });
 
         this.initResize();
