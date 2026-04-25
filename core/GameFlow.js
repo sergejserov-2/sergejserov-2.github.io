@@ -99,8 +99,6 @@ this._lastFinishedRoundIndex = null;
 bindNetwork() {
  if (!this.network) return;
 
- // 🔥 INIT (once)
- this._roundTransitioning = false;
  this._lastFinishedRoundIndex = null;
 
  this.network.onRoom((room) => {
@@ -121,9 +119,12 @@ bindNetwork() {
   }
 
   // =========================
-  // NORMALIZE
+  // NORMALIZE + SYNC
   // =========================
   const current = this.normalizeRound(rawRound);
+
+  this.game.syncRoundFromNetwork?.(current);
+  this.setCurrentRound(current);
 
   const guesses = current.guesses || {};
   const guessKeys = Object.keys(guesses);
@@ -133,17 +134,11 @@ bindNetwork() {
   const hasLocation = current.actualLocation != null;
 
   // =========================
-  // SYNC CORE (NO SIDE EFFECTS)
-  // =========================
-  this.game.syncRoundFromNetwork?.(current);
-  this.setCurrentRound(current);
-
-  // =========================
-  // HOST LOGIC (ONLY p1 WRITES)
+  // HOST RULES (ЕДИНСТВЕННОЕ МЕСТО ЗАПИСИ)
   // =========================
   if (this.playerId === "p1") {
 
-   // INITIATOR (once)
+   // INITIATOR
    if (
     hasIndex &&
     hasLocation &&
@@ -156,7 +151,7 @@ bindNetwork() {
     });
    }
 
-   // AUTO FINISH
+   // FINISH
    if (
     current.status !== "finished" &&
     guessCount >= this.game.players.length
@@ -166,7 +161,7 @@ bindNetwork() {
   }
 
   // =========================
-  // GUEST START (STRICT RULE)
+  // GUEST START (ТОЛЬКО ОТСЮДА)
   // =========================
   if (this.playerId !== "p1") {
 
@@ -175,15 +170,9 @@ bindNetwork() {
     hasLocation &&
     this._roundIndex !== current.index;
 
-   if (shouldStart && !this._startingRound) {
-
-    this._startingRound = true;
+   if (shouldStart) {
     this._roundIndex = current.index;
-
-    this.startRoundWithLocation(current.actualLocation)
-     .finally(() => {
-      this._startingRound = false;
-     });
+    this.startRoundWithLocation(current.actualLocation);
    }
   }
 
@@ -192,12 +181,10 @@ bindNetwork() {
   // =========================
   if (current.status === "waiting") {
 
-   // UI только инициатору
    if (current.initiator === this.playerId) {
     this.emit("roundWaiting");
    }
 
-   // таймер всем (но старт один раз)
    if (!this._timerStarted) {
     this._timerStarted = true;
 
@@ -216,37 +203,19 @@ bindNetwork() {
   }
 
   // =========================
-  // FINISH (DEDUP + HOST ONLY NEXT ROUND)
+  // FINISH (ТОЛЬКО UI)
   // =========================
   if (
    current.status === "finished" &&
    hasIndex &&
    this._lastFinishedRoundIndex !== current.index
   ) {
-
-   // 🔥 защита от повторного входа
    this._lastFinishedRoundIndex = current.index;
 
    this._timerStarted = false;
    this.emit("timerStopped");
 
    this.finishRoundFromState("networkFinish");
-
-   // 🔥 ТОЛЬКО ХОСТ ДВИГАЕТ РАУНД
-   if (this.playerId === "p1") {
-
-    if (!this._roundTransitioning) {
-     this._roundTransitioning = true;
-
-     // microtask → чтобы UI успел показать результат
-     Promise.resolve().then(() => {
-      this.nextRound()
-       .finally(() => {
-        this._roundTransitioning = false;
-       });
-     });
-    }
-   }
   }
  });
 }
@@ -423,8 +392,10 @@ finishRound(reason) {
  // =========================
 async nextRound() {
 
- if (this._roundTransitioning) return;
+ // ❗ ЖЁСТКАЯ ГАРАНТИЯ
+ if (this.playerId !== "p1") return;
 
+ if (this._roundTransitioning) return;
  this._roundTransitioning = true;
 
  this._resultShown = false;
@@ -442,6 +413,22 @@ async nextRound() {
   this._roundTransitioning = false;
   return;
  }
+
+ // 🔥 СОЗДАЁМ НОВЫЙ ROUND ЧЕРЕЗ NETWORK
+ const location = await this.generator.generate(this.area);
+
+ const round = this.normalizeRound({
+  index: this.game.getState().rounds.length + 1,
+  actualLocation: location,
+  status: "running",
+  guesses: {},
+  initiator: null
+ });
+
+ this.network.setRound(round);
+
+ this._roundTransitioning = false;
+}
 
  await this.startRound();
 
