@@ -99,6 +99,7 @@ bindNetwork() {
  if (!this.network) return;
 
  this.network.onRoom((room) => {
+
   const game = room.game;
   if (!game) return;
 
@@ -115,7 +116,7 @@ bindNetwork() {
   }
 
   // =========================
-  // NORMALIZE
+  // NORMALIZE (HOST SOURCE OF TRUTH)
   // =========================
   const current = this.normalizeRound(rawRound);
 
@@ -123,35 +124,29 @@ bindNetwork() {
   const guessKeys = Object.keys(guesses);
   const guessCount = guessKeys.length;
 
+  const hasLocation = current.actualLocation != null;
+  const hasIndex = current.index != null;
+
   // =========================
-  // 🔥 SEPARATE FLAGS (CRITICAL FIX)
+  // 🔥 SYNC CORE STATE (NO SIDE EFFECTS YET)
   // =========================
-
-  const roundMetaReady =
-    current.index != null;
-
-  const roundViewReady =
-    current.actualLocation != null;
-
-  // sync core state
   this.game.syncRoundFromNetwork?.(current);
   this.setCurrentRound(current);
 
   // =========================
-  // HOST LOGIC
+  // HOST LOGIC (ONLY p1 WRITES STATE)
   // =========================
   if (this.playerId === "p1") {
 
-   // INITIATOR SET (SAFE)
+   // INITIATOR LOCK (ONLY ONCE)
    if (
-    roundMetaReady &&
+    hasIndex &&
+    hasLocation &&
     guessCount > 0 &&
     !current.initiator
    ) {
-    const first = guessKeys[0];
-
     this.updateRound({
-     initiator: first,
+     initiator: guessKeys[0],
      status: "waiting"
     });
    }
@@ -166,21 +161,22 @@ bindNetwork() {
   }
 
   // =========================
-  // GUEST START (FIXED)
+  // GUEST START (CRITICAL FIX)
   // =========================
+
   if (this.playerId !== "p1") {
 
-   // ❗️ IMPORTANT: ONLY actualLocation controls panorama start
-   const shouldStart =
-    roundViewReady &&
-    current.index != null &&
+   const canStartRound =
+    hasIndex &&
+    hasLocation &&
     this._roundIndex !== current.index;
 
-   if (shouldStart && !this._startingRound) {
+   if (canStartRound && !this._startingRound) {
 
     this._startingRound = true;
     this._roundIndex = current.index;
 
+    // 🔥 IMPORTANT: SINGLE ENTRY POINT
     this.startRoundWithLocation(current.actualLocation)
      .finally(() => {
       this._startingRound = false;
@@ -189,7 +185,7 @@ bindNetwork() {
   }
 
   // =========================
-  // WAITING (ONLY INITIATOR UI)
+  // WAITING UI (HOST INITIATOR ONLY)
   // =========================
   if (current.status === "waiting") {
 
@@ -215,12 +211,12 @@ bindNetwork() {
   }
 
   // =========================
-  // FINISH (SAFE)
+  // FINISH (SAFE GUARD)
   // =========================
   if (
    current.status === "finished" &&
    !this._roundFinishing &&
-   roundMetaReady
+   hasIndex
   ) {
    this._timerStarted = false;
    this.emit("timerStopped");
@@ -228,7 +224,6 @@ bindNetwork() {
   }
  });
 }
-
  // =========================
  // START GAME
  // =========================
