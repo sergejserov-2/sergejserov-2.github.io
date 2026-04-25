@@ -157,36 +157,27 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
   // =========================
   // GAME END
   // =========================
-  this.gameFlow.on("gameEnded", (state) => {
-   this.screenManager.show("gameResult");
+this.gameFlow.on("gameEnded", (state) => {
 
-  // =========================
-  // NORMALIZE (🔥 КЛЮЧ)
-  // =========================
-  const guessesArray = Array.isArray(round.guesses)
-    ? round.guesses
-    : Object.values(round.guesses || {});
+  const last = state.rounds?.at(-1);
+
+  this.screenManager.show("gameResult");
 
   const vm = {
-    actual: round.actualLocation,
-    guesses: guessesArray
+    actual: last?.actualLocation ?? null,
+    guesses: Object.values(last?.guesses || {})
   };
 
-  console.log("🎯 UI VM", vm);
+  this.staticUI.showGameResult(vm);
 
-   this.staticUI.showGameResult(vm);
-
-  const last = state.rounds?.at(-1) || state.currentRound;
-
-   if (last) {
+  if (last) {
     requestAnimationFrame(() => {
-     this.gameOverviewUI.render(last);
+      this.gameOverviewUI.render(last);
     });
-   }
+  }
 
-   this.bindGameResultButtons();
-  });
- }
+  this.bindGameResultButtons();
+});
 
  // =========================
  // BUTTONS
