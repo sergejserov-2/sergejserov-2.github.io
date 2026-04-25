@@ -102,9 +102,11 @@ export class UIFlow {
   // =========================
   // WAITING (DUEL)
   // =========================
-  this.gameFlow.on("roundWaiting", () => {
-   this.screenManager.show("waiting");
-  });
+this.gameFlow.on("roundWaiting", () => {
+  const round = this.gameFlow.getCurrentRound();
+  if (round?.status !== "waiting") return;
+  this.screenManager.show("waiting");
+});
 
   this.gameFlow.on("roundTimerTick", (t) => {
    this.staticUI.updateRoundTimer?.(t);
