@@ -464,15 +464,17 @@ function setStartButtonState({ text, state }) {
   start.classList.remove("wait", "disabled");
 
   if (state === "ready") {
+          btn.style.pointerEvents = "auto";
     return;
   }
 
   if (state === "waiting") {
     start.classList.add("wait");
+          btn.style.pointerEvents = "none";
   }
-
   if (state === "disabled") {
     start.classList.add("disabled");
+          btn.style.pointerEvents = "none";
   }
 }
     
