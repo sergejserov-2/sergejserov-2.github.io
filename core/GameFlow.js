@@ -345,4 +345,83 @@ getRoundForUI() {
  emitUI(event, data) {
   this.emit(event, data);
  }
+
+
+
+
+
+
+
+async nextRound() {
+ if (this._roundFinishing) return;
+
+ // =========================
+ // COMMIT CURRENT ROUND
+ // =========================
+ this.game.commitRound?.();
+
+ // =========================
+ // RESET LOCAL ROUND STATE
+ // =========================
+ this._timerStarted = false;
+ this._roundFinishing = false;
+
+ this.timer.clear();
+ this.roundTimer.clear();
+
+ // =========================
+ // END GAME CHECK
+ // =========================
+ if (this.game.isGameEnded()) {
+  this.endGame();
+  return;
+ }
+
+ // =========================
+ // START NEW ROUND
+ // =========================
+ await this.startRound();
+}
+
+
+
+
+endGame() {
+ if (this._roundFinishing) return;
+
+ this._roundFinishing = true;
+
+ // =========================
+ // STOP ALL TIMERS
+ // =========================
+ this.timer.clear();
+ this.roundTimer.clear();
+
+ // =========================
+ // UPDATE GAME STATE
+ // =========================
+ this.game.endGame?.();
+
+ // =========================
+ // NETWORK SYNC (DUEL SAFE)
+ // =========================
+ if (this.mode === "duel" && this.playerId === "p1") {
+  this.network?.setGame?.({
+   ...this.game.getState(),
+   started: false,
+   ended: true
+  });
+ }
+
+ // =========================
+ // EMIT FINAL STATE
+ // =========================
+ this.emit("gameEnded", this.game.getState());
+
+ this._roundFinishing = false;
+}
+
+
+
+ 
 }
