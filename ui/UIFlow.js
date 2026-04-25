@@ -113,7 +113,7 @@ this._resultLocked = true;
   // =========================
   // ROUND RESULT (GUESS ONLY PIPELINE)
   // =========================
-this.gameFlow.on("roundResultShown", (...) => {
+this.gameFlow.on("roundResultShown", ({ state, round }) => {
   if (this._resultLocked) return;
   this._resultLocked = true;
 
