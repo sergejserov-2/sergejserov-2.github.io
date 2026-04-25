@@ -269,7 +269,7 @@ this._resultEmittedForRound = current.index;
   this.handlePlayerFinished(playerId, result);
  }
 
-handlePlayerFinished(...) {
+handlePlayerFinished(playerId, result) {
   if (this.playerId !== "p1") return;
 
   const round = this.getCurrentRound();
