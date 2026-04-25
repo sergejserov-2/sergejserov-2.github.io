@@ -128,12 +128,22 @@ export class GameFlow {
      });
     }
 
-    if (
-     current.status !== "finished" &&
-     guessCount >= this.game.players.length
-    ) {
-     this.updateRound({ status: "finished" });
-    }
+const allGuessesReady =
+  Object.keys(current.guesses || {}).length >= this.game.players.length;
+
+if (
+ current.status !== "finished" &&
+ allGuessesReady &&
+ hasIndex
+) {
+ // 🔒 host-only authoritative transition
+ if (this.playerId === "p1") {
+  this.network.setRound({
+   ...current,
+   status: "finished"
+  });
+ }
+}
    }
 
    // =========================
