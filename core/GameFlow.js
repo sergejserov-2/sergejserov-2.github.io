@@ -32,7 +32,8 @@ export class GameFlow {
 
   this._roundIndex = null;
 
-  this._resultEmittedForRound = null;
+this._resultEmittedForRound = null;
+this._hostFinishedLocally = null;
 
   this._resolveStreetViewReady = null;
 
@@ -178,20 +179,18 @@ export class GameFlow {
 // =========================
 // 💥 RESULT SCREEN FIX (SYNC PER CLIENT)
 // =========================
-if (
- current.status === "finished" &&
- hasIndex
-) {
+if (current.status === "finished" && hasIndex) {
 
- // 🔥 локальный дедуп (НЕ network-based)
- if (this._resultEmittedForRound === current.index) return;
+ const roundIndex = current.index;
 
- this._resultEmittedForRound = current.index;
+ // 🔒 глобальный дедуп
+ if (this._resultEmittedForRound === roundIndex) return;
+
+ this._resultEmittedForRound = roundIndex;
 
  this._timerStarted = false;
  this.emit("timerStopped");
 
- // 🔥 важно: эмитим ВСЕГДА локально
  this.emit("roundResultShown", {
   state: this.game.getState(),
   round: this.getRoundForUI(),
@@ -295,7 +294,7 @@ if (
   this.updateRound(next);
  }
 
- updateRound(patch) {
+updateRound(patch) {
   if (this.playerId !== "p1") return;
   if (!this.network?.setRound) return;
 
@@ -308,7 +307,12 @@ if (
 
   this.setCurrentRound(next);
   this.network.setRound(next);
- }
+
+  // 🔥 фикс: запоминаем факт финализации
+  if (patch.status === "finished") {
+   this._hostFinishedLocally = next.index;
+  }
+}
 
  // =========================
  // RESULT LOGIC (NOW PURELY NETWORK DRIVEN)
