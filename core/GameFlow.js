@@ -31,7 +31,6 @@ export class GameFlow {
   this._currentRound = null;
 
   this._roundIndex = null;
-  this._lastFinishedRoundIndex = null;
 
   this._resultEmittedForRound = null;
 
@@ -176,28 +175,29 @@ export class GameFlow {
     }
    }
 
-   // =========================
-   // 💥 ONLY TRUE RESULT SCREEN TRIGGER
-   // =========================
-   if (
-    current.status === "finished" &&
-    hasIndex &&
-    this._lastFinishedRoundIndex !== current.index
-   ) {
+// =========================
+// 💥 RESULT SCREEN FIX (SYNC PER CLIENT)
+// =========================
+if (
+ current.status === "finished" &&
+ hasIndex
+) {
 
-    this._lastFinishedRoundIndex = current.index;
+ // 🔥 локальный дедуп (НЕ network-based)
+ if (this._resultEmittedForRound === current.index) return;
 
-    this._timerStarted = false;
-    this.emit("timerStopped");
+ this._resultEmittedForRound = current.index;
 
-   // ❗ NO LOCAL finishRound LOGIC ANYMORE HERE
-    // ❗ PURE NETWORK → UI EVENT
-    this.emit("roundResultShown", {
-     state: this.game.getState(),
-     round: this.getRoundForUI(),
-     reason: "network"
-    });
-   }
+ this._timerStarted = false;
+ this.emit("timerStopped");
+
+ // 🔥 важно: эмитим ВСЕГДА локально
+ this.emit("roundResultShown", {
+  state: this.game.getState(),
+  round: this.getRoundForUI(),
+  reason: "network"
+ });
+}
   });
  }
 
