@@ -41,7 +41,8 @@ export class GameFlow {
   this._startingRound = false;
   this._roundReady = false;
   this._roundLocked = false;
-
+this._roundTransitioning = false;
+this._lastFinishedRoundIndex = null;
   this._resolveStreetViewReady = null;
 
   this.bindNetwork();
@@ -210,19 +211,37 @@ bindNetwork() {
    }
   }
 
-  // =========================
-  // FINISH (SAFE GUARD)
-  // =========================
+// =========================
+// FINISH (DEDUPED TRANSITION)
+// =========================
   if (
    current.status === "finished" &&
-   !this._roundFinishing &&
-   hasIndex
+   hasIndex &&
+   this._lastFinishedRoundIndex !== current.index
   ) {
+  
+   // mark once per round
+   this._lastFinishedRoundIndex = current.index;
+  
    this._timerStarted = false;
    this.emit("timerStopped");
+  
    this.finishRoundFromState("networkFinish");
+  
+   // 🔥 CRITICAL: ONLY HOST TRIGGERS NEXT ROUND
+   if (this.playerId === "p1") {
+  
+    if (!this._roundTransitioning) {
+     this._roundTransitioning = true;
+  
+     setTimeout(() => {
+      this.nextRound().finally(() => {
+       this._roundTransitioning = false;
+      });
+     }, 0);
+    }
+   }
   }
- });
 }
  // =========================
  // START GAME
@@ -397,7 +416,11 @@ finishRound(reason) {
  // =========================
 async nextRound() {
 
- this._resultShown = false; // 🔥 CRITICAL RESET
+ if (this._roundTransitioning) return;
+
+ this._roundTransitioning = true;
+
+ this._resultShown = false;
  this._roundFinishing = false;
 
  this.timer.clear();
@@ -409,10 +432,13 @@ async nextRound() {
 
  if (this.game.isGameEnded()) {
   this.endGame();
+  this._roundTransitioning = false;
   return;
  }
 
  await this.startRound();
+
+ this._roundTransitioning = false;
 }
 
  // =========================
