@@ -181,22 +181,17 @@ export class GameFlow {
 if (
  current.status === "finished" && hasIndex
 ) {
-console.log("1");
- // 🔥 локальный дедуп (НЕ network-based)
- if (this._resultEmittedForRound === current.index) return;
-console.log("2");
- this._resultEmittedForRound = current.index;
+const roundId = `${current.index}:${current.status}`;
+if (this._resultEmittedForRound === roundId) return;
+this._resultEmittedForRound = roundId;
 
  this._timerStarted = false;
  this.emit("timerStopped");
-console.log("3");
- // 🔥 важно: эмитим ВСЕГДА локально
  this.emit("roundResultShown", {
   state: this.game.getState(),
   round: this.getRoundForUI(),
   reason: "network"
  });
- console.log("4");
 }
   });
  }
