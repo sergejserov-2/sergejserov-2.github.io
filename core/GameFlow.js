@@ -187,6 +187,17 @@ this._resultEmittedForRound = current.index;
 
  this._timerStarted = false;
  this.emit("timerStopped");
+
+  const isLastRound = this.game.isGameEnded?.();
+
+  if (isLastRound) {
+    this.game.commitRound?.(); // важно!
+
+    this.emit("gameEnded", this.game.getState());
+    return;
+  }
+
+ 
  this.emit("roundResultShown", {
   state: this.game.getState(),
   round: this.getRoundForUI(),
