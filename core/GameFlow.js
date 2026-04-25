@@ -32,8 +32,7 @@ export class GameFlow {
 
   this._roundIndex = null;
 
-this._resultEmittedForRound = null;
-this._hostFinishedLocally = null;
+  this._resultEmittedForRound = null;
 
   this._resolveStreetViewReady = null;
 
@@ -179,42 +178,26 @@ this._hostFinishedLocally = null;
 // =========================
 // 💥 RESULT SCREEN FIX (SYNC PER CLIENT)
 // =========================
-if (current.status === "finished" && hasIndex) {
+if (
+ current.status === "finished" &&
+ hasIndex
+) {
 
- const roundIndex = current.index;
+ // 🔥 локальный дедуп (НЕ network-based)
+ if (this._resultEmittedForRound === current.index) return;
 
- // 🔒 глобальный дедуп
- if (this._resultEmittedForRound === roundIndex) return;
-
- this._resultEmittedForRound = roundIndex;
+ this._resultEmittedForRound = current.index;
 
  this._timerStarted = false;
  this.emit("timerStopped");
 
+ // 🔥 важно: эмитим ВСЕГДА локально
  this.emit("roundResultShown", {
   state: this.game.getState(),
   round: this.getRoundForUI(),
   reason: "network"
  });
 }
-
-// если хост НЕ получил network finished, но сам его инициировал
-if (
- this.playerId === "p1" &&
- this._hostFinishedLocally &&
- this._resultEmittedForRound !== this._hostFinishedLocally
-) {
- this._resultEmittedForRound = this._hostFinishedLocally;
-
- this.emit("roundResultShown", {
-  state: this.game.getState(),
-  round: this.getRoundForUI(),
-  reason: "host-fallback"
- });
-}
-
-
-   
   });
  }
 
@@ -312,7 +295,7 @@ if (
   this.updateRound(next);
  }
 
-updateRound(patch) {
+ updateRound(patch) {
   if (this.playerId !== "p1") return;
   if (!this.network?.setRound) return;
 
@@ -325,12 +308,7 @@ updateRound(patch) {
 
   this.setCurrentRound(next);
   this.network.setRound(next);
-
-  // 🔥 фикс: запоминаем факт финализации
-  if (patch.status === "finished") {
-   this._hostFinishedLocally = next.index;
-  }
-}
+ }
 
  // =========================
  // RESULT LOGIC (NOW PURELY NETWORK DRIVEN)
