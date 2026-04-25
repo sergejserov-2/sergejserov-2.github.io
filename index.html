@@ -288,24 +288,28 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
   // =========================
   // SOLO MODE RESET UI
   // =========================
-  if (mode === "solo") {
-   roomController = null;
-   redirected = false;
+if (mode === "solo") {
+ roomController = null;
+ redirected = false;
 
-   start.textContent = "Начать игру";
-   start.disabled = false;
+ setStartButtonState({
+  text: "Начать игру",
+  state: "ready"
+ });
 
-   link.value = "";
-   link.disabled = true;
+ link.value = "";
+ link.disabled = true;
 
-   return;
-  }
+ return;
+}
 
   // =========================
   // DUEL INIT
   // =========================
-  start.textContent = "Создание комнаты...";
-  start.disabled = true;
+setStartButtonState({
+ text: "Создание комнаты...",
+ state: "disabled"
+});
 
   roomController = new FirebaseRoomController();
 
@@ -331,18 +335,22 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
    // =========================
    // UI STATE: guest joined
    // =========================
-   if (guestConnected && !guestReady) {
-    start.textContent = "Гость подключился";
-    start.disabled = true;
-   }
+if (guestConnected && !guestReady) {
+ setStartButtonState({
+  text: "Игрок подключился",
+  state: "waiting"
+ });
+}
 
    // =========================
    // UI STATE: guest ready
    // =========================
-   if (guestReady && !started) {
-    start.textContent = "START GAME";
-    start.disabled = false;
-   }
+if (guestReady && !started) {
+ setStartButtonState({
+  text: "Начать игру",
+  state: "ready"
+ });
+}
 
    // =========================
    // GAME START → REDIRECT HOST
@@ -355,7 +363,10 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
    }
   });
 
-  start.textContent = "Ожидание игрока...";
+ setStartButtonState({
+  text: "Игрок подключился",
+  state: "waiting"
+ });
  };
 });
 
@@ -365,7 +376,7 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
 start.onclick = () => {
 
  if (mode === "duel") {
-  start.disabled = true;
+
 
   // state-driven start
   roomController.startGame(buildConfig());
@@ -439,6 +450,32 @@ document.getElementById("movesOff").onclick = () => {
  document.getElementById("movesOff").classList.add("active");
  document.getElementById("movesOn").classList.remove("active");
 };
+
+function setStartButtonState({ text, state }) {
+  // state: "idle" | "waiting" | "ready"
+
+  start.textContent = text;
+
+  start.classList.remove("wait", "disabled");
+
+  if (state === "ready") {
+    start.disabled = false;
+    start.style.cursor = "pointer";
+  }
+
+  if (state === "waiting") {
+    start.disabled = true;
+    start.style.cursor = "not-allowed";
+    start.classList.add("wait");
+  }
+
+  if (state === "disabled") {
+    start.disabled = true;
+    start.style.cursor = "not-allowed";
+    start.classList.add("disabled");
+  }
+}
+    
 </script>
 </body>
 </html>
