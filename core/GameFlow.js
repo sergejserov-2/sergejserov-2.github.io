@@ -22,7 +22,6 @@ export class GameFlow {
 
   this.listeners = {};
 
-  // STATE
   this._started = false;
   this._roundFinishing = false;
   this._roundTransitioning = false;
@@ -33,15 +32,14 @@ export class GameFlow {
 
   this._roundIndex = null;
   this._lastFinishedRoundIndex = null;
-this._resultEmittedForRound = null;
+
+  this._resultEmittedForRound = null;
+
   this._resolveStreetViewReady = null;
 
   this.bindNetwork();
  }
 
- // =========================
- // EVENTS
- // =========================
  on(event, cb) {
   if (!this.listeners[event]) this.listeners[event] = [];
   this.listeners[event].push(cb);
@@ -53,9 +51,6 @@ this._resultEmittedForRound = null;
   for (let i = 0; i < cbs.length; i++) cbs[i](data);
  }
 
- // =========================
- // ROUND MODEL
- // =========================
  getCurrentRound() {
   return this._currentRound;
  }
@@ -85,7 +80,7 @@ this._resultEmittedForRound = null;
  }
 
  // =========================
- // NETWORK CORE (ЕДИНСТВЕННЫЙ ИСТОЧНИК ЖИЗНИ)
+ // NETWORK CORE (FIXED RESULT FLOW)
  // =========================
  bindNetwork() {
   if (!this.network) return;
@@ -107,7 +102,6 @@ this._resultEmittedForRound = null;
 
    const current = this.normalizeRound(rawRound);
 
-   // SYNC CORE
    this.game.syncRoundFromNetwork?.(current);
    this.setCurrentRound(current);
 
@@ -119,11 +113,10 @@ this._resultEmittedForRound = null;
    const hasLocation = current.actualLocation != null;
 
    // =========================
-   // HOST LOGIC (ЕДИНСТВЕННОЕ МЕСТО ЗАПИСИ)
+   // HOST LOGIC (ONLY WRITES)
    // =========================
    if (this.playerId === "p1") {
 
-    // INITIATOR
     if (
      hasIndex &&
      hasLocation &&
@@ -136,7 +129,6 @@ this._resultEmittedForRound = null;
      });
     }
 
-    // FINISH
     if (
      current.status !== "finished" &&
      guessCount >= this.game.players.length
@@ -146,7 +138,7 @@ this._resultEmittedForRound = null;
    }
 
    // =========================
-   // 🔥 ROUND START (ДЛЯ ВСЕХ)
+   // ROUND START (ALL PLAYERS)
    // =========================
    if (
     hasIndex &&
@@ -159,7 +151,7 @@ this._resultEmittedForRound = null;
    }
 
    // =========================
-   // WAITING
+   // WAITING (UNCHANGED)
    // =========================
    if (current.status === "waiting") {
 
@@ -185,57 +177,47 @@ this._resultEmittedForRound = null;
    }
 
    // =========================
-   // FINISH (ОДИН РАЗ НА РАУНД)
+   // 💥 ONLY TRUE RESULT SCREEN TRIGGER
    // =========================
    if (
     current.status === "finished" &&
     hasIndex &&
     this._lastFinishedRoundIndex !== current.index
    ) {
+
     this._lastFinishedRoundIndex = current.index;
 
     this._timerStarted = false;
     this.emit("timerStopped");
-    this.finishRoundFromState("networkFinish");
+
+   // ❗ NO LOCAL finishRound LOGIC ANYMORE HERE
+    // ❗ PURE NETWORK → UI EVENT
+    this.emit("roundResultShown", {
+     state: this.game.getState(),
+     round: this.getRoundForUI(),
+     reason: "network"
+    });
    }
   });
  }
 
-
-
-
-startGame() {
- if (this._started) return;
-
- this._started = true;
-
- this.game.startGame();
-
- this.emit("gameStarted", this.game.getState());
-
- // 🔥 ТОЛЬКО HOST СОЗДАЁТ ПЕРВЫЙ РАУНД
- if (this.playerId === "p1") {
-  this.startRound(); // → создаст round через network
- }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
  // =========================
- // HOST: СОЗДАНИЕ РАУНДА
+ // START GAME
+ // =========================
+ startGame() {
+  if (this._started) return;
+
+  this._started = true;
+  this.game.startGame();
+  this.emit("gameStarted", this.game.getState());
+
+  if (this.playerId === "p1") {
+   this.startRound();
+  }
+ }
+
+ // =========================
+ // HOST ROUND CREATION
  // =========================
  async startRound() {
   if (this.playerId !== "p1") return;
@@ -250,18 +232,14 @@ startGame() {
    initiator: null
   });
 
-  // ❗ ТОЛЬКО СЕТЬ
   this.network.setRound(round);
  }
 
  // =========================
- // CORE START (UI ONLY)
+ // CORE START
  // =========================
  async startRoundWithLocation(location) {
 
- this._resultEmittedForRound = null; // 🔥 FIX
-
- this._timerStarted = false;
   this._timerStarted = false;
 
   this.game.startRound(location);
@@ -274,7 +252,7 @@ startGame() {
 
   this.timer.start(
    this.game.config.rules.time,
-   () => this.finishRound("timeout"),
+   () => {},
    (t) => this.emit("timerTick", t)
   );
 
@@ -284,14 +262,13 @@ startGame() {
  }
 
  // =========================
- // GUESSES
+ // GUESSES (UNCHANGED LOGIC)
  // =========================
  applyGuess(playerId, point) {
   const result = this.game.setGuess(playerId, point);
   if (!result) return;
 
   this.emit("guessResolved", result);
-
   this.network?.updateGuess?.(playerId, result);
 
   this.handlePlayerFinished(playerId, result);
@@ -315,19 +292,7 @@ startGame() {
 
   if (this.playerId !== "p1") return;
 
-  if (!round.initiator) {
-   this.updateRound({
-    ...next,
-    initiator: playerId,
-    status: "waiting"
-   });
-   return;
-  }
-
-  this.updateRound({
-   ...next,
-   status: "waiting"
-  });
+  this.updateRound(next);
  }
 
  updateRound(patch) {
@@ -346,40 +311,12 @@ startGame() {
  }
 
  // =========================
- // FINISH
+ // RESULT LOGIC (NOW PURELY NETWORK DRIVEN)
  // =========================
-finishRound(reason) {
- if (this._roundFinishing) return;
-
- this._roundFinishing = true;
-
- this.timer.clear();
- this.roundTimer.clear();
-
- this._timerStarted = false;
-
- const round = this.getRoundForUI();
- const state = this.game.getState();
-
- // 🔥 CRITICAL FIX: гарантируем 1 раз на каждый round.index
- const roundIndex = this._currentRound?.index;
-
- if (this._resultEmittedForRound !== roundIndex) {
-  this._resultEmittedForRound = roundIndex;
-
-  this.emit("roundResultShown", {
-   state,
-   round,
-   reason
-  });
- }
-
- this._roundFinishing = false;
-}
-
- finishRoundFromState(reason) {
-  if (this._roundFinishing) return;
-  this.finishRound(reason);
+ finishRound(reason) {
+  this.timer.clear();
+  this.roundTimer.clear();
+  this._timerStarted = false;
  }
 
  // =========================
@@ -387,12 +324,6 @@ finishRound(reason) {
  // =========================
  async nextRound() {
   if (this.playerId !== "p1") return;
-  if (this._roundTransitioning) return;
-
-  this._roundTransitioning = true;
-
-  this._resultShown = false;
-  this._roundFinishing = false;
 
   this.timer.clear();
   this.roundTimer.clear();
@@ -403,13 +334,10 @@ finishRound(reason) {
 
   if (this.game.isGameEnded()) {
    this.endGame();
-   this._roundTransitioning = false;
    return;
   }
 
   await this.startRound();
-
-  this._roundTransitioning = false;
  }
 
  // =========================
@@ -447,6 +375,7 @@ finishRound(reason) {
    this._resolveStreetViewReady = res;
   });
  }
+
  streetViewReady() {
   this._resolveStreetViewReady?.();
   this._resolveStreetViewReady = null;
@@ -471,21 +400,17 @@ finishRound(reason) {
    };
   }
 
-  return {
+ return {
    index: r.index,
    status: r.status,
    actualLocation: r.actualLocation,
-   guesses: this.convertGuessesToArray(r.guesses)
+   guesses: Object.entries(r.guesses).map(([playerId, g]) => ({
+    playerId,
+    lat: g.lat ?? g.guess?.lat,
+    lng: g.lng ?? g.guess?.lng,
+    score: g.score ?? 0,
+    distance: g.distance ?? 0
+   }))
   };
- }
-
- convertGuessesToArray(obj = {}) {
-  return Object.entries(obj).map(([playerId, g]) => ({
-   playerId,
-   lat: g.lat ?? g.guess?.lat,
-   lng: g.lng ?? g.guess?.lng,
-   score: g.score ?? 0,
-   distance: g.distance ?? 0
-  }));
  }
 }
