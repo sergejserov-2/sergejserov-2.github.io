@@ -163,14 +163,17 @@ bindNetwork() {
    }
   }
 
- // =========================
-// WAITING (GLOBAL)
 // =========================
-if (current.status === "waiting") {
+// WAITING (ONLY INITIATOR)
+// =========================
+if (
+ current.status === "waiting" &&
+ this.playerId === current.initiator
+) {
 
  this.emit("roundWaiting");
 
- // 🔥 КЛЮЧ: синхронизируем HUD таймер с roundTimer
+ // HUD timer sync
  this.emit("timerTick", this.roundTimer.getRemaining?.() ?? 10);
 
  if (!this._timerStarted) {
@@ -183,10 +186,7 @@ if (current.status === "waiting") {
      this.updateRound({ status: "finished" });
     }
    },
-   (t) => {
-    // 🔥 ВАЖНО: тот же HUD pipeline
-    this.emit("timerTick", t);
-   }
+   (t) => this.emit("timerTick", t)
   );
 
   this.emit("roundTimerStart");
