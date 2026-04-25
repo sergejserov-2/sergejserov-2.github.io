@@ -102,40 +102,43 @@ bindNetwork() {
   }
 
   // =========================
-  // NORMALIZE + SYNC CORE FIX
+  // NORMALIZE + SYNC SOURCE OF TRUTH
   // =========================
-  const source = this.normalizeRound(rawRound);
+  const current = this.normalizeRound(rawRound);
 
-  // 🔥 CRITICAL: sync GameState FIRST (иначе host видит stale guesses)
-  this.game.syncRoundFromNetwork?.(source);
+  // 🔥 IMPORTANT: sync into local game state FIRST
+  this.game.syncRoundFromNetwork?.(current);
 
-  // cache for UI
-  this.setCurrentRound(source);
-
-  const state = this.game.getState();
-  const current = source;
-
-  if (!current) return;
+  this.setCurrentRound(current);
 
   const guesses = current.guesses || {};
-  const guessCount = Object.keys(guesses).length;
+  const guessKeys = Object.keys(guesses);
+  const guessCount = guessKeys.length;
 
   // =========================
-  // HOST LOGIC (p1 ONLY)
+  // 🔥 INITIATOR FIX (NETWORK RULE)
+  // =========================
+  if (guessCount > 0 && !current.initiator) {
+   current.initiator = guessKeys[0];
+  }
+
+  // =========================
+  // HOST LOGIC (p1 only minimal authority)
   // =========================
   if (this.playerId === "p1") {
 
-   // 👉 FIRST GUESS → SET INITIATOR + WAITING
-   if (!current.initiator && guessCount > 0) {
-    const firstPlayerId = Object.keys(guesses)[0];
-
+   // 👉 ensure waiting state is broadcasted once guesses start
+   if (
+    guessCount > 0 &&
+    current.status === "running"
+   ) {
     this.updateRound({
-     initiator: firstPlayerId,
+     initiator: current.initiator,
      status: "waiting"
     });
    }
 
-   // 👉 AUTO FINISH
+   // 👉 auto finish
    if (
     current.status !== "finished" &&
     guessCount >= this.game.players.length
@@ -161,7 +164,7 @@ bindNetwork() {
   }
 
   // =========================
-  // WAITING (GLOBAL)
+  // WAITING STATE (GLOBAL)
   // =========================
   if (current.status === "waiting") {
 
