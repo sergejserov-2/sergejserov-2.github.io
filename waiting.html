@@ -48,15 +48,21 @@ h2 {
     padding: 12px;
     text-align: center;
     border-radius: 10px;
-    background: #2ecc71;
     cursor: pointer;
     font-weight: bold;
     transition: 0.2s;
     user-select: none;
+    box-sizing: border-box; /* 🔥 фикс ширины */
 }
 
-.btn:disabled {
-    background: #555;
+/* зелёная — можно нажать */
+.btn.ready {
+    background: #2ecc71;
+}
+
+/* жёлтая — уже нажато */
+.btn.wait {
+    background: #f39c12;
     cursor: not-allowed;
 }
 
@@ -73,17 +79,18 @@ h2 {
 
 <div class="box">
 
-    <h2>⏳ Waiting Room</h2>
+    <h2>⏳ Комната ожидания</h2>
 
-    <div class="role">guest</div>
+    <div class="role">Правила игры</div>
 
-    <div class="config" id="config">Loading...</div>
+    <div class="config" id="config">Загрузка...</div>
 
-    <div class="btn" id="btn">READY</div>
+    <div class="btn" id="btn"></div>
 
-    <div class="status" id="status">Waiting for host...</div>
+    <div class="status" id="status">Ожидание хоста...</div>
 
 </div>
+
 <script type="module">
 import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 
@@ -98,9 +105,29 @@ const room = new FirebaseRoomController();
 let redirected = false;
 
 // =========================
+// BUTTON STATE
+// =========================
+function updateButton(isReady) {
+  if (isReady) {
+    btn.textContent = "Вы уже подключились";
+    btn.classList.remove("ready");
+    btn.classList.add("wait");
+    btn.style.pointerEvents = "none";
+  } else {
+    btn.textContent = "Подключиться";
+    btn.classList.add("ready");
+    btn.classList.remove("wait");
+    btn.style.pointerEvents = "auto";
+  }
+}
+
+// =========================
 // JOIN
 // =========================
 const state = await room.joinRoom(roomId);
+
+// initial button state
+updateButton(state?.players?.guest?.ready);
 
 // instant redirect
 if (state?.game?.started) {
@@ -118,6 +145,11 @@ room.onRoom((state) => {
  const game = state.game;
  const players = state.players;
 
+ const isReady = players?.guest?.ready;
+
+ // sync button
+ updateButton(isReady);
+
  // =========================
  // AUTO START
  // =========================
@@ -131,12 +163,12 @@ room.onRoom((state) => {
  // =========================
  // UI STATUS
  // =========================
- if (players?.guest?.connected && !players?.guest?.ready) {
-  status.textContent = "Connected. Press READY.";
+ if (players?.guest?.connected && !isReady) {
+  status.textContent = "Подключитесь, чтобы начать";
  }
 
- if (players?.guest?.ready && !game?.started) {
-  status.textContent = "Waiting host start...";
+ if (isReady && !game?.started) {
+  status.textContent = "Ожидание начала игры...";
  }
 });
 
@@ -144,9 +176,9 @@ room.onRoom((state) => {
 // READY BUTTON
 // =========================
 btn.onclick = async () => {
- btn.disabled = true;
- await room.setGuestReady();
- status.textContent = "Ready ✔";
+  if (btn.classList.contains("wait")) return;
+
+  await room.setGuestReady();
 };
 </script>
 
