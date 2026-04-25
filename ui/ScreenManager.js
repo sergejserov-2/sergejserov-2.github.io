@@ -4,7 +4,7 @@ export class ScreenManager {
 
     this.views = {
       loading: root.querySelector(".loading-screen"),
-      waiting: root.querySelector(".waiting-screen"), // 🔥 НОВОЕ
+      waiting: root.querySelector(".waiting-screen"), 
       round: root.querySelector(".game-scene"),
       roundResult: root.querySelector(".round-result"),
       gameResult: root.querySelector(".game-result")
