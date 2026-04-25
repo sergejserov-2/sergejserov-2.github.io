@@ -178,10 +178,14 @@ export class GameFlow {
 // =========================
 // 💥 RESULT SCREEN FIX (SYNC PER CLIENT)
 // =========================
-if (
- current.status === "finished" &&
- hasIndex
-) {
+const isRoundComplete =
+ hasIndex &&
+ Object.keys(current.guesses || {}).length >= this.game.players.length;
+
+const isFinished =
+ current.status === "finished" || isRoundComplete;
+
+if (isFinished) {
 
  // 🔥 локальный дедуп (НЕ network-based)
  if (this._resultEmittedForRound === current.index) return;
