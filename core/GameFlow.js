@@ -338,35 +338,14 @@ handlePlayerFinished(playerId, result) {
  // =========================
  async nextRound() {
   if (this.playerId !== "p1") return;
-
   this.timer.clear();
   this.roundTimer.clear();
-
   this._timerStarted = false;
-
   this.game.commitRound?.();
-
-  if (this.game.isGameEnded()) {
-   this.endGame();
-   return;
-  }
-
   await this.startRound();
  }
 
- // =========================
- // END GAME
- // =========================
- endGame() {
-  this.timer.clear();
-  this.roundTimer.clear();
 
-  this.emit("timerStopped");
-
-  this.game.endGame?.();
-
-  this.emit("gameEnded", this.game.getState());
- }
 
  // =========================
  // MOVES
