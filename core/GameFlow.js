@@ -81,92 +81,108 @@ export class GameFlow {
  }
 
  // NETWORK
- bindNetwork() {
-  if (!this.network) return;
+bindNetwork() {
+ if (!this.network) return;
 
-  this.network.onRoom((room) => {
+ this.network.onRoom((room) => {
 
-   const game = room.game;
-   if (!game) return;
+  const game = room.game;
+  if (!game) return;
 
-   const round = game.round;
-   if (!round) return;
+  const round = game.round;
+  if (!round) return;
 
-   if (game.started && !this._started) {
-    this._started = true;
-    this.game.startGame();
-    this.emit("gameStarted", this.game.getState());
+  // =========================
+  // GAME START
+  // =========================
+  if (game.started && !this._started) {
+   this._started = true;
+   this.game.startGame();
+   this.emit("gameStarted", this.game.getState());
+  }
+
+  this.setCurrentRound(round);
+
+  const current = this.getCurrentRound();
+  if (!current) return;
+
+  // =========================
+  // 🔥 HOST LOGIC (FIX)
+  // =========================
+  if (this.playerId === "p1") {
+   const guesses = current.guesses || {};
+   const guessIds = Object.keys(guesses);
+   const guessCount = guessIds.length;
+
+   // 👉 первый guess → initiator + waiting
+   if (!current.initiator && guessCount > 0) {
+    const firstPlayerId = guessIds[0];
+
+    this.updateRound({
+     initiator: firstPlayerId,
+     status: "waiting"
+    });
+
+    return;
    }
 
-   this.setCurrentRound(round);
-
-   const current = this.getCurrentRound();
-   if (!current) return;
-
-   // =========================
-   // GUEST START
-   // =========================
-   if (this.playerId !== "p1") {
-
-    const canStart =
-     current.index != null &&
-     current.actualLocation &&
-     current.index !== this._currentRoundIndex;
-
-    if (canStart) {
-     this._currentRoundIndex = current.index;
-     this.startRoundWithLocation(current.actualLocation);
-    }
-   }
-
-   // =========================
-   // WAITING
-   // =========================
-   if (current.status === "waiting") {
-
-    const isInitiator = this.playerId === current.initiator;
-
-    if (isInitiator) {
-     this.emit("roundWaiting");
-    }
-
-    if (!this._timerStarted) {
-     this._timerStarted = true;
-
-     this.roundTimer.start(
-      10,
-      () => {
-       if (this.playerId === "p1") {
-        this.updateRound({ status: "finished" });
-       }
-      },
-      (t) => this.emit("roundTimerTick", t)
-     );
-
-     this.emit("roundTimerStart");
-    }
-   }
-
-   // =========================
-   // AUTO FINISH
-   // =========================
-   const guessCount = Object.keys(current.guesses || {}).length;
-
+   // 👉 все сходили → finish
    if (
-    this.playerId === "p1" &&
     current.status !== "finished" &&
     guessCount >= this.game.players.length
    ) {
     this.updateRound({ status: "finished" });
+    return;
    }
+  }
 
-   // =========================
-   // FINISH
-   // =========================
-   if (current.status === "finished" && !this._roundFinishing) {
-    this._timerStarted = false;
-    this.finishRoundFromState("networkFinish");
+  // =========================
+  // GUEST START
+  // =========================
+  if (this.playerId !== "p1") {
+
+   const canStart =
+    current.index != null &&
+    current.actualLocation &&
+    current.index !== this._currentRoundIndex;
+
+   if (canStart) {
+    this._currentRoundIndex = current.index;
+    this.startRoundWithLocation(current.actualLocation);
    }
+  }
+
+  // =========================
+  // WAITING (🔥 теперь для всех)
+  // =========================
+  if (current.status === "waiting") {
+
+   this.emit("roundWaiting");
+
+   if (!this._timerStarted) {
+    this._timerStarted = true;
+
+    this.roundTimer.start(
+     10,
+     () => {
+      if (this.playerId === "p1") {
+       this.updateRound({ status: "finished" });
+      }
+     },
+     (t) => this.emit("roundTimerTick", t)
+    );
+
+    this.emit("roundTimerStart");
+   }
+  }
+
+  // =========================
+  // FINISH
+  // =========================
+  if (current.status === "finished" && !this._roundFinishing) {
+   this._timerStarted = false;
+   this.finishRoundFromState("networkFinish");
+  }
  });
 }
 
@@ -243,37 +259,40 @@ export class GameFlow {
 
 handlePlayerFinished(playerId, result) {
 
-  const round = this.getCurrentRound();
-  if (!round) return;
+ const round = this.getCurrentRound();
+ if (!round) return;
 
-  const guesses = {
-    ...round.guesses,
-    [playerId]: result
-  };
+ const guesses = {
+  ...round.guesses,
+  [playerId]: result
+ };
 
-  const next = this.normalizeRound({
-    ...round,
-    guesses
-  });
+ const next = this.normalizeRound({
+  ...round,
+  guesses
+ });
 
-  this.setCurrentRound(next);
+ this.setCurrentRound(next);
 
-  if (this.playerId !== "p1") return;
+ // ❗ ВАЖНО: только хост управляет round
+ if (this.playerId !== "p1") return;
 
-  if (!round.initiator) {
-    this.updateRound({
-      ...next,
-      initiator: playerId,
-      status: "waiting"
-    });
-    return;
-  }
-
+ if (!round.initiator) {
   this.updateRound({
-    ...next,
-    status: "waiting"
+   ...next,
+   initiator: playerId,
+   status: "waiting"
   });
+  return;
+ }
+
+ this.updateRound({
+  ...next,
+  status: "waiting"
+ });
 }
+
+ 
  updateRound(patch) {
   if (this.playerId !== "p1") return;
   if (!this.network?.setRound) return;
