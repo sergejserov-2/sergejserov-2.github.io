@@ -179,7 +179,7 @@ export class GameFlow {
 // 💥 RESULT SCREEN FIX (SYNC PER CLIENT)
 // =========================
 if (
- current.status === "finished"
+ current.status === "finished" && hasIndex
 ) {
 
 if (this._resultEmittedForRound === current.index) return;
