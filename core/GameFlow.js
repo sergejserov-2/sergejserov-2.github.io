@@ -164,18 +164,18 @@ bindNetwork() {
   }
 
 // =========================
-// WAITING (ONLY INITIATOR)
+// WAITING (UI ONLY FOR INITIATOR)
 // =========================
-if (
- current.status === "waiting" &&
- this.playerId === current.initiator
-) {
+if (current.status === "waiting") {
 
- this.emit("roundWaiting");
+ // 🔥 UI waiting ТОЛЬКО у инициатора
+ if (this.playerId === current.initiator) {
+  this.emit("roundWaiting");
+ }
 
- // HUD timer sync
- this.emit("timerTick", this.roundTimer.getRemaining?.() ?? 10);
-
+ // =========================
+ // TIMER (ALL PLAYERS)
+ // =========================
  if (!this._timerStarted) {
   this._timerStarted = true;
 
@@ -186,7 +186,10 @@ if (
      this.updateRound({ status: "finished" });
     }
    },
-   (t) => this.emit("timerTick", t)
+   (t) => {
+    // 🔥 синхронный таймер для всех
+    this.emit("timerTick", t);
+   }
   );
 
   this.emit("roundTimerStart");
