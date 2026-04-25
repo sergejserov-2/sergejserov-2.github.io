@@ -191,12 +191,18 @@ this._resultEmittedForRound = current.index;
 const totalRounds = this.game.config?.rules?.rounds || 0;
  const isLastRound = current.index >= totalRounds;
 
- if (isLastRound) {
-  this.game.commitRound?.(); // важно сохранить последний раунд
+if (isLastRound) {
 
-  this.emit("gameEnded", this.game.getState());
-  return;
- }
+ // 🔥 КЛЮЧЕВОЙ FIX: добиваем состояние перед финалом
+ const finalState = this.game.getState();
+
+ this.game.commitRound?.();
+
+ const committedState = this.game.getState();
+
+ this.emit("gameEnded", committedState);
+ return;
+}
 
  
  this.emit("roundResultShown", {
