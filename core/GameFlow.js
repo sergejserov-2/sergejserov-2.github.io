@@ -1,4 +1,199 @@
-this.emit("timerStarted");
+export class GameFlow {
+ constructor({
+  game,
+  generator,
+  area,
+  services,
+  mode = "solo",
+  network = null,
+  playerId = "p1"
+ }) {
+
+  this.game = game;
+  this.generator = generator;
+  this.area = area;
+
+  this.timer = services.timer;
+  this.roundTimer = services.timer;
+  this.moves = services.moves;
+
+  this.mode = mode;
+  this.network = network;
+  this.playerId = playerId;
+
+  this.listeners = {};
+
+  // =========================
+  // STATE FLAGS (CORE FIX)
+  // =========================
+  this._started = false;
+  this._roundFinishing = false;
+
+  this._timerStarted = false;
+  this._roundIndex = null;
+  this._startingRound = false;
+
+  this._currentRound = null;
+
+  this._resolveStreetViewReady = null;
+
+  this.bindNetwork();
+ }
+
+ // =========================
+ // EVENTS
+ // =========================
+ on(event, cb) {
+  if (!this.listeners[event]) this.listeners[event] = [];
+  this.listeners[event].push(cb);
+ }
+
+ emit(event, data) {
+  const cbs = this.listeners[event];
+  if (!cbs) return;
+  for (let i = 0; i < cbs.length; i++) cbs[i](data);
+ }
+
+ // =========================
+ // ROUND MODEL
+ // =========================
+ getCurrentRound() {
+  return this._currentRound;
+ }
+
+ setCurrentRound(round) {
+  this._currentRound = this.normalizeRound(round);
+ }
+
+ normalizeRound(r) {
+  if (!r) {
+   return {
+    index: 0,
+    status: "running",
+    actualLocation: null,
+    initiator: null,
+    guesses: {}
+   };
+  }
+
+  return {
+   index: r.index ?? 0,
+   status: r.status ?? "running",
+   actualLocation: r.actualLocation ?? null,
+   initiator: r.initiator ?? null,
+   guesses: r.guesses ?? {}
+  };
+ }
+
+ // =========================
+ // NETWORK (STATE MACHINE CORE)
+ // =========================
+ bindNetwork() {
+  if (!this.network) return;
+
+  this.network.onRoom((room) => {
+
+   const game = room.game;
+   if (!game) return;
+
+   const rawRound = game.round;
+   if (!rawRound) return;
+
+   // =========================
+   // GAME START
+   // =========================
+   if (game.started && !this._started) {
+    this._started = true;
+    this.game.startGame();
+    this.emit("gameStarted", this.game.getState());
+   }
+
+   // =========================
+   // NORMALIZE SOURCE
+   // =========================
+   const round = this.normalizeRound(rawRound);
+
+   // sync local game state
+   this.game.syncRoundFromNetwork?.(round);
+   this.setCurrentRound(round);
+
+   const guesses = round.guesses || {};
+   const guessCount = Object.keys(guesses).length;
+
+   // =========================
+   // HOST AUTHORITY (ONLY p1)
+   // =========================
+   if (this.playerId === "p1") {
+
+    // set initiator
+    if (guessCount > 0 && !round.initiator) {
+     const first = Object.keys(guesses)[0];
+
+     this.updateRound({
+      initiator: first,
+      status: "waiting"
+     });
+
+     return;
+    }
+
+    // auto finish
+    if (
+     round.status !== "finished" &&
+     guessCount >= this.game.players.length
+    ) {
+     this.updateRound({ status: "finished" });
+    }
+   }
+
+   // =========================
+   // GUEST START (GUARDED)
+   // =========================
+   if (this.playerId !== "p1") {
+
+    const shouldStart =
+     round.index != null &&
+     round.actualLocation &&
+     this._roundIndex !== round.index;
+
+    if (shouldStart && !this._startingRound) {
+
+     this._startingRound = true;
+     this._roundIndex = round.index;
+
+     this.startRoundWithLocation(round.actualLocation)
+      .finally(() => {
+       this._startingRound = false;
+      });
+    }
+   }
+
+   // =========================
+   // WAITING STATE
+   // =========================
+   if (round.status === "waiting") {
+
+    this.emit("roundState", "waiting");
+
+    // UI only for initiator
+    if (round.initiator === this.playerId) {
+     this.emit("roundWaiting");
+    }
+
+    // TIMER (all players)
+    if (!this._timerStarted) {
+     this._timerStarted = true;
+
+     this.roundTimer.start(
+      10,
+      () => {
+       if (this.playerId === "p1") {
+        this.updateRound({ status: "finished" });
+       }
+      },
+      (t) => this.emit("timerTick", t)
+     );
+        this.emit("timerStarted");
     }
    }
 
