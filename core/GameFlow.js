@@ -179,11 +179,11 @@ export class GameFlow {
 // 💥 RESULT SCREEN FIX (SYNC PER CLIENT)
 // =========================
 if (
- current.status === "finished" && hasIndex
+ current.status === "finished"
 ) {
-const roundId = `${current.index}:${current.status}`;
-if (this._resultEmittedForRound === roundId) return;
-this._resultEmittedForRound = roundId;
+
+if (this._resultEmittedForRound === current.index) return;
+this._resultEmittedForRound = current.index;
 
  this._timerStarted = false;
  this.emit("timerStopped");
