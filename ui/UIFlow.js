@@ -160,7 +160,20 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
   this.gameFlow.on("gameEnded", (state) => {
    this.screenManager.show("gameResult");
 
-   const vm = this.uiBuilder.formatGameResultVM(state);
+  // =========================
+  // NORMALIZE (🔥 КЛЮЧ)
+  // =========================
+  const guessesArray = Array.isArray(round.guesses)
+    ? round.guesses
+    : Object.values(round.guesses || {});
+
+  const vm = {
+    actual: round.actualLocation,
+    guesses: guessesArray
+  };
+
+  console.log("🎯 UI VM", vm);
+
    this.staticUI.showGameResult(vm);
 
    const last = state.rounds?.at(-1);
