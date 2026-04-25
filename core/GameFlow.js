@@ -269,26 +269,27 @@ this._resultEmittedForRound = current.index;
   this.handlePlayerFinished(playerId, result);
  }
 
- handlePlayerFinished(playerId, result) {
-  const round = this.getCurrentRound();
-  if (!round) return;
-
-  const guesses = {
-   ...round.guesses,
-   [playerId]: result
-  };
-
-  const next = this.normalizeRound({
-   ...round,
-   guesses
-  });
-
-  this.setCurrentRound(next);
-
+handlePlayerFinished(...) {
   if (this.playerId !== "p1") return;
 
-  this.updateRound(next);
- }
+  const round = this.getCurrentRound();
+
+  const guesses = {
+    ...round.guesses,
+    [playerId]: result
+  };
+
+  const guessCount = Object.keys(guesses).length;
+
+  const isFinished = guessCount >= this.game.players.length;
+
+  this.updateRound({
+    ...round,
+    guesses,
+    status: isFinished ? "finished" : "waiting",
+    initiator: round.initiator || playerId
+  });
+}
 
  updateRound(patch) {
   if (this.playerId !== "p1") return;
