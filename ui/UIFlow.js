@@ -20,7 +20,7 @@ export class UIFlow {
   this.gameOverviewUI = gameOverviewUI;
 
   this.boundGameResultButtons = false;
-this._resultLocked = true;
+
   this.bind();
  }
 
@@ -114,8 +114,6 @@ this._resultLocked = true;
   // ROUND RESULT (GUESS ONLY PIPELINE)
   // =========================
 this.gameFlow.on("roundResultShown", ({ state, round }) => {
-  if (this._resultLocked) return;
-  this._resultLocked = true;
 
   this.screenManager.show("roundResult");
 
@@ -152,7 +150,6 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
   // DELAY
   // =========================
   this.staticUI.startRoundDelay(10000, () => {
-    this._resultLocked = false;
     this.gameFlow.nextRound();
   });
 });
