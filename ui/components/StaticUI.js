@@ -84,28 +84,16 @@ resetHUD() {
  // =========================
 
 showGameResult(vm = {}) {
-
   const root = this.gameRoot;
   if (!root) return;
 
   const container = root.querySelector(".players-score");
 
-  const guesses = vm.guesses || [];
-
-  this.renderPlayerBars(container, guesses);
-
-  const wrap = document.createElement("div");
-  wrap.style.marginTop = "12px";
-  wrap.style.fontSize = "13px";
-  wrap.style.opacity = "0.85";
-
-  for (const [playerId, data] of Object.entries(vm.players || {})) {
-    const el = document.createElement("div");
-    el.textContent = `${playerId}: общий счёт ${data.score}`;
-    wrap.appendChild(el);
-  }
-
-  container.appendChild(wrap);
+  this.renderPlayerBars(
+    container,
+    vm.guesses || [],
+    vm.players || {} // 🔥 ВАЖНО
+  );
 
   this.stopRoundDelay();
 }
@@ -114,7 +102,7 @@ showGameResult(vm = {}) {
  // PLAYER BARS
  // =========================
 
- renderPlayerBars(container, list = []) {
+ renderPlayerBars(container, list = [], totals = {}) {
   if (!container) return;
 
   container.querySelector(".player-score-bar")?.remove();
@@ -125,56 +113,75 @@ showGameResult(vm = {}) {
   const MAX_SCORE = 5000;
 
   list.forEach(p => {
-   const color = this.uiBuilder.getPlayerColor(p.playerId);
+    const color = this.uiBuilder.getPlayerColor(p.playerId);
 
-   const score = p.score ?? 0;
-   const distance = p.distance ?? 0;
+    const score = p.score ?? 0;
+    const distance = p.distance ?? 0;
+    const total = totals[p.playerId] || 0;
 
-   const percent = Math.min(score / MAX_SCORE, 1) * 100;
+    const percent = Math.min(score / MAX_SCORE, 1) * 100;
 
-   const el = document.createElement("div");
-   el.className = "player-score";
+    // =========================
+    // SCORE BAR
+    // =========================
+    const bar = document.createElement("div");
+    bar.className = "player-score";
 
-   el.style.position = "relative";
-   el.style.margin = "8px 0";
-   el.style.padding = "10px";
-   el.style.borderRadius = "8px";
-   el.style.overflow = "hidden";
-   el.style.background = "rgba(255,255,255,0.08)";
+    bar.style.position = "relative";
+    bar.style.margin = "8px 0 2px 0";
+    bar.style.padding = "10px";
+    bar.style.borderRadius = "8px";
+    bar.style.overflow = "hidden";
+    bar.style.background = "rgba(255,255,255,0.08)";
 
-   el.innerHTML = `
-    <div style="
-      position: relative;
-      z-index: 2;
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: white;
-    ">
-      <span>${p.playerId}</span>
-      <span>${distance.toFixed(1)} км</span>
-      <span>${score} / ${MAX_SCORE}</span>
-    </div>
+    bar.innerHTML = `
+      <div style="
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: white;
+      ">
+        <span>${p.playerId}</span>
+        <span>${distance.toFixed(1)} км</span>
+        <span>${score} / ${MAX_SCORE}</span>
+      </div>
 
-    <div class="fill"></div>
-   `;
+      <div class="fill"></div>
+    `;
 
-   const fill = el.querySelector(".fill");
+    const fill = bar.querySelector(".fill");
 
-   fill.style.position = "absolute";
-   fill.style.left = "0";
-   fill.style.top = "0";
-   fill.style.height = "100%";
-   fill.style.width = `${percent}%`;
-   fill.style.background = color;
-   fill.style.opacity = "0.35";
-   fill.style.transition = "width 0.4s ease";
+    fill.style.position = "absolute";
+    fill.style.left = "0";
+    fill.style.top = "0";
+    fill.style.height = "100%";
+    fill.style.width = `${percent}%`;
+    fill.style.background = color;
+    fill.style.opacity = "0.35";
+    fill.style.transition = "width 0.4s ease";
 
-   wrap.appendChild(el);
+    // =========================
+    // TOTAL TEXT (ОТДЕЛЬНО)
+    // =========================
+    const totalEl = document.createElement("div");
+
+    totalEl.style.margin = "0 0 8px 4px";
+    totalEl.style.fontSize = "12px";
+    totalEl.style.opacity = "0.8";
+
+    totalEl.textContent = `Общий счёт: ${total}`;
+
+    // =========================
+    // APPEND
+    // =========================
+    wrap.appendChild(bar);
+    wrap.appendChild(totalEl);
   });
 
   container.appendChild(wrap);
- }
+}
 
  // =========================
  // TIMER BAR
