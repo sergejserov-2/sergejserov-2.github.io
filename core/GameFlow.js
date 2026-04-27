@@ -162,7 +162,7 @@ if (current.status === "waiting") {
      this._timerStarted = true;
 
      this.roundTimer.start(
-      10,
+      15,
       () => {
        if (this.playerId === "p1") {
         this.updateRound({ status: "finished" });
