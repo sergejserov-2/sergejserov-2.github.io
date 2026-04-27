@@ -165,6 +165,7 @@ this.gameFlow.on("gameEnded", (state) => {
   // ✅ ПРАВИЛЬНЫЙ VM ДЛЯ STATIC UI
   // =========================
   const vm = this.uiBuilder.formatGameResultVM(state);
+  console.log("🎯 UI VM", vm);
 
   this.staticUI.showGameResult(vm);
 
