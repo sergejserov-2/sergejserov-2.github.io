@@ -114,7 +114,6 @@ this.gameFlow.on("roundWaiting", () => {
   // ROUND RESULT (GUESS ONLY PIPELINE)
   // =========================
 this.gameFlow.on("roundResultShown", ({ state, round }) => {
-
   this.screenManager.show("roundResult");
   const guessesArray = Array.isArray(round.guesses)
     ? round.guesses
@@ -150,27 +149,6 @@ this.gameFlow.on("gameEnded", ({ state, round }) => {
   };
 
   console.log("🎯 UI VM", vm);
-
-  // =========================
-  // 🔥 СЕТЕВОЙ TOTAL SCORE
-  // =========================
-  const players = {};
-  const rounds = state.rounds || [];
-
-  for (const r of rounds) {
-    for (const g of (r.guesses || [])) {
-
-      if (!players[g.playerId]) {
-        players[g.playerId] = { score: 0 };
-      }
-
-      players[g.playerId].score += g.score || 0;
-    }
-  }
-
-  // =========================
-  // VM = ROUND + TOTAL
-  // =========================
   this.staticUI.showGameResult(vm);
   requestAnimationFrame(() => {
     this.roundOverviewUI.render({
