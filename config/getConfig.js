@@ -2,15 +2,16 @@ export function getConfig() {
   let raw = null;
 
   try {
-    raw = JSON.parse(localStorage.getItem("gameConfig"));
-  } catch {
+    const saved = localStorage.getItem("gameConfig");
+    raw = saved ? JSON.parse(saved) : null;
+  } catch (e) {
     raw = null;
   }
 
   const config = {
-    mode: raw?.mode || "solo",
-    area: raw?.area || "europe",
-    players: raw?.players || ["p1"],
+    mode: raw?.mode ?? "solo",
+    area: raw?.area ?? "europe",
+    players: raw?.players ?? ["p1"],
 
     rules: {
       rounds: normalize(raw?.rules?.rounds, 5),
@@ -34,14 +35,14 @@ function normalize(v, def) {
 
 function validate(cfg) {
   if (cfg.rules.rounds <= 0 || cfg.rules.rounds > 20) {
-    throw new Error("Invalid rounds");
+    cfg.rules.rounds = 5;
   }
 
   if (cfg.rules.time < -1) {
-    throw new Error("Invalid time");
+    cfg.rules.time = -1;
   }
 
   if (cfg.rules.moves < -1) {
-    throw new Error("Invalid moves");
+    cfg.rules.moves = -1;
   }
 }
