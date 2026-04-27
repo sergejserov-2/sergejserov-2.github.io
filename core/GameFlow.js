@@ -381,29 +381,33 @@ handlePlayerFinished(playerId, result) {
  // =========================
  // UI
  // =========================
- getRoundForUI() {
-  const r = this.getCurrentRound();
+mapRoundToUI(r) {
+  if (!r) return null;
 
-  if (!r) {
-   return {
-    index: 0,
-    status: "running",
-    actualLocation: null,
-    guesses: []
-   };
-  }
-
- return {
-   index: r.index,
-   status: r.status,
-   actualLocation: r.actualLocation,
-   guesses: Object.entries(r.guesses).map(([playerId, g]) => ({
-    playerId,
-    lat: g.lat ?? g.guess?.lat,
-    lng: g.lng ?? g.guess?.lng,
-    score: g.score ?? 0,
-    distance: g.distance ?? 0
-   }))
+  return {
+    index: r.index,
+    status: r.status,
+    actualLocation: r.actualLocation,
+    guesses: Object.entries(r.guesses || {}).map(([playerId, g]) => ({
+      playerId,
+      lat: g.lat ?? g.guess?.lat,
+      lng: g.lng ?? g.guess?.lng,
+      score: g.score ?? 0,
+      distance: g.distance ?? 0
+    }))
   };
- }
+}
+getRoundForUI() {
+  return this.mapRoundToUI(this.getCurrentRound());
+}
+
+getLastRoundForUI() {
+  const last = this.game.getState().rounds?.at(-1);
+  return this.mapRoundToUI(last);
+}
+
+
+
+
+ 
 }
