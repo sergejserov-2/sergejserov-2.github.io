@@ -100,8 +100,6 @@ export class GameFlow {
    }
 
    const current = this.normalizeRound(rawRound);
-
-   this.game.syncRoundFromNetwork?.(current);
    this.setCurrentRound(current);
 
    const guesses = current.guesses || {};
@@ -409,7 +407,23 @@ getLastRoundForUI() {
   return this.mapRoundToUI(last);
 }
 
+getAllRoundsForUI() {
+  const state = this.game.getState();
+  const rounds = state.rounds || [];
 
+  return rounds.map(r => ({
+    index: r.index,
+    status: r.status,
+    actualLocation: r.actualLocation,
+    guesses: Object.entries(r.guesses || {}).map(([playerId, g]) => ({
+      playerId,
+      lat: g.lat ?? g.guess?.lat,
+      lng: g.lng ?? g.guess?.lng,
+      score: g.score ?? 0,
+      distance: g.distance ?? 0
+    }))
+  }));
+}
 
 
  
