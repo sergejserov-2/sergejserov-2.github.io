@@ -157,22 +157,25 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
   // =========================
   // GAME END
   // =========================
-this.gameFlow.on("gameEnded", () => {
-
-  const round = this.gameFlow.getLastRoundForUI();
+this.gameFlow.on("gameEnded", (state) => {
 
   this.screenManager.show("gameResult");
 
-  const vm = {
-    actual: round?.actualLocation ?? null,
-    guesses: round?.guesses ?? []
-  };
+  // =========================
+  // ✅ ПРАВИЛЬНЫЙ VM ДЛЯ STATIC UI
+  // =========================
+  const vm = this.uiBuilder.formatGameResultVM(state);
 
   this.staticUI.showGameResult(vm);
 
-  if (round) {
+  // =========================
+  // ✅ КАРТА (ПОСЛЕДНИЙ РАУНД)
+  // =========================
+  const lastRound = this.gameFlow.getLastRoundForUI();
+
+  if (lastRound) {
     requestAnimationFrame(() => {
-      this.gameOverviewUI.render(round);
+      this.gameOverviewUI.render(lastRound);
     });
   }
 
