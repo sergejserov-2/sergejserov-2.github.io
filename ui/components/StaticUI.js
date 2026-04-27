@@ -74,7 +74,7 @@ showGameResult(vm = {}) {
 
   for (const [playerId, data] of Object.entries(vm.players || {})) {
     const el = document.createElement("div");
-    el.textContent = ${playerId}: общий счёт ${data.score};
+    el.textContent = `${playerId}: общий счёт ${data.score}`;
     wrap.appendChild(el);
   }
 
