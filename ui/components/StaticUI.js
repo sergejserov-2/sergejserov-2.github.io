@@ -62,8 +62,7 @@ showGameResult(vm = {}) {
 
   const container = root.querySelector(".players-score");
 
-  const round = vm.round;
-  const guesses = round?.guesses || [];
+  const guesses = vm.guesses || [];
 
   this.renderPlayerBars(container, guesses);
 
