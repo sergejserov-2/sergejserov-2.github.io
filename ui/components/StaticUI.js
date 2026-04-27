@@ -56,27 +56,29 @@ export class StaticUI {
  // =========================
 
 showGameResult(vm = {}) {
-     console.log("GameinStaticUI");
+
   const root = this.gameRoot;
   if (!root) return;
 
   const container = root.querySelector(".players-score");
 
-  const guesses = vm.guesses || [];
+  const round = vm.round;
+  const guesses = round?.guesses || [];
 
   this.renderPlayerBars(container, guesses);
 
-  const players = vm.players || {};
-  const totalWrap = document.createElement("div");
-  totalWrap.style.marginTop = "12px";
-  totalWrap.style.fontSize = "13px";
-  totalWrap.style.opacity = "0.8";
-  Object.entries(players).forEach(([playerId, data]) => {
+  const wrap = document.createElement("div");
+  wrap.style.marginTop = "12px";
+  wrap.style.fontSize = "13px";
+  wrap.style.opacity = "0.85";
+
+  for (const [playerId, data] of Object.entries(vm.players || {})) {
     const el = document.createElement("div");
-    el.textContent = `${playerId}: ${data.score}`;
-    totalWrap.appendChild(el);
-  });
-  container.appendChild(totalWrap);
+    el.textContent = ${playerId}: общий счёт ${data.score};
+    wrap.appendChild(el);
+  }
+
+  container.appendChild(wrap);
 
   this.stopRoundDelay();
 }
