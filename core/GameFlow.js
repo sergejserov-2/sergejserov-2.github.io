@@ -405,6 +405,18 @@ mapRoundToUI(r) {
 getRoundForUI() {
   return this.mapRoundToUI(this.getCurrentRound());
 }
+getTotalScore() {
+  const rounds = this.getAllRoundsForUI();
 
+  let total = 0;
+
+  for (const r of rounds) {
+    for (const g of (r.guesses || [])) {
+      total += g.score || 0;
+    }
+  }
+
+  return total;
+}
  
 }
