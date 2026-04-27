@@ -35,6 +35,16 @@ export class StaticUI {
   el.textContent = value === -1 ? "∞" : `Ходы: ${value}`;
  }
 
+
+resetHUD() {
+  const timeEl = this.hudElement.querySelector(".time-left b");
+  const movesEl = this.hudElement.querySelector(".moves-left b");
+
+  if (timeEl) timeEl.textContent = "";
+  if (movesEl) movesEl.textContent = "";
+}
+
+ 
  // =========================
  // ROUND RESULT
  // =========================
