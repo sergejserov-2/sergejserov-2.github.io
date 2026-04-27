@@ -157,28 +157,27 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
   // =========================
   // GAME END
   // =========================
-this.gameFlow.on("gameEnded", (state) => {
+this.gameFlow.on("gameEnded", () => {
 
-  const last = state.rounds?.at(-1);
+  const round = this.gameFlow.getLastRoundForUI();
 
   this.screenManager.show("gameResult");
 
   const vm = {
-    actual: last?.actualLocation ?? null,
-    guesses: Object.values(last?.guesses || {})
+    actual: round?.actualLocation ?? null,
+    guesses: round?.guesses ?? []
   };
 
   this.staticUI.showGameResult(vm);
 
-  if (last) {
+  if (round) {
     requestAnimationFrame(() => {
-      this.gameOverviewUI.render(last);
+      this.gameOverviewUI.render(round);
     });
   }
 
   this.bindGameResultButtons();
 });
- }
  // =========================
  // BUTTONS
  // =========================
