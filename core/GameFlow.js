@@ -405,22 +405,36 @@ mapRoundToUI(r) {
 getRoundForUI() {
   return this.mapRoundToUI(this.getCurrentRound());
 }
-getTotalScore() {
+getTotalScore(currentRound = null) {
   const state = this.game.getState();
   const rounds = state.rounds || [];
 
   const players = {};
 
+  // =========================
+  // ВСЕ ПРОШЛЫЕ РАУНДЫ
+  // =========================
   for (const r of rounds) {
     const guesses = Array.isArray(r.guesses)
       ? r.guesses
       : Object.values(r.guesses || {});
 
     for (const g of guesses) {
-      if (!players[g.playerId]) {
-        players[g.playerId] = 0;
-      }
+      if (!players[g.playerId]) players[g.playerId] = 0;
+      players[g.playerId] += g.score || 0;
+    }
+  }
 
+  // =========================
+  // + ТЕКУЩИЙ РАУНД (ИЗ СЕТИ)
+  // =========================
+  if (currentRound) {
+    const guesses = Array.isArray(currentRound.guesses)
+      ? currentRound.guesses
+      : Object.values(currentRound.guesses || {});
+
+    for (const g of guesses) {
+      if (!players[g.playerId]) players[g.playerId] = 0;
       players[g.playerId] += g.score || 0;
     }
   }
