@@ -406,17 +406,26 @@ getRoundForUI() {
   return this.mapRoundToUI(this.getCurrentRound());
 }
 getTotalScore() {
-  const rounds = this.getAllRoundsForUI();
+  const state = this.game.getState();
+  const rounds = state.rounds || [];
 
-  let total = 0;
+  const players = {};
 
   for (const r of rounds) {
-    for (const g of (r.guesses || [])) {
-      total += g.score || 0;
+    const guesses = Array.isArray(r.guesses)
+      ? r.guesses
+      : Object.values(r.guesses || {});
+
+    for (const g of guesses) {
+      if (!players[g.playerId]) {
+        players[g.playerId] = 0;
+      }
+
+      players[g.playerId] += g.score || 0;
     }
   }
 
-  return total;
+  return players;
 }
  
 }
