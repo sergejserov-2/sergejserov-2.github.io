@@ -198,7 +198,11 @@ if (isLastRound) {
 
  const committedState = this.game.getState();
 
- this.emit("gameEnded", committedState);
+ this.emit("gameEnded", {
+  state: this.game.getState(),
+  round: this.getRoundForUI(),
+  reason: "network"
+ });
  return;
 }
 
@@ -401,30 +405,6 @@ mapRoundToUI(r) {
 getRoundForUI() {
   return this.mapRoundToUI(this.getCurrentRound());
 }
-
-getLastRoundForUI() {
-  const last = this.game.getState().rounds?.at(-1);
-  return this.mapRoundToUI(last);
-}
-
-getAllRoundsForUI() {
-  const state = this.game.getState();
-  const rounds = state.rounds || [];
-
-  return rounds.map(r => ({
-    index: r.index,
-    status: r.status,
-    actualLocation: r.actualLocation,
-    guesses: Object.entries(r.guesses || {}).map(([playerId, g]) => ({
-      playerId,
-      lat: g.lat ?? g.guess?.lat,
-      lng: g.lng ?? g.guess?.lng,
-      score: g.score ?? 0,
-      distance: g.distance ?? 0
-    }))
-  }));
-}
-
 
  
 }
