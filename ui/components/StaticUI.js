@@ -55,24 +55,31 @@ export class StaticUI {
  // GAME RESULT
  // =========================
 
- showGameResult(vm = {}) {
+showGameResult(vm = {}) {
+     console.log("GameinStaticUI");
   const root = this.gameRoot;
   if (!root) return;
 
   const container = root.querySelector(".players-score");
 
+  const guesses = vm.guesses || [];
+
+  this.renderPlayerBars(container, guesses);
+
   const players = vm.players || {};
-
-  const list = Object.entries(players).map(([playerId, data]) => ({
-   playerId,
-   score: data.score || 0,
-   distance: 0
-  }));
-
-  this.renderPlayerBars(container, list);
+  const totalWrap = document.createElement("div");
+  totalWrap.style.marginTop = "12px";
+  totalWrap.style.fontSize = "13px";
+  totalWrap.style.opacity = "0.8";
+  Object.entries(players).forEach(([playerId, data]) => {
+    const el = document.createElement("div");
+    el.textContent = `${playerId}: ${data.score}`;
+    totalWrap.appendChild(el);
+  });
+  container.appendChild(totalWrap);
 
   this.stopRoundDelay();
- }
+}
 
  // =========================
  // PLAYER BARS
