@@ -178,6 +178,7 @@ this.gameFlow.on("gameEnded", () => {
 
   this.bindGameResultButtons();
 });
+ }
  // =========================
  // BUTTONS
  // =========================
