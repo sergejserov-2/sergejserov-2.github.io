@@ -157,26 +157,46 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
   // =========================
   // GAME END
   // =========================
-this.gameFlow.on("gameEnded", (state) => {
+this.gameFlow.on("gameEnded", () => {
 
   this.screenManager.show("gameResult");
 
   // =========================
-  // ✅ ПРАВИЛЬНЫЙ VM ДЛЯ STATIC UI
+  // 🔥 ВСЕ РАУНДЫ ИЗ GAMEFLOW
   // =========================
-  const vm = this.uiBuilder.formatGameResultVM(state);
-  console.log("🎯 UI VM", vm);
+  const rounds = this.gameFlow.getAllRoundsForUI();
 
+  // =========================
+  // 🔥 СЧИТАЕМ СКОРЫ ПРЯМО ЗДЕСЬ (как UIBuilder делает)
+  // =========================
+  const players = {};
+
+  for (const r of rounds) {
+    for (const g of (r.guesses || [])) {
+
+      if (!players[g.playerId]) {
+        players[g.playerId] = { score: 0 };
+      }
+
+      players[g.playerId].score += g.score || 0;
+    }
+  }
+
+  const vm = { players, rounds };
+
+  // =========================
+  // STATIC UI
+  // =========================
   this.staticUI.showGameResult(vm);
 
   // =========================
-  // ✅ КАРТА (ПОСЛЕДНИЙ РАУНД)
+  // MAP (ПОСЛЕДНИЙ РАУНД)
   // =========================
-  const lastRound = this.gameFlow.getLastRoundForUI();
+  const last = rounds.at(-1);
 
-  if (lastRound) {
+  if (last) {
     requestAnimationFrame(() => {
-      this.gameOverviewUI.render(lastRound);
+      this.gameOverviewUI.render(last);
     });
   }
 
