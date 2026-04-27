@@ -277,15 +277,18 @@ if (isLastRound) {
  // =========================
  // GUESSES (UNCHANGED LOGIC)
  // =========================
- applyGuess(playerId, point) {
+applyGuess(playerId, point) {
   const result = this.game.setGuess(playerId, point);
   if (!result) return;
+
+  // 🔥 ВАЖНО — пишем в GameState
+  this.game.applyResult(result);
 
   this.emit("guessResolved", result);
   this.network?.updateGuess?.(playerId, result);
 
   this.handlePlayerFinished(playerId, result);
- }
+}
 
 handlePlayerFinished(playerId, result) {
   if (this.playerId !== "p1") return;
