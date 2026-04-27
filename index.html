@@ -289,7 +289,26 @@ function saveConfig() {
 // =========================
 const start = document.getElementById("start");
 const link = document.getElementById("duelLink");
+function setStartButtonState({ text, state }) {
+  start.textContent = text;
 
+  start.classList.remove("wait", "disabled");
+
+  if (state === "ready") {
+    start.style.pointerEvents = "auto";
+    return;
+  }
+
+  if (state === "waiting") {
+    start.classList.add("wait");
+    start.style.pointerEvents = "none";
+  }
+
+  if (state === "disabled") {
+    start.classList.add("disabled");
+    start.style.pointerEvents = "none";
+  }
+}
 // =========================
 // MODE
 // =========================
@@ -314,16 +333,20 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
       link.value = "";
       link.disabled = true;
 
-      start.textContent = "Начать игру";
-      start.style.pointerEvents = "auto";
+setStartButtonState({
+  text: "Начать игру",
+  state: "ready"
+});
       return;
     }
 
     // =========================
     // DUEL INIT
     // =========================
-    start.textContent = "Создание комнаты...";
-    start.style.pointerEvents = "none";
+setStartButtonState({
+  text: "Создание комнаты",
+  state: "disabled"
+});
 
     roomController = new FirebaseRoomController();
 
@@ -340,8 +363,10 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
       const guestReady = roomState.players?.guest?.ready;
 
       if (guestReady && !started) {
-        start.textContent = "Начать игру";
-        start.style.pointerEvents = "auto";
+setStartButtonState({
+  text: "Начать игру",
+  state: "ready"
+});
       }
 
       if (started && !redirected) {
@@ -351,7 +376,10 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
       }
     });
 
-    start.textContent = "Ожидание игрока...";
+setStartButtonState({
+  text: "Ожидание игрока...",
+  state: "waiting"
+});
   };
 });
 
@@ -402,30 +430,52 @@ document.querySelectorAll("[data-rounds]").forEach(btn => {
 // =========================
 // TIME
 // =========================
-document.getElementById("timeOn").onclick = () => {
+const timeOnBtn = document.getElementById("timeOn");
+const timeOffBtn = document.getElementById("timeOff");
+
+timeOnBtn.onclick = () => {
   timeEnabled = true;
   timeInput.disabled = false;
+
+  timeOnBtn.classList.add("active");
+  timeOffBtn.classList.remove("active");
+
   saveConfig();
 };
 
-document.getElementById("timeOff").onclick = () => {
+timeOffBtn.onclick = () => {
   timeEnabled = false;
   timeInput.disabled = true;
+
+  timeOffBtn.classList.add("active");
+  timeOnBtn.classList.remove("active");
+
   saveConfig();
 };
 
 // =========================
 // MOVES
 // =========================
-document.getElementById("movesOn").onclick = () => {
+const movesOnBtn = document.getElementById("movesOn");
+const movesOffBtn = document.getElementById("movesOff");
+
+movesOnBtn.onclick = () => {
   movesEnabled = true;
   movesInput.disabled = false;
+
+  movesOnBtn.classList.add("active");
+  movesOffBtn.classList.remove("active");
+
   saveConfig();
 };
 
-document.getElementById("movesOff").onclick = () => {
+movesOffBtn.onclick = () => {
   movesEnabled = false;
   movesInput.disabled = true;
+
+  movesOffBtn.classList.add("active");
+  movesOnBtn.classList.remove("active");
+
   saveConfig();
 };
 </script>
