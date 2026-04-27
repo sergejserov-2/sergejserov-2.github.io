@@ -24,24 +24,42 @@ export class StaticUI {
   }
  }
 
- updateTimer(value) {
-  const el = this.hudElement.querySelector(".time-left b");
-  if (el) el.textContent = `Время: ${value}`;
- }
+updateTimer(value) {
+  const root = this.hudElement.querySelector(".time-left");
+  const el = root?.querySelector("b");
 
- updateMoves(value) {
-  const el = this.hudElement.querySelector(".moves-left b");
-  if (!el) return;
-  el.textContent = value === -1 ? "∞" : `Ходы: ${value}`;
- }
+  if (!root || !el) return;
 
+  if (value == null || value < 0) {
+    root.style.display = "none";
+    return;
+  }
+
+  root.style.display = "";
+  el.textContent = `Время: ${value}`;
+}
+
+updateMoves(value) {
+  const root = this.hudElement.querySelector(".moves-left");
+  const el = root?.querySelector("b");
+
+  if (!root || !el) return;
+
+  if (value == null || value < 0) {
+    root.style.display = "none";
+    return;
+  }
+
+  root.style.display = "";
+  el.textContent = `Ходы: ${value}`;
+}
 
 resetHUD() {
-  const timeEl = this.hudElement.querySelector(".time-left b");
-  const movesEl = this.hudElement.querySelector(".moves-left b");
+  const timeRoot = this.hudElement.querySelector(".time-left");
+  const movesRoot = this.hudElement.querySelector(".moves-left");
 
-  if (timeEl) timeEl.textContent = "";
-  if (movesEl) movesEl.textContent = "";
+  if (timeRoot) timeRoot.style.display = "none";
+  if (movesRoot) movesRoot.style.display = "none";
 }
 
  
