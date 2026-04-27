@@ -63,9 +63,11 @@ export class UIFlow {
 
    this.staticUI.stopRoundDelay?.();
    this.staticUI.resetHUD();
+   const totals = this.gameFlow.getTotalScore();
+   const myScore = totals[this.gameFlow.playerId] || 0;
    this.staticUI.updateHUD({
      ...this.uiBuilder.formatGameVM(state),
-     totalScore: this.gameFlow.getTotalScore()
+     totalScore: myScore
    });
   });
 
