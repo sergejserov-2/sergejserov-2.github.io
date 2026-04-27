@@ -1,10 +1,12 @@
 import {
- ref,
- set,
- onValue,
- push,
- get,
- update
+  ref,
+  set,
+  onValue,
+  push,
+  get,
+  update,
+  remove,
+  onDisconnect
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
 import { db } from "./firebaseApp.js";
@@ -32,18 +34,15 @@ export class FirebaseRoomController {
 
   await set(this.roomRef, {
    roomId: this.roomId,
-
    players: {
     host: { connected: true, ready: false },
     guest: { connected: false, ready: false }
    },
-
    game: {
     started: false,
     config: null,
     round: null
    },
-
    draftConfig: initialConfig
   });
 
@@ -72,11 +71,12 @@ export class FirebaseRoomController {
   });
 
   this.bind();
+
   return room;
  }
 
  // =========================
- // BIND (SINGLE SOURCE)
+ // BIND
  // =========================
  bind() {
   onValue(this.roomRef, (snap) => {
@@ -89,13 +89,6 @@ export class FirebaseRoomController {
 
  onRoom(cb) {
   this.listeners.room.push(cb);
- }
-
- // =========================
- // CONFIG
- // =========================
- setDraftConfig(cfg) {
-  return update(this.roomRef, { draftConfig: cfg });
  }
 
  // =========================
@@ -119,18 +112,68 @@ export class FirebaseRoomController {
  }
 
  // =========================
- // ROUND SYNC (CRITICAL)
+ // ROUND SYNC
  // =========================
  setRound(round) {
   return update(this.roomRef, {
    "game/round": round
   });
  }
- 
+
  updateGuess(playerId, result) {
- return update(this.roomRef, {
-  [`game/round/guesses/${playerId}`]: result
- });
-}
- 
+  return update(this.roomRef, {
+   [`game/round/guesses/${playerId}`]: result
+  });
+ }
+
+ // =========================================================
+ // 🚪 LEAVE ROOM (NEW)
+ // =========================================================
+ async leaveRoom(role = "guest") {
+  if (!this.roomRef) return;
+
+  await update(this.roomRef, {
+   [`players/${role}/connected`]: false,
+   [`players/${role}/ready`]: false
+  });
+
+  await this.cleanupIfEmpty();
+ }
+
+ // =========================================================
+ // 🧹 AUTO CLEANUP ROOM IF EMPTY
+ // =========================================================
+ async cleanupIfEmpty() {
+  const snap = await get(this.roomRef);
+  const room = snap.val();
+
+  if (!room) return;
+
+  const players = room.players || {};
+
+  const anyConnected =
+   players.host?.connected ||
+   players.guest?.connected;
+
+  if (!anyConnected) {
+   await remove(this.roomRef);
+  }
+ }
+
+ // =========================================================
+ // ⚡ OPTIONAL: HARD DISCONNECT HANDLING
+ // =========================================================
+ enableAutoDisconnect(role = "guest") {
+  if (!this.roomRef) return;
+
+  const playerRef = ref(
+   this.db,
+   `rooms/${this.roomId}/players/${role}`
+  );
+
+  onDisconnect(playerRef).update({
+   connected: false,
+   ready: false
+  });
+ }
 }
