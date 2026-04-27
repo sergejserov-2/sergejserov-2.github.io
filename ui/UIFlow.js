@@ -62,7 +62,7 @@ export class UIFlow {
    this.gameOverviewUI?.clear();
 
    this.staticUI.stopRoundDelay?.();
-
+   this.staticUI.resetHUD();
    this.staticUI.updateHUD(
     this.uiBuilder.formatGameVM(state)
    );
