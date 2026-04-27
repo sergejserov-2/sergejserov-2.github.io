@@ -63,9 +63,10 @@ export class UIFlow {
 
    this.staticUI.stopRoundDelay?.();
    this.staticUI.resetHUD();
-   this.staticUI.updateHUD(
-    this.uiBuilder.formatGameVM(state)
-   );
+   this.staticUI.updateHUD({
+     ...this.uiBuilder.formatGameVM(state),
+     totalScore: this.gameFlow.getTotalScore()
+   });
   });
 
   // =========================
