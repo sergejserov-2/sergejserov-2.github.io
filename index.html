@@ -257,21 +257,26 @@ let movesEnabled = false;
 
 let roomController = null;
 let redirected = false;
-
+const timeInput = document.getElementById("timeInput");
+const movesInput = document.getElementById("movesInput");
+    
 // =========================
 // BUILD CONFIG
 // =========================
 function buildConfig() {
- return {
-  mode,
-  area,
-  players: ["p1", "p2"],
-  rules: {
-   rounds,
-   time: timeEnabled ? +timeInput.value : -1,
-   moves: movesEnabled ? +movesInput.value : -1
-  }
- };
+  const time = timeEnabled ? Number(timeInput.value) : -1;
+  const moves = movesEnabled ? Number(movesInput.value) : -1;
+
+  return {
+    mode,
+    area,
+    players: ["p1", "p2"],
+    rules: {
+      rounds,
+      time: Number.isFinite(time) ? time : -1,
+      moves: Number.isFinite(moves) ? moves : -1
+    }
+  };
 }
 
 // =========================
