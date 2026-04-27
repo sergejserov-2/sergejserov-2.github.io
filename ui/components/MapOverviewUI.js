@@ -30,58 +30,89 @@ export class MapOverviewUI {
   if (!actual) return;
 
   const actualColor = this.uiBuilder.getActualColor();
-
   const guesses = round.guesses || [];
 
   const points = [actual];
 
+  // =========================
+  // ONLY ACTUAL (NO GUESSES)
+  // =========================
   if (!guesses.length) {
-   this.markers.push(
-    this.adapter.createMarker(this.map, actual, {
-     color: actualColor,
-     scale: 1.3
-    })
-   );
-   return;
+    this.markers.push(
+      this.adapter.createMarker(this.map, actual, {
+        color: actualColor,
+        scale: 1.3
+      })
+    );
+    return;
   }
 
+  // =========================
+  // ADD GUESS MARKERS
+  // =========================
   for (const g of guesses) {
-   const color = this.uiBuilder.getPlayerColor(g.playerId);
+    const color = this.uiBuilder.getPlayerColor(g.playerId);
 
-   this.markers.push(
-    this.adapter.createMarker(this.map, g, {
-     color,
-     scale: 1
-    })
-   );
+    this.markers.push(
+      this.adapter.createMarker(this.map, g, {
+        color,
+        scale: 1
+      })
+    );
 
-   points.push(g);
+    points.push(g);
   }
 
+  // =========================
+  // FIT VIEW
+  // =========================
   this.fitToAll(points);
 
   await this.adapter.waitRenderStable(this.map);
 
-  for (const g of guesses) {
-   const color = this.uiBuilder.getPlayerColor(g.playerId);
+  // =========================
+  // 🔥 PARALLEL + SYNC ANIMATION
+  // =========================
+  const BASE_DURATION = 1000;
 
-   await this.adapter.animateLine(
-    this.map,
-    g,
-    actual,
-    color,
-    actualColor
-   );
-  }
-
-  this.markers.push(
-   this.adapter.createMarker(this.map, actual, {
-    color: actualColor,
-    scale: 1.3
-   })
+  const maxDistance = Math.max(
+    ...guesses.map(g => g.distance || 0),
+    1
   );
- }
 
+  await Promise.all(
+    guesses.map(g => {
+      const color = this.uiBuilder.getPlayerColor(g.playerId);
+
+      const distance = g.distance || 0;
+
+      const duration = Math.max(
+        300,
+        BASE_DURATION * (distance / maxDistance)
+      );
+
+      return this.adapter.animateLine(
+        this.map,
+        g,
+        actual,
+        color,
+        actualColor,
+        duration
+      );
+    })
+  );
+
+  // =========================
+  // ACTUAL MARKER ON TOP
+  // =========================
+  this.markers.push(
+    this.adapter.createMarker(this.map, actual, {
+      color: actualColor,
+      scale: 1.3
+    })
+  );
+}
+ 
  fitToAll(points) {
   if (!points.length) return;
 
