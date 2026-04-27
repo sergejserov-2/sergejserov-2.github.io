@@ -381,17 +381,21 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
 // =========================
 start.onclick = () => {
 
+ if (mode === "duel") {
+
   const config = buildConfig();
 
-  console.log("🚀 START CONFIG:", config);
-
-  if (mode === "duel") {
-    roomController.startGame(config);
-    return;
-  }
-
+  // 🔥 FIX: синхронизируем с SOLO системой
   localStorage.setItem("gameConfig", JSON.stringify(config));
-  window.location.href = "/play.html";
+
+  roomController.startGame(config);
+  return;
+ }
+
+ const config = buildConfig();
+
+ localStorage.setItem("gameConfig", JSON.stringify(config));
+ window.location.href = "/play.html";
 };
 
 // =========================
