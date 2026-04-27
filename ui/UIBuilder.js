@@ -84,24 +84,29 @@ export class UIBuilder {
  // GAME RESULT
  // =========================
 
- formatGameResultVM(state) {
+formatGameResultVM(state) {
   const rounds = state.rounds || [];
 
   const players = {};
 
   for (const r of rounds) {
-   for (const g of (r.guesses || [])) {
-    if (!players[g.playerId]) {
-     players[g.playerId] = { score: 0 };
-    }
 
-    players[g.playerId].score += g.score || 0;
-   }
+    const guesses = Array.isArray(r.guesses)
+      ? r.guesses
+      : Object.values(r.guesses || {});
+
+    for (const g of guesses) {
+      if (!players[g.playerId]) {
+        players[g.playerId] = { score: 0 };
+      }
+
+      players[g.playerId].score += g.score || 0;
+    }
   }
 
   return {
-   players,
-   rounds
+    players,
+    rounds
   };
- }
+}
 }
