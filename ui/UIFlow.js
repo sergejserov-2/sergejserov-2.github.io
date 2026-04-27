@@ -138,7 +138,7 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
   });
 });
 
-this.gameFlow.on("gameEnded", (state) => {
+this.gameFlow.on("gameEnded", ({ state, round }) => {
   this.screenManager.show("gameResult");
   const guessesArray = Array.isArray(round.guesses)
     ? round.guesses
