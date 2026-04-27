@@ -116,10 +116,30 @@ this.gameFlow.on("roundWaiting", () => {
 this.gameFlow.on("roundResultShown", ({ state, round }) => {
 
   this.screenManager.show("roundResult");
+  const guessesArray = Array.isArray(round.guesses)
+    ? round.guesses
+    : Object.values(round.guesses || {});
 
-  // =========================
-  // NORMALIZE (🔥 КЛЮЧ)
-  // =========================
+  const vm = {
+    actual: round.actualLocation,
+    guesses: guessesArray
+  };
+
+  console.log("🎯 UI VM", vm);
+  this.staticUI.showRoundResult(vm);
+  requestAnimationFrame(() => {
+    this.roundOverviewUI.render({
+      actualLocation: round.actualLocation,
+      guesses: guessesArray
+    });
+  });
+  this.staticUI.startRoundDelay(10000, () => {
+    this.gameFlow.nextRound();
+  });
+});
+
+this.gameFlow.on("gameEnded", (state) => {
+  this.screenManager.show("gameResult");
   const guessesArray = Array.isArray(round.guesses)
     ? round.guesses
     : Object.values(round.guesses || {});
@@ -132,44 +152,10 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
   console.log("🎯 UI VM", vm);
 
   // =========================
-  // STATIC UI
-  // =========================
-  this.staticUI.showRoundResult(vm);
-
-  // =========================
-  // MAP
-  // =========================
-  requestAnimationFrame(() => {
-    this.roundOverviewUI.render({
-      actualLocation: round.actualLocation,
-      guesses: guessesArray
-    });
-  });
-
-  // =========================
-  // DELAY
-  // =========================
-  this.staticUI.startRoundDelay(10000, () => {
-    this.gameFlow.nextRound();
-  });
-});
-
-  // =========================
-  // GAME END
-  // =========================
-this.gameFlow.on("gameEnded", () => {
-
-  this.screenManager.show("gameResult");
-
-  // =========================
-  // ✅ ВСЕ РАУНДЫ (НОРМАЛИЗОВАННЫЕ)
-  // =========================
-  const rounds = this.gameFlow.getAllRoundsForUI();
-
-  // =========================
-  // ✅ СЧИТАЕМ TOTAL ПО ИГРОКАМ
+  // 🔥 СЕТЕВОЙ TOTAL SCORE
   // =========================
   const players = {};
+  const rounds = state.rounds || [];
 
   for (const r of rounds) {
     for (const g of (r.guesses || [])) {
@@ -182,21 +168,16 @@ this.gameFlow.on("gameEnded", () => {
     }
   }
 
-  const vm = { players, rounds };
-
+  // =========================
+  // VM = ROUND + TOTAL
+  // =========================
   this.staticUI.showGameResult(vm);
-
-  // =========================
-  // ✅ КАРТА (ПОСЛЕДНИЙ РАУНД)
-  // =========================
-  const last = rounds.at(-1);
-
-  if (last) {
-    requestAnimationFrame(() => {
-      this.gameOverviewUI.render(last);
+  requestAnimationFrame(() => {
+    this.roundOverviewUI.render({
+      actualLocation: round.actualLocation,
+      guesses: guessesArray
     });
-  }
-
+  });
   this.bindGameResultButtons();
 });
  }
