@@ -248,6 +248,9 @@ input:disabled {
 <script type="module">
 import { FirebaseRoomController } from "./server/FirebaseRoomController.js";
 
+// =========================
+// STATE
+// =========================
 let mode = "solo";
 let area = "europe";
 let rounds = 5;
@@ -257,17 +260,27 @@ let movesEnabled = false;
 
 let roomController = null;
 let redirected = false;
+
+// =========================
+// INPUTS
+// =========================
 const timeInput = document.getElementById("timeInput");
 const movesInput = document.getElementById("movesInput");
-    
+
 // =========================
-// BUILD CONFIG
+// ELEMENTS
+// =========================
+const start = document.getElementById("start");
+const link = document.getElementById("duelLink");
+
+// =========================
+// CONFIG BUILDER
 // =========================
 function buildConfig() {
   const time = timeEnabled ? Number(timeInput.value) : -1;
   const moves = movesEnabled ? Number(movesInput.value) : -1;
 
-  return {
+  const config = {
     mode,
     area,
     players: ["p1", "p2"],
@@ -277,212 +290,208 @@ function buildConfig() {
       moves: Number.isFinite(moves) ? moves : -1
     }
   };
+
+  console.log("🧪 CONFIG BUILD:", config);
+
+  return config;
 }
 
 // =========================
-// ELEMENTS
-// =========================
-const start = document.getElementById("start");
-const link = document.getElementById("duelLink");
-
-// =========================
-// MODE BUTTONS
+// MODE
 // =========================
 document.querySelectorAll("[data-mode]").forEach(btn => {
- btn.onclick = async () => {
+  btn.onclick = async () => {
 
-  document.querySelectorAll("[data-mode]")
-   .forEach(x => x.classList.remove("active"));
+    mode = btn.dataset.mode;
 
-  btn.classList.add("active");
-  mode = btn.dataset.mode;
+    document.querySelectorAll("[data-mode]").forEach(x => {
+      x.classList.toggle("active", x === btn);
+    });
 
-  // =========================
-  // SOLO MODE RESET UI
-  // =========================
-if (mode === "solo") {
- roomController = null;
- redirected = false;
+    // RESET SOLO
+    if (mode === "solo") {
+      roomController = null;
+      redirected = false;
 
- setStartButtonState({
-  text: "Начать игру",
-  state: "ready"
- });
+      setStartButtonState({
+        text: "Начать игру",
+        state: "ready"
+      });
 
- link.value = "";
- link.disabled = true;
+      link.value = "";
+      link.disabled = true;
 
- return;
-}
+      return;
+    }
 
-  // =========================
-  // DUEL INIT
-  // =========================
-setStartButtonState({
- text: "Создание комнаты...",
- state: "disabled"
-});
+    // DUEL INIT
+    setStartButtonState({
+      text: "Создание комнаты...",
+      state: "disabled"
+    });
 
-  roomController = new FirebaseRoomController();
+    roomController = new FirebaseRoomController();
 
-  const room = await roomController.createRoom(buildConfig());
+    const room = await roomController.createRoom(buildConfig());
 
-  link.value = room.inviteLink;
-  link.disabled = false;
+    link.value = room.inviteLink;
+    link.disabled = false;
 
-  // =========================
-  // STATE LISTENER (NEW API)
-  // =========================
-  roomController.onRoom((roomState) => {
+    roomController.onRoom((roomState) => {
 
-   if (redirected) return;
+      if (redirected) return;
 
-   const players = roomState.players;
-   const game = roomState.game;
+      const players = roomState.players;
+      const game = roomState.game;
 
-   const guestConnected = players?.guest?.connected;
-   const guestReady = players?.guest?.ready;
-   const started = game?.started;
+      const guestConnected = players?.guest?.connected;
+      const guestReady = players?.guest?.ready;
+      const started = game?.started;
 
-   // =========================
-   // UI STATE: guest joined
-   // =========================
-if (guestConnected && !guestReady) {
- setStartButtonState({
-  text: "Игрок подключился",
-  state: "waiting"
- });
-}
+      if (guestConnected && !guestReady) {
+        setStartButtonState({
+          text: "Игрок подключился",
+          state: "waiting"
+        });
+      }
 
-   // =========================
-   // UI STATE: guest ready
-   // =========================
-if (guestReady && !started) {
- setStartButtonState({
-  text: "Начать игру",
-  state: "ready"
- });
-}
+      if (guestReady && !started) {
+        setStartButtonState({
+          text: "Начать игру",
+          state: "ready"
+        });
+      }
 
-   // =========================
-   // GAME START → REDIRECT HOST
-   // =========================
-   if (started && !redirected) {
-    redirected = true;
+      if (started && !redirected) {
+        redirected = true;
+        window.location.href =
+          `/play.html?room=${roomState.roomId}&role=host`;
+      }
+    });
 
-    window.location.href =
-     `/play.html?room=${roomState.roomId}&role=host`;
-   }
-  });
-
- setStartButtonState({
-  text: "Ожидание игрока...",
-  state: "waiting"
- });
- };
+    setStartButtonState({
+      text: "Ожидание игрока...",
+      state: "waiting"
+    });
+  };
 });
 
 // =========================
-// START BUTTON
+// START
 // =========================
 start.onclick = () => {
 
- if (mode === "duel") {
+  const config = buildConfig();
 
+  console.log("🚀 START CONFIG:", config);
 
-  // state-driven start
-  roomController.startGame(buildConfig());
+  if (mode === "duel") {
+    roomController.startGame(config);
+    return;
+  }
 
-  return;
- }
-
- localStorage.setItem("gameConfig", JSON.stringify(buildConfig()));
- window.location.href = "/play.html";
+  localStorage.setItem("gameConfig", JSON.stringify(config));
+  window.location.href = "/play.html";
 };
 
 // =========================
-// AREA BUTTONS
+// AREA
 // =========================
 document.querySelectorAll("[data-area]").forEach(btn => {
- btn.onclick = () => {
-  document.querySelectorAll("[data-area]")
-   .forEach(x => x.classList.remove("active"));
+  btn.onclick = () => {
 
-  btn.classList.add("active");
-  area = btn.dataset.area;
- };
+    area = btn.dataset.area;
+
+    document.querySelectorAll("[data-area]").forEach(x => {
+      x.classList.toggle("active", x === btn);
+    });
+  };
 });
 
 // =========================
-// ROUNDS BUTTONS
+// ROUNDS
 // =========================
 document.querySelectorAll("[data-rounds]").forEach(btn => {
- btn.onclick = () => {
-  document.querySelectorAll("[data-rounds]")
-   .forEach(x => x.classList.remove("active"));
+  btn.onclick = () => {
 
-  btn.classList.add("active");
-  rounds = +btn.dataset.rounds;
- };
+    rounds = +btn.dataset.rounds;
+
+    document.querySelectorAll("[data-rounds]").forEach(x => {
+      x.classList.toggle("active", x === btn);
+    });
+  };
 });
 
 // =========================
-// TIMER TOGGLE
+// TIMER
 // =========================
 document.getElementById("timeOn").onclick = () => {
- timeEnabled = true;
- timeInput.disabled = false;
-
- document.getElementById("timeOn").classList.add("active");
- document.getElementById("timeOff").classList.remove("active");
+  timeEnabled = true;
+  timeInput.disabled = false;
+document.getElementById("timeOn").classList.add("active");
+  document.getElementById("timeOff").classList.remove("active");
 };
 
 document.getElementById("timeOff").onclick = () => {
- timeEnabled = false;
- timeInput.disabled = true;
-document.getElementById("timeOff").classList.add("active");
- document.getElementById("timeOn").classList.remove("active");
+  timeEnabled = false;
+  timeInput.disabled = true;
+
+  document.getElementById("timeOff").classList.add("active");
+  document.getElementById("timeOn").classList.remove("active");
+
+  timeInput.value = 300;
 };
 
 // =========================
-// MOVES TOGGLE
+// MOVES
 // =========================
 document.getElementById("movesOn").onclick = () => {
- movesEnabled = true;
- movesInput.disabled = false;
+  movesEnabled = true;
+  movesInput.disabled = false;
 
- document.getElementById("movesOn").classList.add("active");
- document.getElementById("movesOff").classList.remove("active");
+  document.getElementById("movesOn").classList.add("active");
+  document.getElementById("movesOff").classList.remove("active");
 };
 
 document.getElementById("movesOff").onclick = () => {
- movesEnabled = false;
- movesInput.disabled = true;
+  movesEnabled = false;
+  movesInput.disabled = true;
 
- document.getElementById("movesOff").classList.add("active");
- document.getElementById("movesOn").classList.remove("active");
+  document.getElementById("movesOff").classList.add("active");
+  document.getElementById("movesOn").classList.remove("active");
+
+  movesInput.value = 10;
 };
 
+// =========================
+// BUTTON STATE
+// =========================
 function setStartButtonState({ text, state }) {
   start.textContent = text;
 
   start.classList.remove("wait", "disabled");
 
   if (state === "ready") {
-          start.style.pointerEvents = "auto";
+    start.style.pointerEvents = "auto";
     return;
   }
 
   if (state === "waiting") {
     start.classList.add("wait");
-          start.style.pointerEvents = "none";
+    start.style.pointerEvents = "none";
   }
+
   if (state === "disabled") {
     start.classList.add("disabled");
-          start.style.pointerEvents = "none";
+    start.style.pointerEvents = "none";
   }
 }
-    
+
+// =========================
+// DEBUG
+// =========================
+window.debugConfig = () => buildConfig();
+
 </script>
 </body>
 </html>
