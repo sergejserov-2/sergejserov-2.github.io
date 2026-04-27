@@ -151,7 +151,7 @@ export class MapAdapter {
         marker?.remove?.();
     }
 
-animateLine(map, start, end, colorA, colorB) {
+animateLine(map, start, end, colorA, colorB, duration = 1000) {
     const id = `line-${Math.random().toString(36).slice(2)}`;
 
     // =========================
