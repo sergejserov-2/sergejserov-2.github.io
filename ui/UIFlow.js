@@ -162,12 +162,12 @@ this.gameFlow.on("gameEnded", () => {
   this.screenManager.show("gameResult");
 
   // =========================
-  // 🔥 ВСЕ РАУНДЫ ИЗ GAMEFLOW
+  // ✅ ВСЕ РАУНДЫ (НОРМАЛИЗОВАННЫЕ)
   // =========================
   const rounds = this.gameFlow.getAllRoundsForUI();
 
   // =========================
-  // 🔥 СЧИТАЕМ СКОРЫ ПРЯМО ЗДЕСЬ (как UIBuilder делает)
+  // ✅ СЧИТАЕМ TOTAL ПО ИГРОКАМ
   // =========================
   const players = {};
 
@@ -184,13 +184,10 @@ this.gameFlow.on("gameEnded", () => {
 
   const vm = { players, rounds };
 
-  // =========================
-  // STATIC UI
-  // =========================
   this.staticUI.showGameResult(vm);
 
   // =========================
-  // MAP (ПОСЛЕДНИЙ РАУНД)
+  // ✅ КАРТА (ПОСЛЕДНИЙ РАУНД)
   // =========================
   const last = rounds.at(-1);
 
