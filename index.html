@@ -262,10 +262,27 @@ let roomController = null;
 let redirected = false;
 
 // =========================
-// INPUTS
+// CONFIG SOURCE OF TRUTH
 // =========================
-const timeInput = document.getElementById("timeInput");
-const movesInput = document.getElementById("movesInput");
+function buildConfig() {
+  return {
+    mode,
+    area,
+    players: ["p1", "p2"],
+    rules: {
+      rounds,
+      time: timeEnabled ? +timeInput.value : -1,
+      moves: movesEnabled ? +movesInput.value : -1
+    }
+  };
+}
+
+// =========================
+// LOCAL STORAGE (🔥 ONLY GAME SOURCE)
+// =========================
+function saveConfig() {
+  localStorage.setItem("gameConfig", JSON.stringify(buildConfig()));
+}
 
 // =========================
 // ELEMENTS
@@ -274,61 +291,39 @@ const start = document.getElementById("start");
 const link = document.getElementById("duelLink");
 
 // =========================
-// CONFIG BUILDER
-// =========================
-function buildConfig() {
-  const time = timeEnabled ? Number(timeInput.value) : -1;
-  const moves = movesEnabled ? Number(movesInput.value) : -1;
-
-  const config = {
-    mode,
-    area,
-    players: ["p1", "p2"],
-    rules: {
-      rounds,
-      time: Number.isFinite(time) ? time : -1,
-      moves: Number.isFinite(moves) ? moves : -1
-    }
-  };
-
-  console.log("🧪 CONFIG BUILD:", config);
-
-  return config;
-}
-
-// =========================
 // MODE
 // =========================
 document.querySelectorAll("[data-mode]").forEach(btn => {
   btn.onclick = async () => {
 
+    document.querySelectorAll("[data-mode]")
+      .forEach(x => x.classList.remove("active"));
+
+    btn.classList.add("active");
     mode = btn.dataset.mode;
 
-    document.querySelectorAll("[data-mode]").forEach(x => {
-      x.classList.toggle("active", x === btn);
-    });
+    saveConfig();
 
-    // RESET SOLO
+    // =========================
+    // SOLO RESET
+    // =========================
     if (mode === "solo") {
       roomController = null;
       redirected = false;
 
-      setStartButtonState({
-        text: "Начать игру",
-        state: "ready"
-      });
-
       link.value = "";
       link.disabled = true;
 
+      start.textContent = "Начать игру";
+      start.style.pointerEvents = "auto";
       return;
     }
 
+    // =========================
     // DUEL INIT
-    setStartButtonState({
-      text: "Создание комнаты...",
-      state: "disabled"
-    });
+    // =========================
+    start.textContent = "Создание комнаты...";
+    start.style.pointerEvents = "none";
 
     roomController = new FirebaseRoomController();
 
@@ -341,25 +336,12 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
 
       if (redirected) return;
 
-      const players = roomState.players;
-      const game = roomState.game;
-
-      const guestConnected = players?.guest?.connected;
-      const guestReady = players?.guest?.ready;
-      const started = game?.started;
-
-      if (guestConnected && !guestReady) {
-        setStartButtonState({
-          text: "Игрок подключился",
-          state: "waiting"
-        });
-      }
+      const started = roomState.game?.started;
+      const guestReady = roomState.players?.guest?.ready;
 
       if (guestReady && !started) {
-        setStartButtonState({
-          text: "Начать игру",
-          state: "ready"
-        });
+        start.textContent = "Начать игру";
+        start.style.pointerEvents = "auto";
       }
 
       if (started && !redirected) {
@@ -369,10 +351,7 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
       }
     });
 
-    setStartButtonState({
-      text: "Ожидание игрока...",
-      state: "waiting"
-    });
+    start.textContent = "Ожидание игрока...";
   };
 });
 
@@ -381,21 +360,13 @@ document.querySelectorAll("[data-mode]").forEach(btn => {
 // =========================
 start.onclick = () => {
 
- if (mode === "duel") {
+  if (mode === "duel") {
+    roomController.startGame(buildConfig());
+    return;
+  }
 
-  const config = buildConfig();
-
-  // 🔥 FIX: синхронизируем с SOLO системой
-  localStorage.setItem("gameConfig", JSON.stringify(config));
-
-  roomController.startGame(config);
-  return;
- }
-
- const config = buildConfig();
-
- localStorage.setItem("gameConfig", JSON.stringify(config));
- window.location.href = "/play.html";
+  saveConfig();
+  window.location.href = "/play.html";
 };
 
 // =========================
@@ -403,12 +374,13 @@ start.onclick = () => {
 // =========================
 document.querySelectorAll("[data-area]").forEach(btn => {
   btn.onclick = () => {
+    document.querySelectorAll("[data-area]")
+      .forEach(x => x.classList.remove("active"));
 
+    btn.classList.add("active");
     area = btn.dataset.area;
 
-    document.querySelectorAll("[data-area]").forEach(x => {
-      x.classList.toggle("active", x === btn);
-    });
+    saveConfig();
   };
 });
 
@@ -417,33 +389,29 @@ document.querySelectorAll("[data-area]").forEach(btn => {
 // =========================
 document.querySelectorAll("[data-rounds]").forEach(btn => {
   btn.onclick = () => {
+    document.querySelectorAll("[data-rounds]")
+      .forEach(x => x.classList.remove("active"));
 
+    btn.classList.add("active");
     rounds = +btn.dataset.rounds;
 
-    document.querySelectorAll("[data-rounds]").forEach(x => {
-      x.classList.toggle("active", x === btn);
-    });
+    saveConfig();
   };
 });
 
 // =========================
-// TIMER
+// TIME
 // =========================
 document.getElementById("timeOn").onclick = () => {
   timeEnabled = true;
   timeInput.disabled = false;
-document.getElementById("timeOn").classList.add("active");
-  document.getElementById("timeOff").classList.remove("active");
+  saveConfig();
 };
 
 document.getElementById("timeOff").onclick = () => {
   timeEnabled = false;
   timeInput.disabled = true;
-
-  document.getElementById("timeOff").classList.add("active");
-  document.getElementById("timeOn").classList.remove("active");
-
-  timeInput.value = 300;
+  saveConfig();
 };
 
 // =========================
@@ -452,50 +420,14 @@ document.getElementById("timeOff").onclick = () => {
 document.getElementById("movesOn").onclick = () => {
   movesEnabled = true;
   movesInput.disabled = false;
-
-  document.getElementById("movesOn").classList.add("active");
-  document.getElementById("movesOff").classList.remove("active");
+  saveConfig();
 };
 
 document.getElementById("movesOff").onclick = () => {
   movesEnabled = false;
   movesInput.disabled = true;
-
-  document.getElementById("movesOff").classList.add("active");
-  document.getElementById("movesOn").classList.remove("active");
-
-  movesInput.value = 10;
+  saveConfig();
 };
-
-// =========================
-// BUTTON STATE
-// =========================
-function setStartButtonState({ text, state }) {
-  start.textContent = text;
-
-  start.classList.remove("wait", "disabled");
-
-  if (state === "ready") {
-    start.style.pointerEvents = "auto";
-    return;
-  }
-
-  if (state === "waiting") {
-    start.classList.add("wait");
-    start.style.pointerEvents = "none";
-  }
-
-  if (state === "disabled") {
-    start.classList.add("disabled");
-    start.style.pointerEvents = "none";
-  }
-}
-
-// =========================
-// DEBUG
-// =========================
-window.debugConfig = () => buildConfig();
-
 </script>
 </body>
 </html>
