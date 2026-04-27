@@ -150,15 +150,16 @@ this.gameFlow.on("gameEnded", ({ state, round }) => {
     ? round.guesses
     : Object.values(round.guesses || {});
 
-  const totals = this.gameFlow.getTotalScore();
+  // 🔥 ВАЖНО: передаём текущий раунд
+  const totals = this.gameFlow.getTotalScore(round);
 
   const vm = {
     actual: round.actualLocation,
     guesses: guessesArray,
-    players: totals // 🔥 ВАЖНО
+    players: totals
   };
 
-  console.log("🎯 UI VM", vm);
+  console.log("🎯 GAME VM", vm);
 
   this.staticUI.showGameResult(vm);
 
