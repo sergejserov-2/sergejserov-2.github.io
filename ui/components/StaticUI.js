@@ -167,9 +167,9 @@ showGameResult(vm = {}) {
     // =========================
     const totalEl = document.createElement("div");
 
-    totalEl.style.margin = "0 0 8px 4px";
-    totalEl.style.fontSize = "12px";
-    totalEl.style.opacity = "0.8";
+totalEl.style.margin = "2px 0 10px 6px";
+totalEl.style.fontSize = "16px";     // 👈 больше
+totalEl.style.color = "#ffffff";     // 👈 белый
 
     totalEl.textContent = `Общий счёт: ${total}`;
 
