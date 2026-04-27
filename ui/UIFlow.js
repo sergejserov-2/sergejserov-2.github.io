@@ -122,9 +122,12 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
     ? round.guesses
     : Object.values(round.guesses || {});
 
+  const totals = this.gameFlow.getTotalScore();
+
   const vm = {
     actual: round.actualLocation,
-    guesses: guessesArray
+    guesses: guessesArray,
+    players: totals // 🔥 ВАЖНО
   };
 
   console.log("🎯 UI VM", vm);
@@ -142,23 +145,30 @@ this.gameFlow.on("roundResultShown", ({ state, round }) => {
 
 this.gameFlow.on("gameEnded", ({ state, round }) => {
   this.screenManager.show("gameResult");
+
   const guessesArray = Array.isArray(round.guesses)
     ? round.guesses
     : Object.values(round.guesses || {});
 
+  const totals = this.gameFlow.getTotalScore();
+
   const vm = {
     actual: round.actualLocation,
-    guesses: guessesArray
+    guesses: guessesArray,
+    players: totals // 🔥 ВАЖНО
   };
 
   console.log("🎯 UI VM", vm);
+
   this.staticUI.showGameResult(vm);
+
   requestAnimationFrame(() => {
     this.roundOverviewUI.render({
       actualLocation: round.actualLocation,
       guesses: guessesArray
     });
   });
+
   this.bindGameResultButtons();
 });
  }
